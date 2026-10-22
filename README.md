@@ -1,36 +1,44 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Reputation Turbo
 
-## Getting Started
+The Reputation Turbo public website and owner dashboard: one Next.js app with a Postgres database.
 
-First, run the development server:
+**Milestone 1 includes:** public pages (Home, Services & Pricing, About, Our Work, Free Online Audit, Contact, One-Sheet, Privacy, Terms), the Free Online Audit and contact forms, lead capture with duplicate detection, confirmation and owner notification emails, and the dashboard (sign-in, daily summary, leads pipeline and list, lead detail with notes and history, and a pricing editor with a switch that shows or hides prices on the website).
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## How it fits together
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+| Part | Where |
+| --- | --- |
+| Public pages | `src/app/(site)` |
+| Form handling (validation, spam checks, duplicate leads, emails) | `src/app/(site)/actions.ts`, `src/lib/leads.ts`, `src/lib/notifications.ts` |
+| Dashboard | `src/app/admin` |
+| Business details (phone, address, cities, industries) | `src/lib/site.ts` |
+| Database tables and starting prices | `db/schema.sql`, `db/seed.sql` |
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Run it locally
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Install Node 22 and Postgres 16.
+2. `npm install`
+3. Copy `.env.example` to `.env.local` and fill it in (see the comments in that file).
+4. `npm run db:setup` creates the tables and loads the starting packages, add-ons and plans.
+5. `npm run dev`, then open http://localhost:3000 and http://localhost:3000/admin.
 
-## Learn More
+Without `RESEND_API_KEY`, emails are recorded in the database (status `logged`) instead of being sent.
 
-To learn more about Next.js, take a look at the following resources:
+## Tests
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- `npm test` runs the unit tests (form validation, password hashing).
+- `npm run build && npm run test:e2e` runs the browser tests on desktop and phone sizes against a production build. They reset the leads tables in the database named in `.env.local`, so never point them at production. Set `PW_CHROMIUM_PATH` to use an already installed Chromium.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Deploying (Vercel + Supabase + Resend)
 
-## Deploy on Vercel
+1. **Supabase:** create a project, then copy the *Transaction pooler* connection string (Project Settings, Database). Run `DATABASE_URL="..." npm run db:setup` once.
+2. **Resend:** add and verify the `reputationturbo.com` domain (it gives you DNS records to add), then create an API key.
+3. **Vercel:** import the GitHub repository and add every variable from `.env.example` under Project Settings, Environment Variables. Use a new `SESSION_SECRET` and a password hash made with `npm run hash-password -- "your password"`.
+4. Point `reputationturbo.com` at Vercel (Vercel shows the DNS records) and set `NEXT_PUBLIC_SITE_URL=https://reputationturbo.com`.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Rules this code follows
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Prices stay hidden on the website until the owner turns on "Show prices" in the dashboard.
+- No invented reviews, testimonials or projects anywhere on the site.
+- Every admin page and admin action checks the signed-in session on the server.
+- Secrets live only in environment variables, never in code.
