@@ -1,5 +1,8 @@
 import Link from "next/link";
-import { site } from "@/lib/site";
+import { citySlug, site } from "@/lib/site";
+import { businessJsonLd, faqJsonLd, type Faq } from "@/lib/structured-data";
+import { FaqList } from "@/components/FaqList";
+import { JsonLd } from "@/components/JsonLd";
 import { ButtonLink, Container, Eyebrow } from "@/components/ui";
 
 const services: { title: string; body: string; href?: string }[] = [
@@ -28,31 +31,39 @@ const steps = [
   { n: "3", title: "We build and launch", body: "We set it up, you review and approve, and we launch. You own every account when we're done." },
 ];
 
-// Structured business details for search engines and AI assistants.
-const jsonLd = {
-  "@context": "https://schema.org",
-  "@type": "ProfessionalService",
-  name: site.name,
-  slogan: site.tagline,
-  url: site.url,
-  email: site.email,
-  telephone: site.phoneHref.replace("tel:", ""),
-  address: {
-    "@type": "PostalAddress",
-    streetAddress: site.address.line1,
-    addressLocality: site.address.city,
-    addressRegion: site.address.region,
-    postalCode: site.address.postal,
-    addressCountry: "US",
+// Common questions, shown on the page and published as structured data for AI tools to quote.
+const faqs: Faq[] = [
+  {
+    q: "What does the free online audit include?",
+    a: "We review your website, Google Business Profile, social profiles and reviews, and ask AI assistants like ChatGPT the questions your customers ask to see whether they recommend you. A real person checks every finding before it reaches you, and it's free with no obligation.",
   },
-  areaServed: site.cities.map((c) => ({ "@type": "City", name: `${c}, CA` })),
-  knowsAbout: ["Small business websites", "Google Business Profile optimization", "Local SEO", "Online reviews", "Generative engine optimization (GEO)"],
-};
+  {
+    q: "What is GEO, and do I need it?",
+    a: "GEO (generative engine optimization) is making sure AI assistants can find your business, describe it correctly and recommend it. More customers now ask AI who to hire, so if you rely on local customers finding you, it's worth checking where you stand. Every website we build includes it.",
+  },
+  {
+    q: "Do I need a new website?",
+    a: "Not necessarily. If your current site works, we can improve your Google profile, reviews and AI visibility without rebuilding it. If it's outdated or missing, our website packages include GEO from day one.",
+  },
+  {
+    q: "How much does it cost?",
+    a: "Every package has a clear, upfront price, and your domain, hosting and email costs are listed separately and paid directly by you. See Services & Pricing, or start with the free audit and we'll recommend the right package.",
+  },
+  {
+    q: "Do I own my website and accounts?",
+    a: "Yes. Your domain, hosting, business email, Google profile and social accounts are in your name, so you stay in control even if you stop working with us.",
+  },
+  {
+    q: "Can you guarantee I'll be number one on Google or ChatGPT?",
+    a: "No, and nobody honestly can. We fix the things search engines and AI assistants rely on, show you the evidence, and track whether it's working.",
+  },
+];
 
 export default function HomePage() {
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
+      <JsonLd data={businessJsonLd()} />
+      <JsonLd data={faqJsonLd(faqs)} />
       <section className="relative overflow-hidden bg-navy text-white">
         <div aria-hidden="true" className="pointer-events-none absolute -right-24 top-0 h-full w-1/2 -skew-x-[20deg] bg-gradient-to-l from-orange/25 to-transparent" />
         <Container className="relative py-16 sm:py-24">
@@ -155,7 +166,16 @@ export default function HomePage() {
                 <li key={i} className="rounded-full bg-navy-50 px-3 py-1.5 text-sm font-medium text-navy">{i}</li>
               ))}
             </ul>
-            <p className="mt-6 text-muted">Serving {site.cities.join(", ")} and the rest of San Diego County.</p>
+            <p className="mt-6 text-muted">
+              Serving{" "}
+              {site.cities.map((c, i) => (
+                <span key={c}>
+                  <Link href={`/areas/${citySlug(c)}`} className="text-navy underline decoration-orange underline-offset-2 hover:text-orange">{c}</Link>
+                  {i < site.cities.length - 1 ? ", " : ""}
+                </span>
+              ))}{" "}
+              and the rest of San Diego County.
+            </p>
           </div>
           <div className="rounded-lg border-l-4 border-orange bg-navy-50 p-8">
             <h2 className="font-display text-3xl font-bold text-navy">You own everything</h2>
@@ -169,6 +189,14 @@ export default function HomePage() {
               stick to what we can verify, and we explain every recommendation in plain English.
             </p>
           </div>
+        </Container>
+      </section>
+
+      <section className="bg-navy-50 py-16 sm:py-20">
+        <Container>
+          <Eyebrow>Questions</Eyebrow>
+          <h2 className="mt-2 font-display text-4xl font-bold text-navy">Common questions</h2>
+          <FaqList faqs={faqs} />
         </Container>
       </section>
 

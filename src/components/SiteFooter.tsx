@@ -17,6 +17,7 @@ export function SiteFooter() {
           {navLinks.map((l) => (
             <Link key={l.href} href={l.href} className="hover:text-orange">{l.label}</Link>
           ))}
+          <Link href="/areas" className="hover:text-orange">Areas We Serve</Link>
           <Link href="/privacy" className="hover:text-orange">Privacy Policy</Link>
           <Link href="/terms" className="hover:text-orange">Terms of Use</Link>
         </nav>
