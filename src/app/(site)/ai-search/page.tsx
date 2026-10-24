@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getOfferings, getShowPrices } from "@/lib/offerings";
+import { getOfferings, getShowPrices, isGeo } from "@/lib/offerings";
 import { OfferingCard } from "@/components/Pricing";
 import { ButtonLink, Container, Eyebrow, PageHeader } from "@/components/ui";
 
@@ -9,9 +9,6 @@ export const metadata: Metadata = {
   description:
     "Get your business mentioned when customers ask ChatGPT, Google's AI answers and other AI assistants who to hire. AI search visibility (GEO) for San Diego County service businesses.",
 };
-
-// Offerings shown on this page; prices and wording are managed in the dashboard.
-const geoSlugs = ["ai-search-setup", "ai-visibility-plan"];
 
 const questions = [
   "Who's the best concrete contractor in El Cajon?",
@@ -35,7 +32,7 @@ const steps = [
 
 export default async function AiSearchPage() {
   const [offerings, showPrices] = await Promise.all([getOfferings({ activeOnly: true }), getShowPrices()]);
-  const geoOfferings = offerings.filter((o) => geoSlugs.includes(o.slug));
+  const geoOfferings = offerings.filter(isGeo);
 
   return (
     <>
@@ -107,8 +104,11 @@ export default async function AiSearchPage() {
       {geoOfferings.length > 0 && (
         <section className="bg-navy-50 py-14">
           <Container>
-            <Eyebrow>Options</Eyebrow>
+            <Eyebrow>Already have a website? Keep it.</Eyebrow>
             <h2 className="mt-2 font-display text-3xl font-bold text-navy">One-time setup, optional monthly tracking</h2>
+            <p className="mt-2 max-w-2xl text-muted">
+              No rebuild needed. We work alongside your current website and web designer, and you keep every account.
+            </p>
             <div className="mt-6 grid gap-6 md:grid-cols-2">
               {geoOfferings.map((o) => (
                 <div key={o.id} className="grid rounded-lg bg-white">
@@ -133,7 +133,7 @@ export default async function AiSearchPage() {
           <div className="rounded-lg bg-orange p-8 text-white">
             <h2 className="font-display text-3xl font-extrabold italic uppercase">Find out what AI says about you</h2>
             <p className="mt-2 text-white/90">Every free online audit now includes an AI search check.</p>
-            <ButtonLink href="/free-audit" variant="dark" className="mt-6">Get Your Free Audit</ButtonLink>
+            <ButtonLink href="/free-audit?focus=ai-search" variant="dark" className="mt-6">Get Your Free Audit</ButtonLink>
           </div>
         </Container>
       </section>

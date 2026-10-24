@@ -79,7 +79,7 @@ function Success({ title, body }: { title: string; body: string }) {
   );
 }
 
-export function AuditForm() {
+export function AuditForm({ focus }: { focus?: "ai-search" }) {
   const [state, action, pending] = useActionState(submitAuditRequest, initial);
   if (state.ok) {
     return (
@@ -92,6 +92,7 @@ export function AuditForm() {
   return (
     <form action={action} noValidate className="relative space-y-4" aria-label="Free online audit request">
       <Honeypot />
+      {focus && <input type="hidden" name="focus" value={focus} />}
       <div className="grid gap-4 sm:grid-cols-2">
         <Field name="firstName" label="First name" state={state} autoComplete="given-name" required />
         <Field name="lastName" label="Last name" state={state} autoComplete="family-name" required />

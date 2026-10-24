@@ -16,13 +16,19 @@ const checks = [
   "AI search: whether ChatGPT and Google's AI answers mention you when customers ask for your service nearby",
 ];
 
-export default function FreeAuditPage() {
+export default async function FreeAuditPage({ searchParams }: { searchParams: Promise<{ focus?: string | string[] }> }) {
+  // Links from the AI search page and outreach use ?focus=ai-search so those leads are tagged in the dashboard.
+  const aiSearch = (await searchParams).focus === "ai-search";
   return (
     <>
       <PageHeader
         eyebrow="Free online audit"
         title="See how customers see you"
-        intro="Tell us about your business and we'll send a personalized audit of your online presence. It's free, with no obligation."
+        intro={
+          aiSearch
+            ? "Tell us about your business and we'll send a personalized audit of your online presence, including what ChatGPT and Google's AI answers say about you. It's free, with no obligation."
+            : "Tell us about your business and we'll send a personalized audit of your online presence. It's free, with no obligation."
+        }
       />
       <section className="py-14">
         <Container className="grid gap-12 lg:grid-cols-[1fr_1.2fr]">
@@ -43,7 +49,7 @@ export default function FreeAuditPage() {
             </p>
           </div>
           <div className="rounded-lg border border-line p-6 shadow-sm sm:p-8">
-            <AuditForm />
+            <AuditForm focus={aiSearch ? "ai-search" : undefined} />
           </div>
         </Container>
       </section>

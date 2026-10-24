@@ -45,8 +45,8 @@ test("audit form shows errors for missing and invalid fields", async ({ page }) 
   expect((await db`select count(*)::int as n from leads`)[0].n).toBe(0);
 });
 
-async function submitAudit(page: import("@playwright/test").Page, email: string, website = "lopezconcrete.com") {
-  await page.goto("/free-audit");
+async function submitAudit(page: import("@playwright/test").Page, email: string, website = "lopezconcrete.com", path = "/free-audit") {
+  await page.goto(path);
   await page.getByLabel("First name").fill("Maria");
   await page.getByLabel("Last name").fill("Lopez");
   await page.getByLabel("Business name").fill("Lopez Concrete");
@@ -81,6 +81,16 @@ test("audit request creates a lead, sends both emails, and merges duplicates", a
   expect(acts.map((a) => a.dup)).toEqual(["false", "true"]);
   // A blank website on the second request does not erase the first one.
   expect((await db`select website_url from leads`)[0].website_url).toBe("https://lopezconcrete.com");
+});
+
+test("audit requests from AI search links are tagged in the dashboard", async ({ page }) => {
+  await page.goto("/ai-search");
+  await expect(page.getByRole("link", { name: "Get Your Free Audit" }).last()).toHaveAttribute("href", "/free-audit?focus=ai-search");
+  await submitAudit(page, "maria@example.com", "lopezconcrete.com", "/free-audit?focus=ai-search");
+  const [lead] = await db`select source, stage from leads`;
+  expect(lead).toEqual({ source: "ai_search", stage: "audit_in_progress" });
+  const [act] = await db`select body from activities`;
+  expect(act.body).toContain("AI search check");
 });
 
 test("bots filling the hidden field are ignored", async ({ page }) => {

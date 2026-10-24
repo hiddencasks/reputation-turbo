@@ -18,6 +18,10 @@ export type Offering = {
   active: boolean;
 };
 
+/** AI search (GEO) offerings, shown in their own section for businesses that already have a website. */
+export const geoSlugs = ["ai-search-setup", "ai-visibility-plan"];
+export const isGeo = (o: Offering) => geoSlugs.includes(o.slug);
+
 export async function getOfferings(opts: { activeOnly?: boolean } = {}): Promise<Offering[]> {
   return opts.activeOnly
     ? sql<Offering[]>`select * from offerings where active order by kind, sort, name`

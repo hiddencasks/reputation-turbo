@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { getOfferings, getShowPrices } from "@/lib/offerings";
+import { getOfferings, getShowPrices, isGeo } from "@/lib/offerings";
 import { OfferingCard, priceText } from "@/components/Pricing";
 import { ButtonLink, Container, Eyebrow, PageHeader } from "@/components/ui";
 
@@ -19,9 +18,11 @@ const thirdParty = [
 
 export default async function ServicesPage() {
   const [offerings, showPrices] = await Promise.all([getOfferings({ activeOnly: true }), getShowPrices()]);
-  const packages = offerings.filter((o) => o.kind === "package");
-  const addons = offerings.filter((o) => o.kind === "addon");
-  const plans = offerings.filter((o) => o.kind === "plan");
+  const geo = offerings.filter(isGeo);
+  const rest = offerings.filter((o) => !isGeo(o));
+  const packages = rest.filter((o) => o.kind === "package");
+  const addons = rest.filter((o) => o.kind === "addon");
+  const plans = rest.filter((o) => o.kind === "plan");
 
   return (
     <>
@@ -47,15 +48,32 @@ export default async function ServicesPage() {
             <ButtonLink href="/free-audit">Start With a Free Audit</ButtonLink>
             <ButtonLink href="/contact" variant="secondary">Ask for a Custom Quote</ButtonLink>
           </div>
-          <p className="mt-8 rounded-lg border-l-4 border-orange bg-navy-50 p-4">
-            <strong className="text-navy">New: AI search visibility (GEO).</strong> Get mentioned when customers ask ChatGPT or
-            Google&apos;s AI answers who to hire.{" "}
-            <Link href="/ai-search" className="font-semibold text-navy underline decoration-orange decoration-2 underline-offset-4 hover:text-orange">
-              How it works
-            </Link>
-          </p>
         </Container>
       </section>
+
+      {geo.length > 0 && (
+        <section className="bg-navy py-14 text-white">
+          <Container>
+            <Eyebrow>Already have a website?</Eyebrow>
+            <h2 className="mt-2 font-display text-3xl font-bold">Keep it. Get it recommended by AI.</h2>
+            <p className="mt-2 max-w-2xl text-white/85">
+              More customers now ask ChatGPT and Google&apos;s AI answers who to hire. We work alongside your current website and
+              web designer, no rebuild needed, so those assistants can find your business, understand it and recommend it.
+            </p>
+            <div className="mt-6 grid gap-6 md:grid-cols-2">
+              {geo.map((o) => (
+                <div key={o.id} className="grid rounded-lg bg-white text-ink">
+                  <OfferingCard o={o} showPrices={showPrices} />
+                </div>
+              ))}
+            </div>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <ButtonLink href="/free-audit?focus=ai-search">Check What AI Says About You</ButtonLink>
+              <ButtonLink href="/ai-search" variant="ghostLight">How AI Search Works</ButtonLink>
+            </div>
+          </Container>
+        </section>
+      )}
 
       {plans.length > 0 && (
         <section className="bg-navy-50 py-14">
@@ -63,7 +81,7 @@ export default async function ServicesPage() {
             <Eyebrow>Monthly care plans</Eyebrow>
             <h2 className="mt-2 font-display text-3xl font-bold text-navy">Optional ongoing help</h2>
             <p className="mt-2 max-w-2xl text-muted">Never required. Add one after launch if you want us to keep things updated for you.</p>
-            <div className="mt-6 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <div className="mt-6 grid gap-6 md:grid-cols-3">
               {plans.map((o) => (
                 <div key={o.id} className="grid rounded-lg bg-white">
                   <OfferingCard o={o} showPrices={showPrices} />
