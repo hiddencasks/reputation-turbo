@@ -129,3 +129,12 @@ create table if not exists ai_check_answers (
 );
 
 create index if not exists ai_check_answers_check_idx on ai_check_answers (check_id);
+
+-- Supabase publishes every table in "public" through its web API. Row level
+-- security with no policies keeps that API from reading them; the site
+-- connects as the table owner, which bypasses it.
+do $$ declare t record; begin
+  for t in select tablename from pg_tables where schemaname = 'public' loop
+    execute format('alter table public.%I enable row level security', t.tablename);
+  end loop;
+end $$;
