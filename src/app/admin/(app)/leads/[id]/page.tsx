@@ -10,6 +10,7 @@ type EmailRow = { id: string; subject: string; template: string; status: string;
 
 const kindLabel: Record<string, string> = {
   audit_form: "Audit request",
+  ai_search: "AI search audit request",
   contact_form: "Contact form",
   note: "Note",
   stage_change: "Stage",

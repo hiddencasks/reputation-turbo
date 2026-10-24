@@ -5,6 +5,7 @@ import { ButtonLink } from "./ui";
 
 export const navLinks = [
   { href: "/services", label: "Services & Pricing" },
+  { href: "/ai-search", label: "AI Search" },
   { href: "/about", label: "About" },
   { href: "/our-work", label: "Our Work" },
   { href: "/one-sheet", label: "One-Sheet" },
@@ -28,7 +29,7 @@ export function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <a href={site.phoneHref} className="hidden font-semibold text-navy hover:text-orange sm:inline">
+          <a href={site.phoneHref} className="hidden font-semibold text-navy hover:text-orange sm:inline lg:hidden xl:inline">
             {site.phoneDisplay}
           </a>
           <ButtonLink href="/free-audit" className="px-4 py-2">

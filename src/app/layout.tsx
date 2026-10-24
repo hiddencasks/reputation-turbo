@@ -9,11 +9,11 @@ const heading = Barlow_Condensed({ variable: "--font-heading", subsets: ["latin"
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
   title: {
-    default: `${site.name} | Websites, Google Profiles & Reviews for San Diego Contractors`,
+    default: `${site.name} | GEO, Websites & Reviews for San Diego Contractors`,
     template: `%s | ${site.name}`,
   },
   description:
-    "Reputation Turbo helps San Diego County contractors and home service businesses get found online, build trust and win more jobs. Start with a free online audit.",
+    "Reputation Turbo helps San Diego County contractors and home service businesses get found on Google and in AI answers like ChatGPT, build trust and win more jobs. Start with a free online audit.",
   openGraph: { siteName: site.name, type: "website", locale: "en_US" },
 };
 

@@ -45,16 +45,20 @@ export async function submitAuditRequest(_prev: FormState, formData: FormData): 
     }
 
     const data = parsed.data;
+    const aiSearch = formData.get("focus") === "ai-search";
     const { lead, duplicate } = await upsertLead({
       ...data,
-      source: "audit_form",
+      source: aiSearch ? "ai_search" : "audit_form",
       stage: "audit_in_progress",
-      note: `Requested a free online audit${data.website ? ` for ${data.website}` : " (no website given)"}.`,
+      note: `Requested a free online audit${aiSearch ? " with an AI search check" : ""}${data.website ? ` for ${data.website}` : " (no website given)"}.`,
       meta: { ipHash, website: data.website },
     });
 
     if (!(await isSuppressed(lead.email))) await sendAuditConfirmation(lead);
-    await notifyOwner(lead, "audit", "Next step: run the audit and approve it before it is sent.", duplicate);
+    const nextStep = aiSearch
+      ? "Next step: check what AI assistants say about them, run the audit and approve it before it is sent."
+      : "Next step: run the audit and approve it before it is sent.";
+    await notifyOwner(lead, "audit", nextStep, duplicate);
     return { ok: true, errors: {}, values: {} };
   } catch (err) {
     console.error("[audit-form]", err);

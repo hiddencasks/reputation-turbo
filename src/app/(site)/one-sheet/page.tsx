@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { addressOneLine, site } from "@/lib/site";
-import { getOfferings, getShowPrices } from "@/lib/offerings";
+import { getOfferings, getShowPrices, isGeo } from "@/lib/offerings";
 import { priceText } from "@/components/Pricing";
 import { Logo } from "@/components/Logo";
 import { PrintButton } from "@/components/PrintButton";
@@ -16,7 +16,7 @@ const steps = ["Free online audit", "Clear plan and price", "We build, you appro
 
 export default async function OneSheetPage() {
   const [offerings, showPrices] = await Promise.all([getOfferings({ activeOnly: true }), getShowPrices()]);
-  const packages = offerings.filter((o) => o.kind === "package");
+  const packages = offerings.filter((o) => o.kind === "package" && !isGeo(o));
 
   return (
     <div className="bg-navy-50 py-8 print:bg-white print:py-0">
@@ -31,13 +31,13 @@ export default async function OneSheetPage() {
             <Logo tone="light" className="text-3xl" />
             <p className="mt-2 font-display text-xl italic">{site.tagline}</p>
           </div>
-          <p className="text-sm text-white/80">Websites · Google Profiles · Reviews · Branding</p>
+          <p className="text-sm text-white/80">GEO · Websites · Google Profiles · Reviews</p>
         </header>
 
         <div className="space-y-6 px-8 py-7">
           <p className="text-lg">
-            We help contractors and home service businesses in {site.serviceArea}, look as good online as their work does in
-            person, so more of the right customers find them, trust them and call.
+            We help contractors and home service businesses in {site.serviceArea}, get found on Google and in AI answers like
+            ChatGPT, so more of the right customers find them, trust them and call. Every website we build includes GEO.
           </p>
 
           <section>
@@ -54,6 +54,10 @@ export default async function OneSheetPage() {
             <p className="mt-3 text-sm">
               <strong className="text-navy">Add-ons:</strong> logo creation, brand identity kits, extra pages, service-area
               pages, social media post packs, review request automation, AI chat and lead response, and monthly care plans.
+            </p>
+            <p className="mt-2 text-sm">
+              <strong className="text-navy">Don&apos;t need a new website?</strong> Our standalone AI search visibility service (GEO)
+              gets your business mentioned when customers ask ChatGPT or Google&apos;s AI answers who to hire.
             </p>
           </section>
 

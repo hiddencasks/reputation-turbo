@@ -27,7 +27,7 @@ export type LeadInput = {
   email: string;
   phone: string;
   website?: string;
-  source: "audit_form" | "contact_form";
+  source: "audit_form" | "ai_search" | "contact_form";
   stage: StageId;
   note: string;
   meta?: Record<string, unknown>;

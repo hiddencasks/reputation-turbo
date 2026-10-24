@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { getOfferings, getShowPrices } from "@/lib/offerings";
+import { getOfferings, getShowPrices, isGeo } from "@/lib/offerings";
 import { OfferingCard, priceText } from "@/components/Pricing";
 import { ButtonLink, Container, Eyebrow, PageHeader } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Services & Pricing",
-  description: "Websites, Google Business Profile optimization, local SEO, branding and review systems for San Diego County service businesses.",
+  description: "Websites, Google Business Profile optimization, local SEO, AI search visibility (GEO), branding and review systems for San Diego County service businesses.",
 };
 
 const thirdParty = [
@@ -18,9 +18,11 @@ const thirdParty = [
 
 export default async function ServicesPage() {
   const [offerings, showPrices] = await Promise.all([getOfferings({ activeOnly: true }), getShowPrices()]);
-  const packages = offerings.filter((o) => o.kind === "package");
-  const addons = offerings.filter((o) => o.kind === "addon");
-  const plans = offerings.filter((o) => o.kind === "plan");
+  const geo = offerings.filter(isGeo);
+  const rest = offerings.filter((o) => !isGeo(o));
+  const packages = rest.filter((o) => o.kind === "package");
+  const addons = rest.filter((o) => o.kind === "addon");
+  const plans = rest.filter((o) => o.kind === "plan");
 
   return (
     <>
@@ -29,14 +31,19 @@ export default async function ServicesPage() {
         title="Pick the help you need"
         intro={
           showPrices
-            ? "Clear, upfront pricing for our work. Third-party costs like your domain and email are listed separately and paid directly by you."
-            : "Every business starts in a different place. Start with a free audit and we'll recommend the right package with a clear, upfront price."
+            ? "Websites with GEO included, or GEO on its own. Clear, upfront pricing for our work. Third-party costs like your domain and email are listed separately and paid directly by you."
+            : "Websites with GEO included, or GEO on its own. Every business starts in a different place, so start with a free audit and we'll recommend the right package with a clear, upfront price."
         }
       />
 
       <section className="py-14">
         <Container>
-          <Eyebrow>Packages</Eyebrow>
+          <Eyebrow>Website packages</Eyebrow>
+          <h2 className="mt-2 font-display text-3xl font-bold text-navy">A new website with GEO included</h2>
+          <p className="mt-2 max-w-2xl text-muted">
+            Every website we build is ready for Google and for AI assistants like ChatGPT, with structured data and an AI-friendly
+            FAQ. Premium adds our full GEO setup.
+          </p>
           <div className="mt-6 grid gap-6 lg:grid-cols-3">
             {packages.map((o, i) => (
               <OfferingCard key={o.id} o={o} showPrices={showPrices} featured={i === 1} />
@@ -49,6 +56,30 @@ export default async function ServicesPage() {
         </Container>
       </section>
 
+      {geo.length > 0 && (
+        <section className="bg-navy py-14 text-white">
+          <Container>
+            <Eyebrow>GEO without a new website</Eyebrow>
+            <h2 className="mt-2 font-display text-3xl font-bold">Get recommended by AI, no rebuild needed</h2>
+            <p className="mt-2 max-w-2xl text-white/85">
+              Happy with your current website, or don&apos;t need one? We work with what you already have, including your Google
+              Business Profile, listings and reviews, so ChatGPT and Google&apos;s AI answers can find, understand and recommend you.
+            </p>
+            <div className="mt-6 grid gap-6 md:grid-cols-2">
+              {geo.map((o) => (
+                <div key={o.id} className="grid rounded-lg bg-white text-ink">
+                  <OfferingCard o={o} showPrices={showPrices} />
+                </div>
+              ))}
+            </div>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <ButtonLink href="/free-audit?focus=ai-search">Check What AI Says About You</ButtonLink>
+              <ButtonLink href="/ai-search" variant="ghostLight">How AI Search Works</ButtonLink>
+            </div>
+          </Container>
+        </section>
+      )}
+
       {plans.length > 0 && (
         <section className="bg-navy-50 py-14">
           <Container>
@@ -57,7 +88,7 @@ export default async function ServicesPage() {
             <p className="mt-2 max-w-2xl text-muted">Never required. Add one after launch if you want us to keep things updated for you.</p>
             <div className="mt-6 grid gap-6 md:grid-cols-3">
               {plans.map((o) => (
-                <div key={o.id} className="bg-white rounded-lg">
+                <div key={o.id} className="grid rounded-lg bg-white">
                   <OfferingCard o={o} showPrices={showPrices} />
                 </div>
               ))}
