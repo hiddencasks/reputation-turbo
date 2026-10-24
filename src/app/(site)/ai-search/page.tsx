@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { getOfferings, getShowPrices } from "@/lib/offerings";
 import { OfferingCard, priceText } from "@/components/Pricing";
 import { ButtonLink, Container, Eyebrow, PageHeader } from "@/components/ui";
+import { FaqList } from "@/components/FaqList";
+import { JsonLd } from "@/components/JsonLd";
+import { faqJsonLd, type Faq } from "@/lib/structured-data";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -26,7 +29,7 @@ const signals = [
 // Ways to get GEO, in the order shown: on its own, or included with a new website.
 const optionSlugs = ["ai-search-setup", "business-website-launch", "premium-digital-presence"];
 
-const faqs = [
+const faqs: Faq[] = [
   {
     q: "What is GEO?",
     a: "GEO stands for generative engine optimization. It's the work of making sure AI assistants like ChatGPT, Google's AI answers, Perplexity and Gemini can find your business, describe it correctly and recommend it when customers ask who to hire.",
@@ -49,12 +52,6 @@ const faqs = [
   },
 ];
 
-const faqJsonLd = {
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  mainEntity: faqs.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })),
-};
-
 const steps = [
   { n: "1", title: "We ask the AIs", body: "We ask ChatGPT, Google's AI answers, Perplexity and others the questions your customers ask, and record who gets recommended." },
   { n: "2", title: "We show you the results", body: "You see where you show up, where you don't, which competitors are named instead, and anything the AI gets wrong about you." },
@@ -70,7 +67,7 @@ export default async function AiSearchPage() {
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd).replace(/</g, "\\u003c") }} />
+      <JsonLd data={faqJsonLd(faqs)} />
       <PageHeader
         eyebrow="AI search visibility (GEO)"
         title="Show up when customers ask AI"
@@ -165,14 +162,7 @@ export default async function AiSearchPage() {
         <Container>
           <Eyebrow>Questions</Eyebrow>
           <h2 className="mt-2 font-display text-3xl font-bold text-navy">GEO, explained</h2>
-          <dl className="mt-6 grid gap-6 md:grid-cols-2">
-            {faqs.map((f) => (
-              <div key={f.q} className="rounded-lg border border-line p-6">
-                <dt className="font-display text-xl font-bold text-navy">{f.q}</dt>
-                <dd className="mt-2 text-muted">{f.a}</dd>
-              </div>
-            ))}
-          </dl>
+          <FaqList faqs={faqs} />
         </Container>
       </section>
 

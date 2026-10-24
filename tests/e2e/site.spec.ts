@@ -16,6 +16,9 @@ const pages = [
   ["/one-sheet", /What we do/],
   ["/privacy", /Privacy Policy/],
   ["/terms", /Terms of Use/],
+  ["/areas", /Local help across San Diego County/],
+  ["/areas/el-cajon", /Get found in El Cajon/],
+  ["/areas/rancho-san-diego", /Get found in Rancho San Diego/],
 ] as const;
 
 for (const [path, heading] of pages) {
@@ -283,4 +286,30 @@ test("the scheduled job requires its secret", async ({ request }) => {
   const res = await request.get("/api/cron/ai-checks", { headers: { authorization: "Bearer test-cron-secret" } });
   expect(res.status()).toBe(200);
   expect(await res.json()).toEqual({ queued: 0, processed: 0 });
+});
+
+test("city pages, llms.txt and the sitemap help AI tools find the business", async ({ page, request }) => {
+  expect((await request.get("/areas/los-angeles")).status()).toBe(404);
+
+  await page.goto("/areas/santee");
+  await expect(page.getByText("Questions Santee customers ask AI:")).toBeVisible();
+  const structured = await page.locator('script[type="application/ld+json"]').allTextContents();
+  expect(structured.some((j) => j.includes('"FAQPage"') && j.includes("Do you work with businesses in Santee?"))).toBe(true);
+  expect(structured.some((j) => j.includes('"areaServed":{"@type":"City","name":"Santee, CA"}'))).toBe(true);
+
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "Common questions" })).toBeVisible();
+  await page.getByRole("link", { name: "La Mesa", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Get found in La Mesa" })).toBeVisible();
+
+  const llms = await request.get("/llms.txt");
+  expect(llms.headers()["content-type"]).toContain("text/plain");
+  const text = await llms.text();
+  expect(text).toMatch(/^# Reputation Turbo/);
+  expect(text).toContain("- AI Search Visibility (GEO):");
+  expect(text).not.toContain("$"); // prices stay hidden until "Show prices" is on
+  expect(text).toContain("/areas/el-cajon");
+
+  const sitemap = await (await request.get("/sitemap.xml")).text();
+  expect(sitemap).toContain("/areas/spring-valley</loc>");
 });
