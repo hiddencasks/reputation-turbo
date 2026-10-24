@@ -81,3 +81,51 @@ create table if not exists settings (
   value jsonb not null,
   updated_at timestamptz not null default now()
 );
+
+-- AI visibility checks (Milestone 2): what AI assistants say when customers ask for a lead's trade in their city.
+alter table leads add column if not exists trade text not null default '';
+alter table leads add column if not exists city text not null default '';
+-- Monthly re-checks for clients on the AI Visibility plan.
+alter table leads add column if not exists ai_monitoring boolean not null default false;
+
+create table if not exists ai_checks (
+  id uuid primary key default gen_random_uuid(),
+  lead_id uuid not null references leads (id) on delete cascade,
+  status text not null default 'queued' check (status in ('queued', 'running', 'done', 'failed')),
+  business_name text not null,
+  website_url text not null default '',
+  trade text not null,
+  city text not null,
+  questions text[] not null default '{}',
+  providers text[] not null default '{}',
+  mentioned_count integer not null default 0,
+  answer_count integer not null default 0,
+  -- [{ "name": "...", "count": 3 }], most-named first
+  competitors jsonb not null default '[]',
+  error text,
+  -- Unguessable link for the client report; the report is public only after approved_at is set.
+  report_token text not null unique default encode(gen_random_bytes(18), 'hex'),
+  approved_at timestamptz,
+  sent_at timestamptz,
+  created_at timestamptz not null default now(),
+  started_at timestamptz,
+  finished_at timestamptz
+);
+
+create index if not exists ai_checks_lead_idx on ai_checks (lead_id, created_at desc);
+create index if not exists ai_checks_status_idx on ai_checks (status);
+
+create table if not exists ai_check_answers (
+  id uuid primary key default gen_random_uuid(),
+  check_id uuid not null references ai_checks (id) on delete cascade,
+  provider text not null,
+  question text not null,
+  answer text not null default '',
+  mentioned boolean not null default false,
+  businesses text[] not null default '{}',
+  sources text[] not null default '{}',
+  error text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists ai_check_answers_check_idx on ai_check_answers (check_id);

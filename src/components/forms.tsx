@@ -18,9 +18,11 @@ type FieldProps = {
   hint?: string;
   placeholder?: string;
   textarea?: boolean;
+  /** Suggestions shown while typing; any other value is still accepted. */
+  suggestions?: readonly string[];
 };
 
-function Field({ name, label, state, type = "text", autoComplete, required, hint, placeholder, textarea }: FieldProps) {
+function Field({ name, label, state, type = "text", autoComplete, required, hint, placeholder, textarea, suggestions }: FieldProps) {
   const error = state.errors[name];
   const describedBy = [hint && `${name}-hint`, error && `${name}-error`].filter(Boolean).join(" ") || undefined;
   const common = {
@@ -42,7 +44,12 @@ function Field({ name, label, state, type = "text", autoComplete, required, hint
         {label}
         {!required && <span className="font-normal text-muted"> (optional)</span>}
       </label>
-      {textarea ? <textarea {...common} rows={5} /> : <input {...common} type={type} />}
+      {textarea ? <textarea {...common} rows={5} /> : <input {...common} type={type} list={suggestions ? `${name}-options` : undefined} />}
+      {suggestions && (
+        <datalist id={`${name}-options`}>
+          {suggestions.map((s) => <option key={s} value={s} />)}
+        </datalist>
+      )}
       {hint && <p id={`${name}-hint`} className="mt-1 text-sm text-muted">{hint}</p>}
       {error && <p id={`${name}-error`} className="mt-1 text-sm font-medium text-red-700">{error}</p>}
     </div>
@@ -98,6 +105,10 @@ export function AuditForm({ focus }: { focus?: "ai-search" }) {
         <Field name="lastName" label="Last name" state={state} autoComplete="family-name" required />
       </div>
       <Field name="businessName" label="Business name" state={state} autoComplete="organization" required />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field name="trade" label="Type of business" state={state} required placeholder="Plumber, roofer, landscaper..." suggestions={site.industries} />
+        <Field name="city" label="City you're based in" state={state} autoComplete="address-level2" required suggestions={site.cities} />
+      </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <Field name="phone" label="Phone number" type="tel" state={state} autoComplete="tel" required />
         <Field name="email" label="Email address" type="email" state={state} autoComplete="email" required />

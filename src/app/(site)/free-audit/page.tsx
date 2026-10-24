@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { AuditForm } from "@/components/forms";
 import { Container, PageHeader } from "@/components/ui";
 
+// Leaves time for the AI visibility check that starts after an audit request.
+export const maxDuration = 300;
+
 export const metadata: Metadata = {
   title: "Free Online Audit",
   description: "Get a free, personalized review of your website, Google listing and online reputation from Reputation Turbo.",

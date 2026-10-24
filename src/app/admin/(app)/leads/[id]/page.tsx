@@ -3,7 +3,14 @@ import { notFound } from "next/navigation";
 import { sql } from "@/lib/db";
 import { STAGES } from "@/lib/stages";
 import type { Lead } from "@/lib/leads";
-import { addNote, updateLead } from "../../../actions";
+import { site } from "@/lib/site";
+import { aiChecksAvailable, getChecksForLead, reportUrl } from "@/lib/ai-visibility/run";
+import { providerLabel } from "@/lib/ai-visibility/providers";
+import { AutoRefresh } from "@/components/AutoRefresh";
+import { addNote, approveReport, runAiCheck, setAiMonitoring, updateLead } from "../../../actions";
+
+// Leaves time for AI visibility checks started from this page.
+export const maxDuration = 300;
 
 type Activity = { id: string; kind: string; body: string; created_at: Date };
 type EmailRow = { id: string; subject: string; template: string; status: string; to_email: string; created_at: Date };
@@ -11,6 +18,8 @@ type EmailRow = { id: string; subject: string; template: string; status: string;
 const kindLabel: Record<string, string> = {
   audit_form: "Audit request",
   ai_search: "AI search audit request",
+  outreach: "Outreach prospect",
+  ai_check: "AI visibility",
   contact_form: "Contact form",
   note: "Note",
   stage_change: "Stage",
@@ -18,15 +27,19 @@ const kindLabel: Record<string, string> = {
 
 const fmt = (d: Date) => d.toLocaleString("en-US", { timeZone: "America/Los_Angeles", dateStyle: "medium", timeStyle: "short" });
 
-export default async function LeadPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function LeadPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ ai?: string }> }) {
   const { id } = await params;
+  const { ai: aiMessage } = await searchParams;
   if (!/^[0-9a-f-]{36}$/.test(id)) notFound();
-  const [[lead], activities, emails] = await Promise.all([
+  const [[lead], activities, emails, checks] = await Promise.all([
     sql<Lead[]>`select * from leads where id = ${id}`,
     sql<Activity[]>`select id, kind, body, created_at from activities where lead_id = ${id} order by created_at desc`,
     sql<EmailRow[]>`select id, subject, template, status, to_email, created_at from emails where lead_id = ${id} order by created_at desc`,
+    getChecksForLead(id),
   ]);
   if (!lead) notFound();
+  const checkRunning = checks.some((c) => c.status === "queued" || c.status === "running");
+  const canCheck = aiChecksAvailable() && Boolean(lead.business_name && lead.trade && lead.city);
 
   const input = "mt-1 w-full rounded-md border border-line bg-white px-3 py-2";
 
@@ -63,6 +76,14 @@ export default async function LeadPage({ params }: { params: Promise<{ id: strin
             <label className="text-sm font-semibold">Recommended package
               <input name="recommendedPackage" defaultValue={lead.recommended_package} className={input} />
             </label>
+            <label className="text-sm font-semibold">Type of business
+              <input name="trade" defaultValue={lead.trade} list="trade-options" className={input} />
+              <datalist id="trade-options">{site.industries.map((i) => <option key={i} value={i} />)}</datalist>
+            </label>
+            <label className="text-sm font-semibold">City
+              <input name="city" defaultValue={lead.city} list="city-options" className={input} />
+              <datalist id="city-options">{site.cities.map((c) => <option key={c} value={c} />)}</datalist>
+            </label>
             <label className="text-sm font-semibold">Quote amount ($)
               <input name="quoteAmount" inputMode="decimal" defaultValue={lead.quote_amount_cents != null ? String(lead.quote_amount_cents / 100) : ""} className={input} />
             </label>
@@ -72,6 +93,83 @@ export default async function LeadPage({ params }: { params: Promise<{ id: strin
           </form>
         </section>
       </div>
+
+      <section aria-labelledby="ai-heading" className="rounded-lg bg-white p-5 shadow-sm">
+        {checkRunning && <AutoRefresh />}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 id="ai-heading" className="font-display text-xl font-bold text-navy">AI visibility</h2>
+          <div className="flex flex-wrap gap-2">
+            <form action={setAiMonitoring.bind(null, lead.id)}>
+              <input type="hidden" name="on" value={lead.ai_monitoring ? "false" : "true"} />
+              <button className="rounded-md px-3 py-2 text-sm font-semibold text-navy ring-1 ring-line">
+                {lead.ai_monitoring ? "Turn off monthly tracking" : "Turn on monthly tracking"}
+              </button>
+            </form>
+            <form action={runAiCheck.bind(null, lead.id)}>
+              <button disabled={!canCheck || checkRunning} className="rounded-md bg-orange px-3 py-2 text-sm font-semibold text-white disabled:opacity-50">
+                {checkRunning ? "Check running..." : "Run AI check"}
+              </button>
+            </form>
+          </div>
+        </div>
+        {lead.ai_monitoring && <p className="mt-1 text-sm text-muted">Monthly tracking is on: a new check runs every month and you&apos;ll get an email to review it.</p>}
+        {aiMessage && <p role="alert" className="mt-3 rounded-md bg-red-50 p-3 text-sm font-medium text-red-800">{aiMessage}</p>}
+        {!aiChecksAvailable() ? (
+          <p className="mt-3 text-sm text-muted">No AI services are set up yet. Add at least one API key (see .env.example) to run checks.</p>
+        ) : !canCheck ? (
+          <p className="mt-3 text-sm text-muted">Add the business name, type of business and city above to run a check.</p>
+        ) : checks.length === 0 ? (
+          <p className="mt-3 text-sm text-muted">No checks yet.</p>
+        ) : null}
+        {checks.length > 0 && (
+          <ul className="mt-4 space-y-4">
+            {checks.map((c) => (
+              <li key={c.id} className="rounded-md border border-line p-4">
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <p className="font-semibold text-navy">
+                    {c.status === "done" ? `Named in ${c.mentioned_count} of ${c.answer_count} AI answers` : c.status === "failed" ? "Check failed" : "Checking what AI assistants say..."}
+                  </p>
+                  <p className="text-xs text-muted">{fmt(c.created_at)} · {c.trade} in {c.city} · {c.providers.map(providerLabel).join(", ")}</p>
+                </div>
+                {c.status === "failed" && <p className="mt-1 text-sm text-red-700">{c.error}</p>}
+                {c.status === "done" && (
+                  <>
+                    {c.competitors.length > 0 && (
+                      <p className="mt-1 text-sm">
+                        <span className="text-muted">Named instead: </span>
+                        {c.competitors.slice(0, 5).map((x) => `${x.name} (${x.count})`).join(", ")}
+                      </p>
+                    )}
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <a href={`/report/${c.report_token}`} target="_blank" className="rounded-md px-3 py-2 text-sm font-semibold text-navy ring-1 ring-line">
+                        {c.approved_at ? "Open report" : "Preview report"}
+                      </a>
+                      {!c.sent_at && lead.email && (
+                        <form action={approveReport.bind(null, c.id)}>
+                          <input type="hidden" name="send" value="email" />
+                          <button className="rounded-md bg-navy px-3 py-2 text-sm font-semibold text-white">Approve &amp; email to {lead.first_name || lead.email}</button>
+                        </form>
+                      )}
+                      {!c.approved_at && (
+                        <form action={approveReport.bind(null, c.id)}>
+                          <input type="hidden" name="send" value="link" />
+                          <button className="rounded-md px-3 py-2 text-sm font-semibold text-navy ring-1 ring-line">Approve link only</button>
+                        </form>
+                      )}
+                    </div>
+                    {c.approved_at && (
+                      <label className="mt-3 block text-sm">
+                        <span className="text-muted">{c.sent_at ? `Emailed ${fmt(c.sent_at)}. ` : "Approved. "}Link to share:</span>
+                        <input readOnly value={reportUrl(c)} className="mt-1 w-full rounded-md border border-line bg-navy-50 px-3 py-2 text-sm" />
+                      </label>
+                    )}
+                  </>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <section className="rounded-lg bg-white p-5 shadow-sm">
         <h2 className="font-display text-xl font-bold text-navy">Add a note</h2>

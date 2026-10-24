@@ -19,6 +19,8 @@ export default defineConfig({
     command: `npx next start -p ${PORT}`,
     url: `http://localhost:${PORT}`,
     reuseExistingServer: false,
+    // AI checks use built-in sample answers in tests; no real AI service is called.
+    env: { AI_CHECK_FAKE: "1", CRON_SECRET: "test-cron-secret" },
     timeout: 60_000,
   },
 });

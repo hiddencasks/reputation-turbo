@@ -39,6 +39,7 @@ test("audit form shows errors for missing and invalid fields", async ({ page }) 
   await page.getByLabel("Email address").fill("not-an-email");
   await page.getByRole("button", { name: "Get My Free Audit" }).click();
   await expect(page.getByText("Please enter your first name.")).toBeVisible();
+  await expect(page.getByText("Please enter your type of business.")).toBeVisible();
   await expect(page.getByText("Please enter a 10-digit phone number.")).toBeVisible();
   await expect(page.getByText("Please enter a valid email address.")).toBeVisible();
   await expect(page.getByLabel("Phone number")).toHaveValue("123");
@@ -50,6 +51,8 @@ async function submitAudit(page: import("@playwright/test").Page, email: string,
   await page.getByLabel("First name").fill("Maria");
   await page.getByLabel("Last name").fill("Lopez");
   await page.getByLabel("Business name").fill("Lopez Concrete");
+  await page.getByLabel("Type of business").fill("Concrete contractors");
+  await page.getByLabel("City you're based in").fill("El Cajon");
   await page.getByLabel("Phone number").fill("(619) 555-0100");
   await page.getByLabel("Email address").fill(email);
   await page.getByLabel(/Website/).fill(website);
@@ -68,16 +71,20 @@ test("audit request creates a lead, sends both emails, and merges duplicates", a
     phone_digits: "6195550100",
     website_url: "https://lopezconcrete.com",
     source: "audit_form",
-    stage: "audit_in_progress",
   });
-  const emails = await db`select template, to_email, status from emails order by template`;
+  // The background AI check may already have moved it on to Audit Ready.
+  expect(["audit_in_progress", "audit_ready"]).toContain(leads[0].stage);
+  // The AI check's own email ("owner_ai_check") may also arrive; it has its own test.
+  const emails = await db`select template, to_email, status from emails where template <> 'owner_ai_check' order by template`;
   expect(emails.map((e) => e.template)).toEqual(["audit_confirmation", "owner_audit"]);
   expect(emails.every((e) => e.status === "logged" || e.status === "sent")).toBe(true);
 
   // Same phone, different email casing: treated as the same lead.
   await submitAudit(page, "MARIA@example.com", "");
   expect(await db`select count(*)::int as n from leads`).toEqual([{ n: 1 }]);
-  const acts = await db`select meta->>'duplicate' as dup from activities order by created_at`;
+  // A repeat request within a day doesn't run (and pay for) a second AI check.
+  expect(await db`select count(*)::int as n from ai_checks`).toEqual([{ n: 1 }]);
+  const acts = await db`select meta->>'duplicate' as dup from activities where kind = 'audit_form' order by created_at`;
   expect(acts.map((a) => a.dup)).toEqual(["false", "true"]);
   // A blank website on the second request does not erase the first one.
   expect((await db`select website_url from leads`)[0].website_url).toBe("https://lopezconcrete.com");
@@ -88,8 +95,10 @@ test("audit requests from AI search links are tagged in the dashboard", async ({
   await expect(page.getByRole("link", { name: "Get Your Free Audit" }).last()).toHaveAttribute("href", "/free-audit?focus=ai-search");
   await submitAudit(page, "maria@example.com", "lopezconcrete.com", "/free-audit?focus=ai-search");
   const [lead] = await db`select source, stage from leads`;
-  expect(lead).toEqual({ source: "ai_search", stage: "audit_in_progress" });
-  const [act] = await db`select body from activities`;
+  expect(lead.source).toBe("ai_search");
+  // The background AI check may already have moved it on.
+  expect(["audit_in_progress", "audit_ready"]).toContain(lead.stage);
+  const [act] = await db`select body from activities where kind = 'ai_search'`;
   expect(act.body).toContain("AI search check");
 });
 
@@ -101,6 +110,8 @@ test("bots filling the hidden field are ignored", async ({ page }) => {
   await page.getByLabel("First name").fill("Bot");
   await page.getByLabel("Last name").fill("Bot");
   await page.getByLabel("Business name").fill("Bot Inc");
+  await page.getByLabel("Type of business").fill("Plumbers");
+  await page.getByLabel("City you're based in").fill("Santee");
   await page.getByLabel("Phone number").fill("6195550111");
   await page.getByLabel("Email address").fill("bot@example.com");
   await page.getByRole("button", { name: "Get My Free Audit" }).click();
@@ -121,6 +132,8 @@ test("contact form creates a new-prospect lead", async ({ page }) => {
 
 test("dashboard requires sign-in and manages leads and pricing", async ({ page }) => {
   await submitAudit(page, "maria@example.com");
+  // The automatic AI check moves the lead from Audit In Progress to Audit Ready.
+  await expect.poll(async () => (await db`select stage from leads`)[0].stage, { timeout: 30_000 }).toBe("audit_ready");
 
   await page.goto("/admin");
   await expect(page).toHaveURL(/\/admin\/login$/);
@@ -132,11 +145,11 @@ test("dashboard requires sign-in and manages leads and pricing", async ({ page }
   await page.getByLabel("Password").fill(ADMIN_PASSWORD);
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page.getByRole("heading", { name: "Dashboard", exact: true })).toBeVisible();
-  await expect(page.getByText("Complete 1 audit request.")).toBeVisible();
+  await expect(page.getByText("Review and send the AI report for")).toBeVisible();
 
   // Pipeline board shows the lead in its stage; open it.
   await page.goto("/admin/leads");
-  await expect(page.getByRole("region", { name: "Audit In Progress" }).getByText("Lopez Concrete")).toBeVisible();
+  await expect(page.getByRole("region", { name: "Audit Ready" }).getByText("Lopez Concrete")).toBeVisible();
   await page.getByRole("link", { name: "Lopez Concrete" }).first().click();
   await expect(page.getByRole("heading", { name: "Lopez Concrete" })).toBeVisible();
 
@@ -145,7 +158,7 @@ test("dashboard requires sign-in and manages leads and pricing", async ({ page }
   await page.getByLabel("Next follow-up").fill("2026-10-30");
   await page.getByLabel("Quote amount ($)").fill("1497");
   await page.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByText("Stage changed from Audit In Progress to Interested.")).toBeVisible();
+  await expect(page.getByText("Stage changed from Audit Ready to Interested.")).toBeVisible();
   await page.getByLabel("Note").fill("Called, wants a quote for a 5-page site.");
   await page.getByRole("button", { name: "Add note" }).click();
   await expect(page.getByText("Called, wants a quote for a 5-page site.")).toBeVisible();
@@ -182,4 +195,92 @@ test("dashboard requires sign-in and manages leads and pricing", async ({ page }
   await expect(page).toHaveURL(/\/admin\/login$/);
   await page.goto("/admin/leads");
   await expect(page).toHaveURL(/\/admin\/login$/);
+});
+
+async function signIn(page: import("@playwright/test").Page) {
+  await page.goto("/admin/login");
+  await page.getByLabel("Email").fill(ADMIN_EMAIL);
+  await page.getByLabel("Password").fill(ADMIN_PASSWORD);
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await expect(page.getByRole("heading", { name: "Dashboard", exact: true })).toBeVisible();
+}
+
+test("audit requests run an AI check that the owner approves and emails", async ({ page }) => {
+  await submitAudit(page, "maria@example.com");
+
+  // The check runs in the background after the confirmation page.
+  await expect.poll(async () => (await db`select status from ai_checks`)[0]?.status, { timeout: 30_000 }).toBe("done");
+  const [check] = await db`select * from ai_checks`;
+  expect(check).toMatchObject({ business_name: "Lopez Concrete", trade: "Concrete contractors", city: "El Cajon", mentioned_count: 1, answer_count: 4 });
+  expect(check.questions[0]).toBe("Who is the best concrete contractor in El Cajon, CA?");
+  expect(check.competitors[0]).toEqual({ name: "Canyon Crew", count: 4 });
+  await expect.poll(async () => (await db`select stage from leads`)[0].stage).toBe("audit_ready");
+  // The owner's "ready to review" email is sent right after the check finishes.
+  await expect.poll(async () => (await db`select count(*)::int as n from emails where template = 'owner_ai_check'`)[0].n).toBe(1);
+
+  // Not public until approved.
+  expect((await page.goto(`/report/${check.report_token}`))?.status()).toBe(404);
+
+  await signIn(page);
+  await expect(page.getByText("Review and send the AI report for")).toBeVisible();
+  await page.getByRole("link", { name: "Lopez Concrete" }).first().click();
+  const ai = page.getByRole("region", { name: "AI visibility" });
+  await expect(ai.getByText("Named in 1 of 4 AI answers")).toBeVisible();
+  await expect(ai.getByText("Canyon Crew (4)")).toBeVisible();
+
+  // The owner can preview before approving.
+  await page.goto(`/report/${check.report_token}`);
+  await expect(page.getByText("Preview: only you can see this")).toBeVisible();
+  await page.goBack();
+
+  await ai.getByRole("button", { name: "Approve & email to Maria" }).click();
+  await expect(ai.getByText(/Emailed .*Link to share/)).toBeVisible();
+  const [sent] = await db`select to_email, subject from emails where template = 'ai_report'`;
+  expect(sent).toEqual({ to_email: "maria@example.com", subject: "Your free AI visibility report for Lopez Concrete" });
+  const [lead] = await db`select stage, next_follow_up from leads`;
+  expect(lead.stage).toBe("audit_delivered");
+  expect(lead.next_follow_up).not.toBeNull();
+
+  // After approval anyone with the link can see it.
+  await page.context().clearCookies();
+  await page.goto(`/report/${check.report_token}`);
+  await expect(page.getByRole("heading", { name: "Lopez Concrete" })).toBeVisible();
+  await expect(page.getByText("Who AI recommends instead")).toBeVisible();
+  await expect(page.getByText("Preview: only you can see this")).toHaveCount(0);
+  await page.getByText("Didn't name you").first().click();
+  await expect(page.getByText("Businesses named: Summit Pro Services, Canyon Crew, Valley Standard Co").first()).toBeVisible();
+});
+
+test("owner adds an outreach prospect and its AI check runs", async ({ page }) => {
+  await signIn(page);
+  await page.goto("/admin/leads");
+  await page.getByText("Add a prospect for outreach").click();
+  const form = page.getByRole("form", { name: "Add a prospect" });
+  await form.getByRole("button", { name: "Add prospect" }).click();
+  await expect(form.getByText("Please enter your business name.")).toBeVisible();
+
+  await form.getByLabel("Business name").fill("Santee Rooter");
+  await form.getByLabel("Type of business").fill("Plumbers");
+  await form.getByLabel("City").fill("Santee");
+  await form.getByRole("button", { name: "Add prospect" }).click();
+  await expect(page.getByRole("heading", { name: "Santee Rooter" })).toBeVisible();
+  // The page refreshes itself until the check finishes.
+  await expect(page.getByText("Named in 1 of 4 AI answers", { exact: true })).toBeVisible({ timeout: 30_000 });
+  const [lead] = await db`select source, stage, email, trade, city from leads`;
+  expect(lead).toEqual({ source: "outreach", stage: "new_prospect", email: "", trade: "Plumbers", city: "Santee" });
+
+  // No email on file: only the link can be approved.
+  await expect(page.getByRole("button", { name: /Approve & email/ })).toHaveCount(0);
+  await page.getByRole("button", { name: "Approve link only" }).click();
+  await expect(page.getByText("Approved. Link to share:")).toBeVisible();
+
+  await page.getByRole("button", { name: "Turn on monthly tracking" }).click();
+  await expect(page.getByText("Monthly tracking is on")).toBeVisible();
+});
+
+test("the scheduled job requires its secret", async ({ request }) => {
+  expect((await request.get("/api/cron/ai-checks")).status()).toBe(401);
+  const res = await request.get("/api/cron/ai-checks", { headers: { authorization: "Bearer test-cron-secret" } });
+  expect(res.status()).toBe(200);
+  expect(await res.json()).toEqual({ queued: 0, processed: 0 });
 });

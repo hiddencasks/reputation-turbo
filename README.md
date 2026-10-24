@@ -25,6 +25,19 @@ The Reputation Turbo public website and owner dashboard: one Next.js app with a 
 
 Without `RESEND_API_KEY`, emails are recorded in the database (status `logged`) instead of being sent.
 
+## AI visibility checks
+
+Every free audit request (and every outreach prospect you add on the Leads page) starts an automatic check: the site asks AI assistants four customer-style questions, such as "Who is the best plumber in Santee, CA?", records whether the business is named and who is named instead, and emails you when the report is ready.
+
+1. Add at least one AI key from `.env.example` (`OPENAI_API_KEY`, `GEMINI_API_KEY`, `PERPLEXITY_API_KEY`, `ANTHROPIC_API_KEY`). Each service is used only when its key is set. With `ANTHROPIC_API_KEY` set, Claude also reads each answer to list the businesses it names; without it, simple text matching is used.
+2. Review the report on the lead's page, then **Approve & email** (sends the client their private report link and moves them to Audit Delivered with a follow-up in 3 days) or **Approve link only** (to paste into your own message).
+3. Reports are visible only to you until approved. After that, anyone with the link can open it.
+4. **Monthly tracking** on a lead re-runs the check every month. On Vercel the schedule in `vercel.json` calls `/api/cron/ai-checks` daily; set `CRON_SECRET` so only Vercel can call it.
+
+Website forms start at most `AI_CHECK_DAILY_LIMIT` checks per 24 hours (default 40), so a flood of spam submissions can't run up AI bills. A repeat request from the same lead within a day doesn't start a second check.
+
+`AI_CHECK_FAKE=1` uses built-in sample answers for local development and the tests, so no AI service is called.
+
 ## Tests
 
 - `npm test` runs the unit tests (form validation, password hashing).

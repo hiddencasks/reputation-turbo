@@ -2,9 +2,11 @@
 
 import { createHash } from "node:crypto";
 import { headers } from "next/headers";
+import { after } from "next/server";
 import { auditRequestSchema, contactSchema, firstErrors, type FieldErrors } from "@/lib/validation";
 import { isSuppressed, recentSubmissions, upsertLead } from "@/lib/leads";
 import { notifyOwner, sendAuditConfirmation, sendContactConfirmation } from "@/lib/notifications";
+import { aiChecksAvailable, hasRecentCheck, processCheck, queueCheck, underDailyLimit } from "@/lib/ai-visibility/run";
 
 export type FormState = {
   ok: boolean;
@@ -32,7 +34,7 @@ function isBot(formData: FormData): boolean {
 const genericError = "Something went wrong on our end. Please try again, or call us.";
 
 export async function submitAuditRequest(_prev: FormState, formData: FormData): Promise<FormState> {
-  const values = formValues(formData, ["firstName", "lastName", "businessName", "phone", "email", "website"]);
+  const values = formValues(formData, ["firstName", "lastName", "businessName", "trade", "city", "phone", "email", "website"]);
   if (isBot(formData)) return { ok: true, errors: {}, values: {} };
 
   const parsed = auditRequestSchema.safeParse(values);
@@ -55,10 +57,18 @@ export async function submitAuditRequest(_prev: FormState, formData: FormData): 
     });
 
     if (!(await isSuppressed(lead.email))) await sendAuditConfirmation(lead);
-    const nextStep = aiSearch
-      ? "Next step: check what AI assistants say about them, run the audit and approve it before it is sent."
-      : "Next step: run the audit and approve it before it is sent.";
-    await notifyOwner(lead, "audit", nextStep, duplicate);
+    // Start the AI visibility check right away; it runs after the visitor sees the confirmation.
+    // A repeat request within a day reuses the check already started.
+    const check =
+      aiChecksAvailable() && !(await hasRecentCheck(lead.id, 24)) && (await underDailyLimit()) ? await queueCheck(lead.id) : null;
+    if (check && "id" in check) after(() => processCheck(check.id));
+
+    const nextStep = check && "id" in check
+      ? "The AI visibility check is running. You'll get an email when its report is ready to review. Then run the rest of the audit and approve both before they are sent."
+      : aiSearch
+        ? "Next step: check what AI assistants say about them, run the audit and approve it before it is sent."
+        : "Next step: run the audit and approve it before it is sent.";
+    await notifyOwner(lead, "audit", `${data.trade} in ${data.city}.\n\n${nextStep}`, duplicate);
     return { ok: true, errors: {}, values: {} };
   } catch (err) {
     console.error("[audit-form]", err);

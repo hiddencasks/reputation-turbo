@@ -25,6 +25,8 @@ describe("auditRequestSchema", () => {
     firstName: "Maria",
     lastName: "Lopez",
     businessName: "Lopez Concrete",
+    trade: "Concrete contractors",
+    city: "El Cajon",
     phone: "619-555-0100",
     email: "Maria@Example.com ",
     website: "lopezconcrete.com",
@@ -41,10 +43,10 @@ describe("auditRequestSchema", () => {
   });
 
   it("reports each missing or invalid field", () => {
-    const r = auditRequestSchema.safeParse({ ...valid, firstName: "", phone: "123", email: "nope", website: "bad site" });
+    const r = auditRequestSchema.safeParse({ ...valid, firstName: "", trade: " ", city: "", phone: "123", email: "nope", website: "bad site" });
     expect(r.success).toBe(false);
     const fields = r.error!.issues.map((i) => i.path[0]);
-    expect(fields).toEqual(expect.arrayContaining(["firstName", "phone", "email", "website"]));
+    expect(fields).toEqual(expect.arrayContaining(["firstName", "trade", "city", "phone", "email", "website"]));
   });
 });
 

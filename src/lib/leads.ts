@@ -16,6 +16,9 @@ export type Lead = {
   next_follow_up: string | null;
   recommended_package: string;
   quote_amount_cents: number | null;
+  trade: string;
+  city: string;
+  ai_monitoring: boolean;
   created_at: Date;
   updated_at: Date;
 };
@@ -27,7 +30,9 @@ export type LeadInput = {
   email: string;
   phone: string;
   website?: string;
-  source: "audit_form" | "ai_search" | "contact_form";
+  trade?: string;
+  city?: string;
+  source: "audit_form" | "ai_search" | "contact_form" | "outreach";
   stage: StageId;
   note: string;
   meta?: Record<string, unknown>;
@@ -43,7 +48,7 @@ export async function upsertLead(input: LeadInput): Promise<{ lead: Lead; duplic
   return sql.begin(async (tx) => {
     const [existing] = await tx<Lead[]>`
       select * from leads
-      where lower(email) = ${input.email.toLowerCase()}
+      where (${input.email} <> '' and lower(email) = ${input.email.toLowerCase()})
          or (${digits} <> '' and phone_digits = ${digits})
       order by created_at
       limit 1
@@ -61,15 +66,17 @@ export async function upsertLead(input: LeadInput): Promise<{ lead: Lead; duplic
           phone = coalesce(nullif(phone, ''), ${input.phone}),
           phone_digits = coalesce(nullif(phone_digits, ''), ${digits}),
           website_url = coalesce(nullif(${input.website ?? ""}, ''), website_url),
+          trade = coalesce(nullif(${input.trade ?? ""}, ''), trade),
+          city = coalesce(nullif(${input.city ?? ""}, ''), city),
           stage = ${keepStage ? existing.stage : input.stage},
           updated_at = now()
         where id = ${existing.id}
         returning *`;
     } else {
       [lead] = await tx<Lead[]>`
-        insert into leads (first_name, last_name, business_name, email, phone, phone_digits, website_url, source, stage)
+        insert into leads (first_name, last_name, business_name, email, phone, phone_digits, website_url, trade, city, source, stage)
         values (${input.firstName}, ${input.lastName}, ${input.businessName}, ${input.email}, ${input.phone},
-                ${digits}, ${input.website ?? ""}, ${input.source}, ${input.stage})
+                ${digits}, ${input.website ?? ""}, ${input.trade ?? ""}, ${input.city ?? ""}, ${input.source}, ${input.stage})
         returning *`;
     }
 
