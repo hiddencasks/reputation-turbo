@@ -4,8 +4,13 @@ import { ButtonLink, Container, Eyebrow } from "@/components/ui";
 
 const services: { title: string; body: string; href?: string }[] = [
   {
-    title: "Websites that win jobs",
-    body: "Fast, mobile-friendly websites built around how your customers search and call: clear services, real photos of your work, and click-to-call on every page.",
+    title: "Show up in AI answers (GEO)",
+    body: "Customers now ask ChatGPT and Google's AI who to hire. We make sure those assistants know your business and can recommend it.",
+    href: "/ai-search",
+  },
+  {
+    title: "Websites with GEO included",
+    body: "Fast, mobile-friendly websites built for Google and AI search: clear services, real photos of your work, and click-to-call on every page.",
   },
   {
     title: "Google Business Profile & local SEO",
@@ -15,15 +20,10 @@ const services: { title: string; body: string; href?: string }[] = [
     title: "Reviews & lead capture",
     body: "Simple review request systems, contact forms that reach you, and fast responses to new leads, so good work turns into more work.",
   },
-  {
-    title: "Show up in AI answers",
-    body: "Customers now ask ChatGPT and Google's AI who to hire. We make sure those assistants know your business and can recommend it.",
-    href: "/ai-search",
-  },
 ];
 
 const steps = [
-  { n: "1", title: "Free online audit", body: "We review your website, Google listing and social profiles, and show you what's working and what to fix, with evidence." },
+  { n: "1", title: "Free online audit", body: "We review your website, Google listing, social profiles and what AI assistants say about you, and show you what's working and what to fix, with evidence." },
   { n: "2", title: "A clear plan", body: "You get a straightforward recommendation and price. Your domain, hosting and email costs are listed separately and paid directly by you." },
   { n: "3", title: "We build and launch", body: "We set it up, you review and approve, and we launch. You own every account when we're done." },
 ];
@@ -61,12 +61,44 @@ export default function HomePage() {
             Get Found. <span className="text-orange">Build Trust.</span> Grow Your Business.
           </h1>
           <p className="mt-6 max-w-2xl text-lg text-white/85 sm:text-xl">
-            Reputation Turbo helps contractors and home service businesses look as good online as their work does in person,
-            with professional websites, complete Google profiles and steady streams of reviews.
+            Reputation Turbo helps contractors and home service businesses get found on Google and in AI answers like ChatGPT,
+            with websites built for both, complete Google profiles and steady streams of reviews.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <ButtonLink href="/free-audit" className="text-lg">Get Your Free Online Audit</ButtonLink>
             <ButtonLink href={site.phoneHref} variant="ghostLight" className="text-lg">Call {site.phoneDisplay}</ButtonLink>
+          </div>
+        </Container>
+      </section>
+
+      <section className="bg-navy-50 py-16 sm:py-20">
+        <Container className="grid gap-10 md:grid-cols-2 md:items-center">
+          <div>
+            <Eyebrow>The new way customers search</Eyebrow>
+            <h2 className="mt-2 font-display text-4xl font-bold text-navy">Customers are asking AI who to hire. Are you in the answer?</h2>
+            <p className="mt-4 text-ink">
+              Instead of scrolling through search results, more people now ask ChatGPT or Google&apos;s AI answers for a
+              recommendation and get back just a few names. Making sure your business is one of them is called{" "}
+              <strong>GEO</strong>, generative engine optimization. It&apos;s built into every website we make, and available on
+              its own if you don&apos;t need a new website.
+            </p>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+              <ButtonLink href="/ai-search">Learn About GEO</ButtonLink>
+              <ButtonLink href="/free-audit?focus=ai-search" variant="secondary">Check What AI Says About You</ButtonLink>
+            </div>
+          </div>
+          <div className="rounded-lg bg-white p-6 shadow-sm">
+            <p className="text-sm font-semibold text-muted">A customer asks:</p>
+            <p className="mt-1 rounded-md bg-navy-50 p-3 italic text-ink">&ldquo;Who&apos;s the best plumber in El Cajon?&rdquo;</p>
+            <p className="mt-4 text-sm font-semibold text-muted">The AI answers with a short list. Is your business on it?</p>
+            <ul className="mt-2 space-y-2">
+              {["Business A", "Business B", "Your business?"].map((b, i) => (
+                <li key={b} className={`flex items-center gap-3 rounded-md border p-3 ${i === 2 ? "border-orange font-semibold text-orange" : "border-line text-ink"}`}>
+                  <span className="font-display text-xl font-extrabold italic">{i + 1}</span>
+                  {b}
+                </li>
+              ))}
+            </ul>
           </div>
         </Container>
       </section>

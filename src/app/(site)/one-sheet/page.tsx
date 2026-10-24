@@ -31,13 +31,13 @@ export default async function OneSheetPage() {
             <Logo tone="light" className="text-3xl" />
             <p className="mt-2 font-display text-xl italic">{site.tagline}</p>
           </div>
-          <p className="text-sm text-white/80">Websites · Google Profiles · Reviews · AI Search</p>
+          <p className="text-sm text-white/80">GEO · Websites · Google Profiles · Reviews</p>
         </header>
 
         <div className="space-y-6 px-8 py-7">
           <p className="text-lg">
-            We help contractors and home service businesses in {site.serviceArea}, look as good online as their work does in
-            person, so more of the right customers find them, trust them and call.
+            We help contractors and home service businesses in {site.serviceArea}, get found on Google and in AI answers like
+            ChatGPT, so more of the right customers find them, trust them and call. Every website we build includes GEO.
           </p>
 
           <section>
@@ -56,8 +56,8 @@ export default async function OneSheetPage() {
               pages, social media post packs, review request automation, AI chat and lead response, and monthly care plans.
             </p>
             <p className="mt-2 text-sm">
-              <strong className="text-navy">Already have a website?</strong> Keep it. Our AI search visibility service (GEO) gets
-              your business mentioned when customers ask ChatGPT or Google&apos;s AI answers who to hire.
+              <strong className="text-navy">Don&apos;t need a new website?</strong> Our standalone AI search visibility service (GEO)
+              gets your business mentioned when customers ask ChatGPT or Google&apos;s AI answers who to hire.
             </p>
           </section>
 

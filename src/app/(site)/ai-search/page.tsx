@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { getOfferings, getShowPrices, isGeo } from "@/lib/offerings";
-import { OfferingCard } from "@/components/Pricing";
+import { getOfferings, getShowPrices } from "@/lib/offerings";
+import { OfferingCard, priceText } from "@/components/Pricing";
 import { ButtonLink, Container, Eyebrow, PageHeader } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
@@ -23,6 +23,38 @@ const signals = [
   { title: "Structured data", body: "Behind-the-scenes code (schema markup) that tells search engines and AI exactly who you are and what you offer." },
 ];
 
+// Ways to get GEO, in the order shown: on its own, or included with a new website.
+const optionSlugs = ["ai-search-setup", "business-website-launch", "premium-digital-presence"];
+
+const faqs = [
+  {
+    q: "What is GEO?",
+    a: "GEO stands for generative engine optimization. It's the work of making sure AI assistants like ChatGPT, Google's AI answers, Perplexity and Gemini can find your business, describe it correctly and recommend it when customers ask who to hire.",
+  },
+  {
+    q: "Is GEO replacing SEO?",
+    a: "No. They overlap. AI assistants draw on many of the same things Google does: your website, your listings and your reviews. GEO adds the work aimed at how AI tools choose and describe businesses, so the two work best together.",
+  },
+  {
+    q: "Do I need a new website?",
+    a: "No. If you're happy with your website, or don't have one, our standalone GEO package works with what you already have, including your Google Business Profile. If your site is outdated, every website we build includes GEO.",
+  },
+  {
+    q: "Which AI tools do you check?",
+    a: "We ask ChatGPT, Google's AI answers, Perplexity and other popular assistants the questions your customers ask, and record what each one says.",
+  },
+  {
+    q: "How soon will I see a difference?",
+    a: "It varies, and nobody can promise a date. Some fixes, like correcting your listings, can show up within weeks. Others take longer while AI tools refresh what they know. On the monthly plan we re-check every month so you can see what changes.",
+  },
+];
+
+const faqJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: faqs.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })),
+};
+
 const steps = [
   { n: "1", title: "We ask the AIs", body: "We ask ChatGPT, Google's AI answers, Perplexity and others the questions your customers ask, and record who gets recommended." },
   { n: "2", title: "We show you the results", body: "You see where you show up, where you don't, which competitors are named instead, and anything the AI gets wrong about you." },
@@ -32,14 +64,17 @@ const steps = [
 
 export default async function AiSearchPage() {
   const [offerings, showPrices] = await Promise.all([getOfferings({ activeOnly: true }), getShowPrices()]);
-  const geoOfferings = offerings.filter(isGeo);
+  const options = optionSlugs.map((slug) => offerings.find((o) => o.slug === slug)).filter((o) => o !== undefined);
+  const plan = offerings.find((o) => o.slug === "ai-visibility-plan");
+  const planPrice = plan && priceText(plan, showPrices);
 
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd).replace(/</g, "\\u003c") }} />
       <PageHeader
         eyebrow="AI search visibility (GEO)"
         title="Show up when customers ask AI"
-        intro="More people now ask ChatGPT or Google's AI answers who to hire instead of scrolling through search results. We make sure your business is part of the answer."
+        intro="More people now ask ChatGPT or Google's AI answers who to hire instead of scrolling through search results. We make sure your business is part of the answer. GEO is built into every website we make, or available on its own."
       />
 
       <section className="py-14">
@@ -101,26 +136,47 @@ export default async function AiSearchPage() {
         </Container>
       </section>
 
-      {geoOfferings.length > 0 && (
+      {options.length > 0 && (
         <section className="bg-navy-50 py-14">
           <Container>
-            <Eyebrow>Already have a website? Keep it.</Eyebrow>
-            <h2 className="mt-2 font-display text-3xl font-bold text-navy">One-time setup, optional monthly tracking</h2>
+            <Eyebrow>Two ways to get started</Eyebrow>
+            <h2 className="mt-2 font-display text-3xl font-bold text-navy">GEO on its own, or with a new website</h2>
             <p className="mt-2 max-w-2xl text-muted">
-              No rebuild needed. We work alongside your current website and web designer, and you keep every account.
+              Keep your current website and add GEO, or get a new website with GEO included. Either way, you own every account.
             </p>
-            <div className="mt-6 grid gap-6 md:grid-cols-2">
-              {geoOfferings.map((o) => (
+            <div className="mt-6 grid gap-6 lg:grid-cols-3">
+              {options.map((o) => (
                 <div key={o.id} className="grid rounded-lg bg-white">
-                  <OfferingCard o={o} showPrices={showPrices} />
+                  <OfferingCard o={o} showPrices={showPrices} featured={o.slug === "ai-search-setup"} />
                 </div>
               ))}
             </div>
+            {plan && (
+              <p className="mt-6 rounded-lg border-l-4 border-orange bg-white p-4">
+                <strong className="text-navy">Want ongoing tracking?</strong> Add the {plan.name} plan{planPrice ? ` (${planPrice})` : ""}:{" "}
+                {plan.description}
+              </p>
+            )}
           </Container>
         </section>
       )}
 
       <section className="py-14">
+        <Container>
+          <Eyebrow>Questions</Eyebrow>
+          <h2 className="mt-2 font-display text-3xl font-bold text-navy">GEO, explained</h2>
+          <dl className="mt-6 grid gap-6 md:grid-cols-2">
+            {faqs.map((f) => (
+              <div key={f.q} className="rounded-lg border border-line p-6">
+                <dt className="font-display text-xl font-bold text-navy">{f.q}</dt>
+                <dd className="mt-2 text-muted">{f.a}</dd>
+              </div>
+            ))}
+          </dl>
+        </Container>
+      </section>
+
+      <section className="bg-navy-50 py-14">
         <Container className="grid gap-12 md:grid-cols-2 md:items-center">
           <div>
             <h2 className="font-display text-3xl font-bold text-navy">Straight talk</h2>

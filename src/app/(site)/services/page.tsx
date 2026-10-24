@@ -31,14 +31,19 @@ export default async function ServicesPage() {
         title="Pick the help you need"
         intro={
           showPrices
-            ? "Clear, upfront pricing for our work. Third-party costs like your domain and email are listed separately and paid directly by you."
-            : "Every business starts in a different place. Start with a free audit and we'll recommend the right package with a clear, upfront price."
+            ? "Websites with GEO included, or GEO on its own. Clear, upfront pricing for our work. Third-party costs like your domain and email are listed separately and paid directly by you."
+            : "Websites with GEO included, or GEO on its own. Every business starts in a different place, so start with a free audit and we'll recommend the right package with a clear, upfront price."
         }
       />
 
       <section className="py-14">
         <Container>
-          <Eyebrow>Packages</Eyebrow>
+          <Eyebrow>Website packages</Eyebrow>
+          <h2 className="mt-2 font-display text-3xl font-bold text-navy">A new website with GEO included</h2>
+          <p className="mt-2 max-w-2xl text-muted">
+            Every website we build is ready for Google and for AI assistants like ChatGPT, with structured data and an AI-friendly
+            FAQ. Premium adds our full GEO setup.
+          </p>
           <div className="mt-6 grid gap-6 lg:grid-cols-3">
             {packages.map((o, i) => (
               <OfferingCard key={o.id} o={o} showPrices={showPrices} featured={i === 1} />
@@ -54,11 +59,11 @@ export default async function ServicesPage() {
       {geo.length > 0 && (
         <section className="bg-navy py-14 text-white">
           <Container>
-            <Eyebrow>Already have a website?</Eyebrow>
-            <h2 className="mt-2 font-display text-3xl font-bold">Keep it. Get it recommended by AI.</h2>
+            <Eyebrow>GEO without a new website</Eyebrow>
+            <h2 className="mt-2 font-display text-3xl font-bold">Get recommended by AI, no rebuild needed</h2>
             <p className="mt-2 max-w-2xl text-white/85">
-              More customers now ask ChatGPT and Google&apos;s AI answers who to hire. We work alongside your current website and
-              web designer, no rebuild needed, so those assistants can find your business, understand it and recommend it.
+              Happy with your current website, or don&apos;t need one? We work with what you already have, including your Google
+              Business Profile, listings and reviews, so ChatGPT and Google&apos;s AI answers can find, understand and recommend you.
             </p>
             <div className="mt-6 grid gap-6 md:grid-cols-2">
               {geo.map((o) => (
