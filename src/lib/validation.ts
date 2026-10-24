@@ -46,9 +46,26 @@ export const auditRequestSchema = z.object({
   firstName: required("first name", 60),
   lastName: required("last name", 60),
   businessName: required("business name", 120),
+  trade: required("type of business", 80),
+  city: required("city", 80),
   phone,
   email,
   website,
+});
+
+/** A business the owner adds by hand for outreach. Contact details are optional. */
+export const prospectSchema = z.object({
+  businessName: required("business name", 120),
+  trade: required("type of business", 80),
+  city: required("city", 80),
+  website,
+  firstName: text(60).default(""),
+  email: z.string().trim().toLowerCase().max(200).refine((v) => v === "" || z.email().safeParse(v).success, "Please enter a valid email address.").default(""),
+  phone: z
+    .string()
+    .trim()
+    .default("")
+    .refine((v) => v === "" || phoneDigits(v).length === 10, "Please enter a 10-digit phone number."),
 });
 
 export const contactSchema = z.object({

@@ -2,7 +2,13 @@ import Link from "next/link";
 import { sql } from "@/lib/db";
 import { STAGES, stageLabel } from "@/lib/stages";
 import type { Lead } from "@/lib/leads";
+import { site } from "@/lib/site";
+import { aiChecksAvailable } from "@/lib/ai-visibility/run";
 import { moveLeadStage } from "../../actions";
+import { ProspectForm } from "./ProspectForm";
+
+// Leaves time for AI visibility checks started when adding a prospect.
+export const maxDuration = 300;
 
 type Search = { q?: string; stage?: string; view?: string; sort?: string };
 
@@ -37,6 +43,17 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
           <Link href={qs("list")} className={tab("list")}>List</Link>
         </div>
       </div>
+
+      <details className="rounded-lg bg-white p-4 shadow-sm">
+        <summary className="cursor-pointer font-semibold text-navy">Add a prospect for outreach</summary>
+        <p className="mt-2 text-sm text-muted">
+          Add a business you want to contact. Its AI check runs in the background; approve the report, then send the link in
+          your message.
+        </p>
+        <div className="mt-4">
+          <ProspectForm industries={site.industries} cities={site.cities} canCheck={aiChecksAvailable()} />
+        </div>
+      </details>
 
       <form className="flex flex-wrap gap-2" role="search">
         <input type="hidden" name="view" value={view} />

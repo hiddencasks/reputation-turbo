@@ -2,9 +2,16 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { z } from "zod";
 import { createSession, destroySession, requireOwner } from "@/lib/auth";
 import { sql } from "@/lib/db";
+import { sendEmail } from "@/lib/email";
+import { isSuppressed, upsertLead, type Lead } from "@/lib/leads";
+import { site } from "@/lib/site";
+import { prospectSchema } from "@/lib/validation";
+import { processCheck, queueCheck, reportUrl, type AiCheck } from "@/lib/ai-visibility/run";
+import { providerLabel } from "@/lib/ai-visibility/providers";
 import { verifyPassword } from "@/lib/password";
 import { STAGE_IDS, stageLabel } from "@/lib/stages";
 
@@ -46,6 +53,8 @@ const leadUpdate = z.object({
   stage: z.enum(STAGE_IDS),
   nextFollowUp: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).or(z.literal("")),
   recommendedPackage: z.string().trim().max(120),
+  trade: z.string().trim().max(80),
+  city: z.string().trim().max(80),
   quoteAmount: z.string().trim().regex(/^\d*(\.\d{0,2})?$/, "Enter a dollar amount like 1497 or 1497.50"),
 });
 
@@ -61,6 +70,8 @@ export async function updateLead(leadId: string, formData: FormData) {
       stage = ${data.stage},
       next_follow_up = ${data.nextFollowUp || null},
       recommended_package = ${data.recommendedPackage},
+      trade = ${data.trade},
+      city = ${data.city},
       quote_amount_cents = ${quoteCents},
       updated_at = now()
     where id = ${leadId}`;
@@ -101,6 +112,117 @@ export async function addNote(leadId: string, formData: FormData) {
   await sql`insert into activities (lead_id, kind, body) values (${leadId}, 'note', ${body})`;
   await sql`update leads set updated_at = now() where id = ${leadId}`;
   revalidatePath(`/admin/leads/${leadId}`);
+}
+
+// ---------- AI visibility checks ----------
+
+/** Starts an AI visibility check for a lead; it runs in the background and the page refreshes until it's done. */
+export async function runAiCheck(leadId: string) {
+  await requireOwner();
+  const result = await queueCheck(leadId);
+  if ("error" in result) redirect(`/admin/leads/${leadId}?ai=${encodeURIComponent(result.error)}`);
+  after(() => processCheck(result.id));
+  revalidatePath(`/admin/leads/${leadId}`);
+}
+
+const EARLY_STAGES = ["new_prospect", "audit_in_progress", "audit_ready", "contacted"];
+
+/**
+ * Approves a finished report so its link works for the client. With
+ * send=email it also emails the link to the lead and moves them to Audit
+ * Delivered with a follow-up in 3 days.
+ */
+export async function approveReport(checkId: string, formData: FormData) {
+  await requireOwner();
+  const send = formData.get("send") === "email";
+  const [check] = await sql<AiCheck[]>`
+    update ai_checks set approved_at = coalesce(approved_at, now())
+    where id = ${checkId} and status = 'done'
+    returning *`;
+  if (!check) throw new Error("Report not found or not finished.");
+  const [lead] = await sql<Lead[]>`select * from leads where id = ${check.lead_id}`;
+  const link = reportUrl(check);
+
+  if (!send) {
+    await sql`insert into activities (lead_id, kind, body) values (${lead.id}, 'ai_check', ${`AI report approved. Shareable link: ${link}`})`;
+  } else {
+    if (!lead.email) redirect(`/admin/leads/${lead.id}?ai=${encodeURIComponent("This lead has no email address. Add one or share the link yourself.")}`);
+    if (await isSuppressed(lead.email)) redirect(`/admin/leads/${lead.id}?ai=${encodeURIComponent("This email address has opted out, so nothing was sent.")}`);
+    const result = await sendEmail({
+      to: lead.email,
+      leadId: lead.id,
+      template: "ai_report",
+      subject: `Your free AI visibility report for ${check.business_name}`,
+      paragraphs: [
+        `Hi ${lead.first_name || "there"},`,
+        `More customers now ask AI assistants who to hire. We asked ${check.providers.map(providerLabel).join(", ")} the questions your customers ask, like "${check.questions[0]}", and recorded what they said.`,
+        `${check.business_name} was named in ${check.mentioned_count} of ${check.answer_count} answers. Your report shows each answer, which businesses were recommended instead, and what we'd fix first:`,
+        link,
+        `Questions? Just reply to this email or call ${site.phoneDisplay}.`,
+        `The Reputation Turbo team`,
+      ],
+    });
+    if (result.status !== "failed") {
+      await sql`update ai_checks set sent_at = now() where id = ${check.id}`;
+      await sql`insert into activities (lead_id, kind, body) values (${lead.id}, 'ai_check', ${`AI report approved and emailed to ${lead.email}.`})`;
+      if (EARLY_STAGES.includes(lead.stage)) {
+        await sql`
+          update leads set stage = 'audit_delivered', next_follow_up = coalesce(next_follow_up, current_date + 3), updated_at = now()
+          where id = ${lead.id}`;
+        await sql`
+          insert into activities (lead_id, kind, body)
+          values (${lead.id}, 'stage_change', ${`Stage changed from ${stageLabel(lead.stage)} to ${stageLabel("audit_delivered")}.`})`;
+      }
+    }
+  }
+  revalidatePath(`/admin/leads/${lead.id}`);
+  revalidatePath("/admin");
+}
+
+export async function setAiMonitoring(leadId: string, formData: FormData) {
+  await requireOwner();
+  const on = formData.get("on") === "true";
+  await sql`update leads set ai_monitoring = ${on}, updated_at = now() where id = ${leadId}`;
+  await sql`
+    insert into activities (lead_id, kind, body)
+    values (${leadId}, 'ai_check', ${on ? "Monthly AI tracking turned on." : "Monthly AI tracking turned off."})`;
+  revalidatePath(`/admin/leads/${leadId}`);
+}
+
+export type ProspectState = { errors: Record<string, string | undefined>; values: Record<string, string> };
+
+/** Adds a business for outreach and, if asked, starts its AI visibility check. */
+export async function createProspect(_prev: ProspectState, formData: FormData): Promise<ProspectState> {
+  await requireOwner();
+  const values = Object.fromEntries(
+    ["businessName", "trade", "city", "website", "firstName", "email", "phone"].map((k) => [k, String(formData.get(k) ?? "")]),
+  );
+  const parsed = prospectSchema.safeParse(values);
+  if (!parsed.success) {
+    const errors: Record<string, string> = {};
+    for (const issue of parsed.error.issues) errors[String(issue.path[0])] ??= issue.message;
+    return { errors, values };
+  }
+  const d = parsed.data;
+  const { lead } = await upsertLead({
+    firstName: d.firstName,
+    lastName: "",
+    businessName: d.businessName,
+    email: d.email,
+    phone: d.phone,
+    website: d.website,
+    trade: d.trade,
+    city: d.city,
+    source: "outreach",
+    stage: "new_prospect",
+    note: `Added as an outreach prospect (${d.trade} in ${d.city}).`,
+  });
+  if (formData.get("runCheck") === "on") {
+    const result = await queueCheck(lead.id);
+    if ("id" in result) after(() => processCheck(result.id));
+    else redirect(`/admin/leads/${lead.id}?ai=${encodeURIComponent(result.error)}`);
+  }
+  redirect(`/admin/leads/${lead.id}`);
 }
 
 // ---------- Pricing ----------
