@@ -8,6 +8,7 @@ test.beforeEach(async () => {
 const pages = [
   ["/", /Get Found/],
   ["/services", /Pick the help you need/],
+  ["/ai-search", /Show up when customers ask AI/],
   ["/about", /A local agency/],
   ["/our-work", /Projects/],
   ["/free-audit", /See how customers see you/],

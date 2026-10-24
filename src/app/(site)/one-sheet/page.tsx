@@ -31,7 +31,7 @@ export default async function OneSheetPage() {
             <Logo tone="light" className="text-3xl" />
             <p className="mt-2 font-display text-xl italic">{site.tagline}</p>
           </div>
-          <p className="text-sm text-white/80">Websites · Google Profiles · Reviews · Branding</p>
+          <p className="text-sm text-white/80">Websites · Google Profiles · Reviews · AI Search</p>
         </header>
 
         <div className="space-y-6 px-8 py-7">
@@ -53,7 +53,8 @@ export default async function OneSheetPage() {
             </div>
             <p className="mt-3 text-sm">
               <strong className="text-navy">Add-ons:</strong> logo creation, brand identity kits, extra pages, service-area
-              pages, social media post packs, review request automation, AI chat and lead response, and monthly care plans.
+              pages, social media post packs, review request automation, AI chat and lead response, AI search visibility (GEO),
+              and monthly care plans.
             </p>
           </section>
 

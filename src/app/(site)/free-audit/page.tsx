@@ -13,6 +13,7 @@ const checks = [
   "Google listing: business details, website link, phone, reviews and rating",
   "Social profiles: whether they're easy to find and consistent",
   "Lead capture: how easy it is for a customer to reach you",
+  "AI search: whether ChatGPT and Google's AI answers mention you when customers ask for your service nearby",
 ];
 
 export default function FreeAuditPage() {

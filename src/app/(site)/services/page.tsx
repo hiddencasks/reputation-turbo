@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { getOfferings, getShowPrices } from "@/lib/offerings";
 import { OfferingCard, priceText } from "@/components/Pricing";
 import { ButtonLink, Container, Eyebrow, PageHeader } from "@/components/ui";
@@ -6,7 +7,7 @@ import { ButtonLink, Container, Eyebrow, PageHeader } from "@/components/ui";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Services & Pricing",
-  description: "Websites, Google Business Profile optimization, local SEO, branding and review systems for San Diego County service businesses.",
+  description: "Websites, Google Business Profile optimization, local SEO, AI search visibility (GEO), branding and review systems for San Diego County service businesses.",
 };
 
 const thirdParty = [
@@ -46,6 +47,13 @@ export default async function ServicesPage() {
             <ButtonLink href="/free-audit">Start With a Free Audit</ButtonLink>
             <ButtonLink href="/contact" variant="secondary">Ask for a Custom Quote</ButtonLink>
           </div>
+          <p className="mt-8 rounded-lg border-l-4 border-orange bg-navy-50 p-4">
+            <strong className="text-navy">New: AI search visibility (GEO).</strong> Get mentioned when customers ask ChatGPT or
+            Google&apos;s AI answers who to hire.{" "}
+            <Link href="/ai-search" className="font-semibold text-navy underline decoration-orange decoration-2 underline-offset-4 hover:text-orange">
+              How it works
+            </Link>
+          </p>
         </Container>
       </section>
 
@@ -55,9 +63,9 @@ export default async function ServicesPage() {
             <Eyebrow>Monthly care plans</Eyebrow>
             <h2 className="mt-2 font-display text-3xl font-bold text-navy">Optional ongoing help</h2>
             <p className="mt-2 max-w-2xl text-muted">Never required. Add one after launch if you want us to keep things updated for you.</p>
-            <div className="mt-6 grid gap-6 md:grid-cols-3">
+            <div className="mt-6 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
               {plans.map((o) => (
-                <div key={o.id} className="bg-white rounded-lg">
+                <div key={o.id} className="grid rounded-lg bg-white">
                   <OfferingCard o={o} showPrices={showPrices} />
                 </div>
               ))}

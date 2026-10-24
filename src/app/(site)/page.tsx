@@ -2,7 +2,7 @@ import Link from "next/link";
 import { site } from "@/lib/site";
 import { ButtonLink, Container, Eyebrow } from "@/components/ui";
 
-const services = [
+const services: { title: string; body: string; href?: string }[] = [
   {
     title: "Websites that win jobs",
     body: "Fast, mobile-friendly websites built around how your customers search and call: clear services, real photos of your work, and click-to-call on every page.",
@@ -15,6 +15,11 @@ const services = [
     title: "Reviews & lead capture",
     body: "Simple review request systems, contact forms that reach you, and fast responses to new leads, so good work turns into more work.",
   },
+  {
+    title: "Show up in AI answers",
+    body: "Customers now ask ChatGPT and Google's AI who to hire. We make sure those assistants know your business and can recommend it.",
+    href: "/ai-search",
+  },
 ];
 
 const steps = [
@@ -23,9 +28,31 @@ const steps = [
   { n: "3", title: "We build and launch", body: "We set it up, you review and approve, and we launch. You own every account when we're done." },
 ];
 
+// Structured business details for search engines and AI assistants.
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "ProfessionalService",
+  name: site.name,
+  slogan: site.tagline,
+  url: site.url,
+  email: site.email,
+  telephone: site.phoneHref.replace("tel:", ""),
+  address: {
+    "@type": "PostalAddress",
+    streetAddress: site.address.line1,
+    addressLocality: site.address.city,
+    addressRegion: site.address.region,
+    postalCode: site.address.postal,
+    addressCountry: "US",
+  },
+  areaServed: site.cities.map((c) => ({ "@type": "City", name: `${c}, CA` })),
+  knowsAbout: ["Small business websites", "Google Business Profile optimization", "Local SEO", "Online reviews", "Generative engine optimization (GEO)"],
+};
+
 export default function HomePage() {
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
       <section className="relative overflow-hidden bg-navy text-white">
         <div aria-hidden="true" className="pointer-events-none absolute -right-24 top-0 h-full w-1/2 -skew-x-[20deg] bg-gradient-to-l from-orange/25 to-transparent" />
         <Container className="relative py-16 sm:py-24">
@@ -48,12 +75,17 @@ export default function HomePage() {
         <Container>
           <Eyebrow>What we do</Eyebrow>
           <h2 className="mt-2 font-display text-4xl font-bold text-navy">Everything customers check before they call you</h2>
-          <div className="mt-10 grid gap-6 md:grid-cols-3">
+          <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             {services.map((s) => (
               <div key={s.title} className="rounded-lg border border-line p-6">
                 <div className="h-1 w-10 -skew-x-[30deg] bg-orange" />
                 <h3 className="mt-4 font-display text-2xl font-bold text-navy">{s.title}</h3>
                 <p className="mt-2 text-muted">{s.body}</p>
+                {s.href && (
+                  <Link href={s.href} className="mt-3 inline-block font-semibold text-navy underline decoration-orange decoration-2 underline-offset-4 hover:text-orange">
+                    Learn about AI search
+                  </Link>
+                )}
               </div>
             ))}
           </div>
