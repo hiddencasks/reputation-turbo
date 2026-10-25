@@ -26,7 +26,7 @@ const picker: { title: string; body: string; icon: IconName; href: string }[] = 
 
 const onboarding: { title: string; body: string; icon: IconName }[] = [
   { title: "Kickoff call", icon: "video", body: "A short call to go over your business, your goals and what you want customers to see first." },
-  { title: "Share access", icon: "key", body: "We send simple steps to give us access to your Google profile and other accounts. You keep ownership, and we never ask for your passwords." },
+  { title: "Your checklist", icon: "key", body: "We send a simple checklist of what we need, like your logo, photos and account access. You keep ownership, and we never ask for your passwords." },
   { title: "We build, you review", icon: "wrench", body: "We do the work and send it to you for review. Ask for changes, and nothing goes live until you approve it." },
   { title: "Launch and handoff", icon: "check", body: "We launch, check that everything works, and show you where everything lives. A monthly plan is optional." },
 ];
