@@ -114,6 +114,10 @@ test("trade photos open the audit with the trade picked, and phone numbers forma
   await page.goto("/");
   await page.getByRole("link", { name: "Painters", exact: true }).click();
   await expect(page.getByLabel("Type of business")).toHaveValue("Painters");
+  await page.goto("/");
+  await page.getByRole("link", { name: "Other", exact: true }).click();
+  await expect(page.locator("#trade")).toHaveValue("Other");
+  await expect(page.getByLabel("Type of business (other)")).toBeVisible();
 });
 
 test("hidden pages redirect to the homepage", async ({ page }) => {

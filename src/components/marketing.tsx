@@ -154,8 +154,8 @@ export function AuditPreview() {
       <ul className="mt-3 space-y-1.5">
         <li className="flex gap-2"><Icon name="check" className="h-4 w-4 text-green-700" /> Website works on phones</li>
         <li className="flex gap-2"><Icon name="check" className="h-4 w-4 text-green-700" /> 4.8★ on Google</li>
-        <li className="flex gap-2 text-red-700"><span className="w-4 text-center font-bold">!</span> Not named by AI assistants</li>
-        <li className="flex gap-2 text-red-700"><span className="w-4 text-center font-bold">!</span> Missing service-area pages</li>
+        <li className="flex items-center gap-2"><Icon name="arrow" className="h-4 w-4 text-orange" /> Not named by AI assistants <span className="rounded bg-orange/10 px-1.5 text-[0.65rem] font-bold uppercase text-orange-600">To fix</span></li>
+        <li className="flex items-center gap-2"><Icon name="arrow" className="h-4 w-4 text-orange" /> Missing service-area pages <span className="rounded bg-orange/10 px-1.5 text-[0.65rem] font-bold uppercase text-orange-600">To fix</span></li>
       </ul>
       {site.auditTurnaround && <p className="mt-3 text-xs text-muted">Delivered {site.auditTurnaround}.</p>}
     </div>

@@ -32,7 +32,8 @@ export default async function FreeAuditPage({
   // Package buttons add ?package=<slug> so the request notes which package the visitor was looking at.
   const slug = typeof params.package === "string" ? params.package : "";
   // The trade photos on the homepage add ?trade=<industry> to preselect the type of business.
-  const trade = site.industries.find((i) => i === params.trade);
+  // "Other" opens the dropdown's text box for the visitor's own answer.
+  const trade = params.trade === "Other" ? "Other" : site.industries.find((i) => i === params.trade);
   const interest = slug ? (await getOfferings({ activeOnly: true })).find((o) => o.slug === slug)?.name : undefined;
   return (
     <>

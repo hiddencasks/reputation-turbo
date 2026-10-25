@@ -45,6 +45,7 @@ export const site = {
     "Fencing",
     "Cleaning",
     "Pressure washing",
+    "Pool services",
   ],
 } as const;
 
