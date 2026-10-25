@@ -184,6 +184,7 @@ export default async function ReportPage({ params }: { params: Promise<{ token: 
         <Container>
           <Eyebrow>The questions we asked</Eyebrow>
           <h2 className="mt-2 font-display text-3xl font-bold text-navy">Every answer, word for word</h2>
+          <p className="mt-2 text-muted">Tap any answer below to read exactly what the AI assistant said.</p>
           <div className="mt-6 space-y-6">
             {check.questions.map((q) => (
               <div key={q} className={`rounded-lg p-5 ${audit ? "border border-line" : "bg-white"}`}>
@@ -191,11 +192,20 @@ export default async function ReportPage({ params }: { params: Promise<{ token: 
                 <ul className="mt-3 space-y-2">
                   {answered.filter((a) => a.question === q).map((a) => (
                     <li key={a.id}>
-                      <details className="rounded-md border border-line">
-                        <summary className="flex cursor-pointer flex-wrap items-center justify-between gap-2 p-3">
+                      <details className="group rounded-md border border-line transition hover:border-navy/40 open:border-navy/40">
+                        <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-2 p-3 [&::-webkit-details-marker]:hidden">
                           <span className="font-semibold">{providerLabel(a.provider)}</span>
-                          <span className={`rounded-full px-2.5 py-0.5 text-sm font-semibold ${a.mentioned ? "bg-green-100 text-green-800" : "bg-red-50 text-red-800"}`}>
-                            {a.mentioned ? "Named you" : "Didn't name you"}
+                          <span className="flex items-center gap-3">
+                            <span className={`rounded-full px-2.5 py-0.5 text-sm font-semibold ${a.mentioned ? "bg-green-100 text-green-800" : "bg-orange/10 text-orange-600"}`}>
+                              {a.mentioned ? "Named you" : "Didn't name you"}
+                            </span>
+                            <span className="flex items-center gap-1 text-sm font-semibold text-navy underline underline-offset-4 group-hover:text-orange">
+                              <span className="group-open:hidden">Show answer</span>
+                              <span className="hidden group-open:inline">Hide answer</span>
+                              <svg aria-hidden="true" viewBox="0 0 20 20" className="h-4 w-4 transition-transform group-open:rotate-180" fill="currentColor">
+                                <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.06l3.71-3.83a.75.75 0 111.08 1.04l-4.25 4.39a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+                              </svg>
+                            </span>
                           </span>
                         </summary>
                         <div className="border-t border-line p-3 text-sm">
