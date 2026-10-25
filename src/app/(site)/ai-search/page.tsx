@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
+import Image from "next/image";
+import { photos } from "@/lib/photos";
 import { getOfferings, getShowPrices } from "@/lib/offerings";
 import { aiAssistantList, checkedAssistantList } from "@/lib/site";
 import { AfterLaunch, OfferingCard } from "@/components/Pricing";
 import { AiSearchTyper } from "@/components/AiSearchTyper";
-import { ButtonLink, Container, Eyebrow, PageHeader } from "@/components/ui";
+import { ButtonLink, Container, Eyebrow } from "@/components/ui";
 import { FaqList } from "@/components/FaqList";
 import { Icon, IconBadge, type IconName } from "@/components/Icon";
 import { JsonLd } from "@/components/JsonLd";
@@ -71,16 +73,38 @@ export default async function AiSearchPage() {
   const [offerings, showPrices] = await Promise.all([getOfferings({ activeOnly: true }), getShowPrices()]);
   const packages = packageSlugs.map((slug) => offerings.find((o) => o.slug === slug)).filter((o) => o !== undefined);
   const monitoring = offerings.find((o) => o.slug === "ai-visibility-plan");
+  const hero = photos.aiSearchHero;
   const carePlans = offerings.filter((o) => o.kind === "plan" && o.slug !== "ai-visibility-plan");
 
   return (
     <>
       <JsonLd data={faqJsonLd(faqs)} />
-      <PageHeader
-        eyebrow="AI search visibility (GEO)"
-        title="Show up when customers ask AI"
-        intro={`More people now ask ${aiAssistantList} who to hire instead of scrolling through search results. We make sure your business is part of the answer. GEO is built into every website we make, or available on its own.`}
-      />
+      <section className="relative overflow-hidden bg-navy text-white">
+        <Container className={`relative py-14 sm:py-20 ${hero ? "grid gap-10 lg:grid-cols-[1.4fr_1fr] lg:items-center" : ""}`}>
+          <div>
+            <Eyebrow>AI search visibility (GEO)</Eyebrow>
+            <h1 className="mt-2 font-display text-4xl font-extrabold italic uppercase sm:text-5xl">Show up when customers ask AI</h1>
+            <p className="mt-4 max-w-2xl text-lg text-white/85">
+              More people now ask {aiAssistantList} who to hire instead of scrolling through search results. We make sure your
+              business is part of the answer. GEO is built into every website we make, or available on its own.
+            </p>
+            <div className="mt-8">
+              <ButtonLink href="/free-audit?focus=ai-search" className="text-lg">Check What AI Says About You</ButtonLink>
+            </div>
+          </div>
+          {hero && (
+            <Image
+              src={hero.src}
+              alt={hero.alt}
+              width={899}
+              height={1120}
+              priority
+              sizes="(min-width: 1024px) 420px, 100vw"
+              className="aspect-[4/3] w-full rounded-2xl object-cover object-[center_35%] shadow-2xl ring-4 ring-white/10 lg:aspect-[4/5]"
+            />
+          )}
+        </Container>
+      </section>
 
       <section className="py-16">
         <Container className="grid gap-12 md:grid-cols-2 md:items-center">
