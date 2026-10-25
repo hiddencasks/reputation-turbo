@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { cityFromSlug, citySlug, site } from "@/lib/site";
+import { aiAssistantList, checkedAssistantList, cityFromSlug, citySlug, site } from "@/lib/site";
 import { businessJsonLd, faqJsonLd, type Faq } from "@/lib/structured-data";
 import { buildQuestions } from "@/lib/ai-visibility/questions";
-import { ButtonLink, Container, Eyebrow, PageHeader } from "@/components/ui";
+import { ButtonLink, Container, Eyebrow, PageHeader, cardHover } from "@/components/ui";
+import { IconBadge, type IconName } from "@/components/Icon";
 import { FaqList } from "@/components/FaqList";
 import { JsonLd } from "@/components/JsonLd";
 
@@ -20,16 +21,16 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
   if (!city) return {};
   return {
     title: `GEO, Websites & Reviews in ${city}, CA`,
-    description: `Reputation Turbo helps ${city} contractors and home service businesses get found on Google and in AI answers like ChatGPT, with websites, Google profiles and reviews. Free online audit.`,
+    description: `Reputation Turbo helps ${city} contractors and home service businesses get found on Google and in AI answers from ${aiAssistantList}, with websites, Google profiles and reviews. Free online audit.`,
     alternates: { canonical: `/areas/${citySlug(city)}` },
   };
 }
 
-const services = [
-  { title: "Show up in AI answers (GEO)", body: "We check what ChatGPT, Google's AI answers and other assistants say when {city} customers ask for your trade, then fix what they rely on.", href: "/ai-search" },
-  { title: "Websites with GEO included", body: "Fast, mobile-friendly websites with service pages for {city} and the areas around it, built for Google and AI search.", href: "/services" },
-  { title: "Google Business Profile", body: "A complete, accurate Google listing so you appear when people nearby search on Google and Maps.", href: "/services" },
-  { title: "Reviews & lead capture", body: "Simple ways to ask happy customers for reviews that mention {city}, and fast replies to new leads.", href: "/services" },
+const services: { title: string; body: string; href: string; icon: IconName }[] = [
+  { title: "Show up in AI answers (GEO)", body: `We check what ${checkedAssistantList} say when {city} customers ask for your trade, then fix what they rely on.`, href: "/ai-search", icon: "sparkle" },
+  { title: "Websites with GEO included", body: "Fast, mobile-friendly websites with service pages for {city} and the areas around it, built for Google and AI search.", href: "/services", icon: "browser" },
+  { title: "Google Business Profile", body: "A complete, accurate Google listing so you appear when people nearby search on Google and Maps.", href: "/services", icon: "pin" },
+  { title: "Reviews & lead capture", body: "Simple ways to ask happy customers for reviews that mention {city}, and fast replies to new leads.", href: "/services", icon: "star" },
 ];
 
 export default async function CityPage({ params }: { params: Promise<{ city: string }> }) {
@@ -49,7 +50,7 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
     },
     {
       q: `Can you check what AI says about my ${city} business?`,
-      a: `Yes. Our free online audit asks AI assistants like ChatGPT the questions ${city} customers ask about your trade, and shows you whether you're named and who is named instead.`,
+      a: `Yes. Our free online audit asks AI assistants like ${checkedAssistantList} the questions ${city} customers ask about your trade, and shows you whether you're named and who is named instead.`,
     },
     {
       q: "Do I need a new website?",
@@ -77,7 +78,7 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
       <PageHeader
         eyebrow={`Serving ${city}, CA`}
         title={`Get found in ${city}`}
-        intro={`We help ${city} contractors and home service businesses show up on Google and in AI answers like ChatGPT, so more local customers find you, trust you and call.`}
+        intro={`We help ${city} contractors and home service businesses show up on Google and in AI answers from ${aiAssistantList}, so more local customers find you, trust you and call.`}
       />
 
       <section className="py-14">
@@ -86,7 +87,7 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
             <Eyebrow>How {city} customers search now</Eyebrow>
             <h2 className="mt-2 font-display text-3xl font-bold text-navy">They&apos;re asking AI who to hire</h2>
             <p className="mt-3 text-ink">
-              Instead of scrolling through search results, more people ask ChatGPT or Google&apos;s AI answers for a
+              Instead of scrolling through search results, more people ask {aiAssistantList} for a
               recommendation and get back a few names. If yours isn&apos;t one of them, those customers may never see you.
             </p>
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
@@ -111,8 +112,8 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
           <h2 className="mt-2 font-display text-3xl font-bold text-navy">How we help {city} businesses</h2>
           <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {services.map((s) => (
-              <Link key={s.title} href={s.href} className="block rounded-lg bg-white p-6 hover:ring-2 hover:ring-orange">
-                <div className="h-1 w-10 -skew-x-[30deg] bg-orange" />
+              <Link key={s.title} href={s.href} className={`block rounded-xl border border-line bg-white p-6 ${cardHover}`}>
+                <IconBadge name={s.icon} />
                 <h3 className="mt-4 font-display text-xl font-bold text-navy">{s.title}</h3>
                 <p className="mt-2 text-sm text-muted">{s.body.replaceAll("{city}", city)}</p>
               </Link>

@@ -158,7 +158,7 @@ export async function approveReport(checkId: string, formData: FormData) {
         `More customers now ask AI assistants who to hire. We asked ${check.providers.map(providerLabel).join(", ")} the questions your customers ask, like "${check.questions[0]}", and recorded what they said.`,
         `${check.business_name} was named in ${check.mentioned_count} of ${check.answer_count} answers. Your report shows each answer, which businesses were recommended instead, and what we'd fix first:`,
         link,
-        `Questions? Just reply to this email or call ${site.phoneDisplay}.`,
+        site.showPhone ? `Questions? Just reply to this email or call ${site.phoneDisplay}.` : `Questions? Just reply to this email, or book a 15-minute video call: ${site.bookingUrl}`,
         `The Reputation Turbo team`,
       ],
     });
@@ -263,7 +263,8 @@ function offeringValues(formData: FormData) {
 function revalidatePricing() {
   revalidatePath("/admin/pricing");
   revalidatePath("/services");
-  revalidatePath("/one-sheet");
+  revalidatePath("/ai-search");
+  revalidatePath("/");
 }
 
 export async function saveOffering(offeringId: string, formData: FormData) {

@@ -57,7 +57,7 @@ export async function sendEmail(input: SendInput): Promise<SendResult> {
 }
 
 function footerText(): string {
-  return `${site.name} · ${addressOneLine} · ${site.phoneDisplay}`;
+  return [site.name, addressOneLine, site.showPhone ? site.phoneDisplay : site.email].join(" · ");
 }
 
 function escapeHtml(s: string): string {

@@ -19,7 +19,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <div className="flex min-h-screen flex-col bg-navy-50 md:flex-row">
       <aside className="bg-navy text-white md:w-60 md:shrink-0">
         <div className="flex items-center justify-between gap-4 p-4 md:block">
-          <Link href="/admin"><Logo tone="light" className="text-lg" /></Link>
+          <Link href="/admin"><Logo tone="light" className="h-8 w-auto" /></Link>
           <p className="hidden truncate text-xs text-white/60 md:mt-2 md:block">{session.email}</p>
         </div>
         <nav aria-label="Dashboard" className="flex gap-1 overflow-x-auto px-2 pb-3 md:flex-col md:pb-0">

@@ -11,7 +11,7 @@ export default async function LoginPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-navy px-4">
       <div className="w-full max-w-sm rounded-lg bg-white p-8 shadow-xl">
-        <Logo className="text-2xl" />
+        <Logo className="h-12 w-auto" />
         <h1 className="mt-6 font-display text-2xl font-bold text-navy">Dashboard sign in</h1>
         <div className="mt-6">
           <LoginForm />

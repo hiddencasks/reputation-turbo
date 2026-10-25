@@ -9,11 +9,9 @@ const pages = [
   ["/", /Get Found/],
   ["/services", /Pick the help you need/],
   ["/ai-search", /Show up when customers ask AI/],
-  ["/about", /A local agency/],
-  ["/our-work", /Projects/],
+  ["/about", /Local roots/],
   ["/free-audit", /See how customers see you/],
   ["/contact", /Let's talk/],
-  ["/one-sheet", /What we do/],
   ["/privacy", /Privacy Policy/],
   ["/terms", /Terms of Use/],
   ["/areas", /Local help across San Diego County/],
@@ -28,7 +26,7 @@ for (const [path, heading] of pages) {
     page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
     const res = await page.goto(path);
     expect(res?.status()).toBe(200);
-    await expect(page.getByRole("heading", { level: path === "/one-sheet" ? 2 : 1 }).filter({ hasText: heading }).first()).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1 }).filter({ hasText: heading }).first()).toBeVisible();
     // No horizontal scrolling on any screen size.
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     expect(overflow).toBeLessThanOrEqual(1);
@@ -43,7 +41,7 @@ test("audit form shows errors for missing and invalid fields", async ({ page }) 
   await page.getByRole("button", { name: "Get My Free Audit" }).click();
   await expect(page.getByText("Please enter your first name.")).toBeVisible();
   await expect(page.getByText("Please enter your type of business.")).toBeVisible();
-  await expect(page.getByText("Please enter a 10-digit phone number.")).toBeVisible();
+  await expect(page.getByText("Please enter a 10-digit phone number, or leave it blank.")).toBeVisible();
   await expect(page.getByText("Please enter a valid email address.")).toBeVisible();
   await expect(page.getByLabel("Phone number")).toHaveValue("123");
   expect((await db`select count(*)::int as n from leads`)[0].n).toBe(0);
@@ -54,11 +52,12 @@ async function submitAudit(page: import("@playwright/test").Page, email: string,
   await page.getByLabel("First name").fill("Maria");
   await page.getByLabel("Last name").fill("Lopez");
   await page.getByLabel("Business name").fill("Lopez Concrete");
-  await page.getByLabel("Type of business").fill("Concrete contractors");
-  await page.getByLabel("City you're based in").fill("El Cajon");
+  await page.getByLabel("Type of business").selectOption("Concrete contractors");
+  await page.getByLabel("City you're based in").selectOption("El Cajon");
   await page.getByLabel("Phone number").fill("(619) 555-0100");
   await page.getByLabel("Email address").fill(email);
-  await page.getByLabel(/Website/).fill(website);
+  if (website) await page.getByLabel("Website", { exact: true }).fill(website);
+  else await page.getByLabel("No website yet").check();
   await page.getByRole("button", { name: "Get My Free Audit" }).click();
   await expect(page.getByRole("heading", { name: "Request received" })).toBeVisible();
 }
@@ -105,6 +104,32 @@ test("audit requests from AI search links are tagged in the dashboard", async ({
   expect(act.body).toContain("AI search check");
 });
 
+test("hidden pages redirect to the homepage", async ({ page }) => {
+  for (const path of ["/our-work", "/one-sheet"]) {
+    await page.goto(path);
+    await expect(page).toHaveURL(/\/$/);
+  }
+});
+
+test("dropdowns accept a typed answer under Other, and phone is optional", async ({ page }) => {
+  await page.goto("/free-audit?package=business-website-launch");
+  await expect(page.getByText("Interested in: Business Website Launch")).toBeVisible();
+  await page.getByLabel("First name").fill("Sam");
+  await page.getByLabel("Business name").fill("Sam's Pools");
+  await page.getByLabel("Type of business").selectOption("Other");
+  await page.getByLabel("Type of business (other)").fill("Pool service");
+  await page.getByLabel("City you're based in").selectOption("Other");
+  await page.getByLabel("City you're based in (other)").fill("Alpine");
+  await page.getByLabel("Email address").fill("sam@email.com");
+  await page.getByLabel("No website yet").check();
+  await page.getByRole("button", { name: "Get My Free Audit" }).click();
+  await expect(page.getByRole("heading", { name: "Request received" })).toBeVisible();
+  const [lead] = await db`select trade, city, phone, website_url from leads`;
+  expect(lead).toMatchObject({ trade: "Pool service", city: "Alpine", phone: "" });
+  const [act] = await db`select body from activities where kind = 'audit_form'`;
+  expect(act.body).toContain("Interested in: Business Website Launch");
+});
+
 test("bots filling the hidden field are ignored", async ({ page }) => {
   await page.goto("/free-audit");
   await page.evaluate(() => {
@@ -113,8 +138,8 @@ test("bots filling the hidden field are ignored", async ({ page }) => {
   await page.getByLabel("First name").fill("Bot");
   await page.getByLabel("Last name").fill("Bot");
   await page.getByLabel("Business name").fill("Bot Inc");
-  await page.getByLabel("Type of business").fill("Plumbers");
-  await page.getByLabel("City you're based in").fill("Santee");
+  await page.getByLabel("Type of business").selectOption("Plumbers");
+  await page.getByLabel("City you're based in").selectOption("Santee");
   await page.getByLabel("Phone number").fill("6195550111");
   await page.getByLabel("Email address").fill("bot@example.com");
   await page.getByRole("button", { name: "Get My Free Audit" }).click();
@@ -188,8 +213,6 @@ test("dashboard requires sign-in and manages leads and pricing", async ({ page }
   await form.getByRole("button", { name: "Save changes" }).click();
   await expect(page.locator("summary").filter({ hasText: "Business Website Launch" })).toContainText("$1,597");
   await page.goto("/services");
-  await expect(page.getByText("Starting at $1,597")).toBeVisible();
-  await page.goto("/one-sheet");
   await expect(page.getByText("Starting at $1,597")).toBeVisible();
 
   // Sign out ends the session.
@@ -306,7 +329,7 @@ test("city pages, llms.txt and the sitemap help AI tools find the business", asy
   expect(llms.headers()["content-type"]).toContain("text/plain");
   const text = await llms.text();
   expect(text).toMatch(/^# Reputation Turbo/);
-  expect(text).toContain("- AI Search Visibility (GEO):");
+  expect(text).toContain("- GEO Setup:");
   expect(text).not.toContain("$"); // prices stay hidden until "Show prices" is on
   expect(text).toContain("/areas/el-cajon");
 

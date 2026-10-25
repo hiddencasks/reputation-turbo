@@ -50,3 +50,6 @@ export function PageHeader({ eyebrow, title, intro }: { eyebrow?: string; title:
 export function formatPrice(cents: number): string {
   return `$${(cents / 100).toLocaleString("en-US", { maximumFractionDigits: cents % 100 === 0 ? 0 : 2 })}`;
 }
+
+/** Lift and orange border on hover, shared by every card that should react to the mouse. */
+export const cardHover = "transition duration-200 hover:-translate-y-1 hover:border-orange hover:shadow-lg hover:ring-1 hover:ring-orange";

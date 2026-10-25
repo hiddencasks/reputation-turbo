@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Barlow, Barlow_Condensed } from "next/font/google";
-import { site } from "@/lib/site";
+import { aiAssistantList, site } from "@/lib/site";
 import "./globals.css";
 
 const body = Barlow({ variable: "--font-body", subsets: ["latin"], weight: ["400", "500", "600", "700"] });
@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     template: `%s | ${site.name}`,
   },
   description:
-    "Reputation Turbo helps San Diego County contractors and home service businesses get found on Google and in AI answers like ChatGPT, build trust and win more jobs. Start with a free online audit.",
+    `Reputation Turbo helps San Diego County contractors and home service businesses get found on Google and in AI answers from ${aiAssistantList}, build trust and win more jobs. Start with a free online audit.`,
   openGraph: { siteName: site.name, type: "website", locale: "en_US" },
 };
 

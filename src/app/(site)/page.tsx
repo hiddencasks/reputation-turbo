@@ -1,94 +1,129 @@
+import Image from "next/image";
 import Link from "next/link";
-import { citySlug, site } from "@/lib/site";
+import { aiAssistantList, checkedAssistantList, citySlug, site } from "@/lib/site";
+import { getShowPrices } from "@/lib/offerings";
+import { photos } from "@/lib/photos";
 import { businessJsonLd, faqJsonLd, type Faq } from "@/lib/structured-data";
 import { FaqList } from "@/components/FaqList";
+import { Icon, IconBadge, type IconName } from "@/components/Icon";
 import { JsonLd } from "@/components/JsonLd";
-import { ButtonLink, Container, Eyebrow } from "@/components/ui";
+import { AiChatDemo, AiRow, AuditPreview, LaunchPreview, PlanPreview, StepFlow } from "@/components/marketing";
+import { ButtonLink, Container, Eyebrow, cardHover } from "@/components/ui";
 
-const services: { title: string; body: string; href?: string }[] = [
+// Reads the "Show prices" setting for the pricing question.
+export const dynamic = "force-dynamic";
+
+// What customers check before they call, in the order they usually do it, and how we help with each.
+const services: { check: string; body: string; icon: IconName; href: string; link: string }[] = [
   {
-    title: "Show up in AI answers (GEO)",
-    body: "Customers now ask ChatGPT and Google's AI who to hire. We make sure those assistants know your business and can recommend it.",
+    check: "They ask AI who to hire",
+    body: `We make sure ${aiAssistantList} know your business and recommend it.`,
+    icon: "sparkle",
     href: "/ai-search",
+    link: "How AI search works",
   },
   {
-    title: "Websites with GEO included",
-    body: "Fast, mobile-friendly websites built for Google and AI search: clear services, real photos of your work, and click-to-call on every page.",
+    check: "They look you up on Google",
+    body: "We complete your Google Business Profile and add service pages for every city you work in.",
+    icon: "pin",
+    href: "/services",
+    link: "Google & local SEO",
   },
   {
-    title: "Google Business Profile & local SEO",
-    body: "Complete, accurate Google listings and service pages for the cities you work in, so nearby customers find you before your competitors.",
+    check: "They read your reviews",
+    body: "We set up simple review requests so happy customers leave fresh, specific reviews.",
+    icon: "star",
+    href: "/services",
+    link: "Review systems",
   },
   {
-    title: "Reviews & lead capture",
-    body: "Simple review request systems, contact forms that reach you, and fast responses to new leads, so good work turns into more work.",
+    check: "They visit your website and call",
+    body: "We build a new site or upgrade yours so it's fast, works on phones, and makes calling or booking one tap.",
+    icon: "browser",
+    href: "/services",
+    link: "Website packages",
   },
 ];
 
-const steps = [
-  { n: "1", title: "Free online audit", body: "We review your website, Google listing, social profiles and what AI assistants say about you, and show you what's working and what to fix, with evidence." },
-  { n: "2", title: "A clear plan", body: "You get a straightforward recommendation and price. Your domain, hosting and email costs are listed separately and paid directly by you." },
-  { n: "3", title: "We build and launch", body: "We set it up, you review and approve, and we launch. You own every account when we're done." },
-];
+function faqsFor(showPrices: boolean): Faq[] {
+  return [
+    {
+      q: "What does the free online audit include?",
+      a: `We review your website, Google Business Profile, social profiles and reviews, and ask AI assistants like ${checkedAssistantList} the questions your customers ask to see whether they recommend you. A real person checks every finding before it reaches you. ${site.auditTurnaround ? `It arrives ${site.auditTurnaround} and is` : "It's"} free, with no obligation.`,
+    },
+    {
+      q: "What is GEO, and do I need it?",
+      a: `GEO (generative engine optimization) is making sure AI assistants like ${aiAssistantList} can find your business, describe it correctly and recommend it. More customers now ask AI who to hire, so if you rely on local customers finding you, it's worth checking where you stand. Every website we build includes it.`,
+    },
+    {
+      q: "Do I need a new website?",
+      a: "Not necessarily. We can build you a new website from scratch, or improve the one you already have. If your site works, we can boost your Google profile, reviews and AI visibility without rebuilding it.",
+    },
+    {
+      q: "How much does it cost?",
+      a: showPrices
+        ? "Every package has a clear, upfront price on our Services & Pricing page, and your domain, hosting and email costs are listed separately and paid directly by you. Not sure what you need? Start with the free audit and we'll recommend the right package."
+        : "Every project gets a clear, upfront quote before any work starts. Your domain, hosting and email are paid directly by you. Start with the free audit and we'll recommend the right package.",
+    },
+    {
+      q: "Do I own my website and accounts?",
+      a: "Yes. Your domain, hosting, business email, Google profile and social accounts are in your name, so you stay in control even if you stop working with us.",
+    },
+    {
+      q: "Can you guarantee I'll be number one on Google or in AI answers?",
+      a: "No, and nobody honestly can. We fix the things search engines and AI assistants rely on, show you the evidence, and track whether it's working.",
+    },
+  ];
+}
 
-// Common questions, shown on the page and published as structured data for AI tools to quote.
-const faqs: Faq[] = [
-  {
-    q: "What does the free online audit include?",
-    a: "We review your website, Google Business Profile, social profiles and reviews, and ask AI assistants like ChatGPT the questions your customers ask to see whether they recommend you. A real person checks every finding before it reaches you, and it's free with no obligation.",
-  },
-  {
-    q: "What is GEO, and do I need it?",
-    a: "GEO (generative engine optimization) is making sure AI assistants can find your business, describe it correctly and recommend it. More customers now ask AI who to hire, so if you rely on local customers finding you, it's worth checking where you stand. Every website we build includes it.",
-  },
-  {
-    q: "Do I need a new website?",
-    a: "Not necessarily. If your current site works, we can improve your Google profile, reviews and AI visibility without rebuilding it. If it's outdated or missing, our website packages include GEO from day one.",
-  },
-  {
-    q: "How much does it cost?",
-    a: "Every package has a clear, upfront price, and your domain, hosting and email costs are listed separately and paid directly by you. See Services & Pricing, or start with the free audit and we'll recommend the right package.",
-  },
-  {
-    q: "Do I own my website and accounts?",
-    a: "Yes. Your domain, hosting, business email, Google profile and social accounts are in your name, so you stay in control even if you stop working with us.",
-  },
-  {
-    q: "Can you guarantee I'll be number one on Google or ChatGPT?",
-    a: "No, and nobody honestly can. We fix the things search engines and AI assistants rely on, show you the evidence, and track whether it's working.",
-  },
-];
-
-export default function HomePage() {
+export default async function HomePage() {
+  const faqs = faqsFor(await getShowPrices());
+  const hero = photos.hero;
   return (
     <>
       <JsonLd data={businessJsonLd()} />
       <JsonLd data={faqJsonLd(faqs)} />
       <section className="relative overflow-hidden bg-navy text-white">
         <div aria-hidden="true" className="pointer-events-none absolute -right-24 top-0 h-full w-1/2 -skew-x-[20deg] bg-gradient-to-l from-orange/25 to-transparent" />
-        <Container className="relative py-16 sm:py-24">
-          <Eyebrow>San Diego County · East County</Eyebrow>
-          <h1 className="mt-3 max-w-3xl font-display text-5xl font-extrabold italic uppercase leading-[0.95] sm:text-7xl">
-            Get Found. <span className="text-orange">Build Trust.</span> Grow Your Business.
-          </h1>
-          <p className="mt-6 max-w-2xl text-lg text-white/85 sm:text-xl">
-            Reputation Turbo helps contractors and home service businesses get found on Google and in AI answers like ChatGPT,
-            with websites built for both, complete Google profiles and steady streams of reviews.
-          </p>
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <ButtonLink href="/free-audit" className="text-lg">Get Your Free Online Audit</ButtonLink>
-            <ButtonLink href={site.phoneHref} variant="ghostLight" className="text-lg">Call {site.phoneDisplay}</ButtonLink>
+        <Container className={`relative py-16 sm:py-24 ${hero ? "grid gap-10 lg:grid-cols-[1.25fr_1fr] lg:items-center" : ""}`}>
+          <div>
+            <Eyebrow>San Diego County · East County</Eyebrow>
+            <h1 className="mt-3 max-w-3xl font-display text-5xl font-extrabold italic uppercase leading-[0.95] sm:text-7xl">
+              Get Found. <span className="text-orange">Build Trust.</span> Grow Your Business.
+            </h1>
+            <p className="mt-6 max-w-2xl text-lg text-white/85 sm:text-xl">
+              We help contractors and home service businesses get found on Google and AI search. We&apos;ll build you a new
+              website from scratch or upgrade the one you already have.
+            </p>
+            <div className="mt-6">
+              <AiRow />
+            </div>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <ButtonLink href="/free-audit" className="text-lg">Get Your Free Online Audit</ButtonLink>
+              {site.showPhone ? (
+                <ButtonLink href={site.phoneHref} variant="ghostLight" className="text-lg">Call {site.phoneDisplay}</ButtonLink>
+              ) : (
+                <ButtonLink href={site.bookingUrl} target="_blank" rel="noopener" variant="ghostLight" className="text-lg">
+                  <Icon name="video" className="h-5 w-5" /> {site.bookingLabel}
+                </ButtonLink>
+              )}
+            </div>
           </div>
+          {hero && (
+            <div className="relative">
+              <Image src={hero.src} alt={hero.alt} width={900} height={1100} priority sizes="(min-width: 1024px) 480px, 100vw" className="aspect-[4/3] w-full rounded-2xl object-cover object-[center_30%] shadow-2xl ring-4 ring-white/10 lg:aspect-[4/5]" />
+            </div>
+          )}
         </Container>
       </section>
 
       <section className="bg-navy-50 py-16 sm:py-20">
-        <Container className="grid gap-10 md:grid-cols-2 md:items-center">
+        <Container className="grid gap-12 md:grid-cols-2 md:items-center">
           <div>
             <Eyebrow>The new way customers search</Eyebrow>
             <h2 className="mt-2 font-display text-4xl font-bold text-navy">Customers are asking AI who to hire. Are you in the answer?</h2>
             <p className="mt-4 text-ink">
-              Instead of scrolling through search results, more people now ask ChatGPT or Google&apos;s AI answers for a
+              Instead of scrolling through search results, more people now ask AI assistants like {aiAssistantList} for a
               recommendation and get back just a few names. Making sure your business is one of them is called{" "}
               <strong>GEO</strong>, generative engine optimization. It&apos;s built into every website we make, and available on
               its own if you don&apos;t need a new website.
@@ -98,19 +133,7 @@ export default function HomePage() {
               <ButtonLink href="/free-audit?focus=ai-search" variant="secondary">Check What AI Says About You</ButtonLink>
             </div>
           </div>
-          <div className="rounded-lg bg-white p-6 shadow-sm">
-            <p className="text-sm font-semibold text-muted">A customer asks:</p>
-            <p className="mt-1 rounded-md bg-navy-50 p-3 italic text-ink">&ldquo;Who&apos;s the best plumber in El Cajon?&rdquo;</p>
-            <p className="mt-4 text-sm font-semibold text-muted">The AI answers with a short list. Is your business on it?</p>
-            <ul className="mt-2 space-y-2">
-              {["Business A", "Business B", "Your business?"].map((b, i) => (
-                <li key={b} className={`flex items-center gap-3 rounded-md border p-3 ${i === 2 ? "border-orange font-semibold text-orange" : "border-line text-ink"}`}>
-                  <span className="font-display text-xl font-extrabold italic">{i + 1}</span>
-                  {b}
-                </li>
-              ))}
-            </ul>
-          </div>
+          <AiChatDemo />
         </Container>
       </section>
 
@@ -120,16 +143,14 @@ export default function HomePage() {
           <h2 className="mt-2 font-display text-4xl font-bold text-navy">Everything customers check before they call you</h2>
           <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             {services.map((s) => (
-              <div key={s.title} className="rounded-lg border border-line p-6">
-                <div className="h-1 w-10 -skew-x-[30deg] bg-orange" />
-                <h3 className="mt-4 font-display text-2xl font-bold text-navy">{s.title}</h3>
-                <p className="mt-2 text-muted">{s.body}</p>
-                {s.href && (
-                  <Link href={s.href} className="mt-3 inline-block font-semibold text-navy underline decoration-orange decoration-2 underline-offset-4 hover:text-orange">
-                    Learn about AI search
-                  </Link>
-                )}
-              </div>
+              <Link key={s.check} href={s.href} className={`group flex flex-col rounded-xl border border-line bg-white p-6 ${cardHover}`}>
+                <IconBadge name={s.icon} />
+                <h3 className="mt-4 font-display text-2xl font-bold leading-tight text-navy">{s.check}</h3>
+                <p className="mt-2 flex-1 text-muted">{s.body}</p>
+                <span className="mt-4 inline-flex items-center gap-1 font-semibold text-navy group-hover:text-orange">
+                  {s.link} <Icon name="arrow" className="h-4 w-4" />
+                </span>
+              </Link>
             ))}
           </div>
           <p className="mt-8">
@@ -144,50 +165,86 @@ export default function HomePage() {
         <Container>
           <Eyebrow>How it works</Eyebrow>
           <h2 className="mt-2 font-display text-4xl font-bold text-navy">Three steps, no guesswork</h2>
-          <ol className="mt-10 grid gap-6 md:grid-cols-3">
-            {steps.map((s) => (
-              <li key={s.n} className="rounded-lg bg-white p-6 shadow-sm">
-                <span className="font-display text-5xl font-extrabold italic text-orange">{s.n}</span>
-                <h3 className="mt-2 font-display text-2xl font-bold text-navy">{s.title}</h3>
-                <p className="mt-2 text-muted">{s.body}</p>
-              </li>
-            ))}
-          </ol>
+          <StepFlow
+            steps={[
+              {
+                title: "Free online audit",
+                body: "We review your website, Google listing, social profiles and what AI assistants say about you, and show you what's working and what to fix, with evidence.",
+                icon: "search",
+                badge: "Free",
+                preview: <AuditPreview />,
+              },
+              {
+                title: "A clear plan",
+                body: "You get a straightforward recommendation and price. Your domain, hosting and email costs are listed separately and paid directly by you.",
+                icon: "chat",
+                preview: <PlanPreview />,
+              },
+              {
+                title: "We build and launch",
+                body: "We set it up, you review and approve, and we launch. You own every account when we're done.",
+                icon: "bolt",
+                preview: <LaunchPreview />,
+              },
+            ]}
+          />
+          <div className="mt-10">
+            <ButtonLink href="/free-audit" className="text-lg">Start With a Free Audit</ButtonLink>
+          </div>
         </Container>
       </section>
 
       <section className="py-16 sm:py-20">
-        <Container className="grid gap-12 md:grid-cols-2">
-          <div>
-            <Eyebrow>Who we help</Eyebrow>
-            <h2 className="mt-2 font-display text-4xl font-bold text-navy">Built for local service businesses</h2>
-            <ul className="mt-6 flex flex-wrap gap-2">
-              {site.industries.map((i) => (
-                <li key={i} className="rounded-full bg-navy-50 px-3 py-1.5 text-sm font-medium text-navy">{i}</li>
+        <Container>
+          {photos.trades.length > 0 && (
+            <ul className="mb-12 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+              {photos.trades.map((t) => (
+                <li key={t.label} className="relative overflow-hidden rounded-xl">
+                  <Image src={t.src} alt={t.alt} width={640} height={800} sizes="(min-width: 1024px) 180px, (min-width: 640px) 33vw, 50vw" className="aspect-[4/5] w-full object-cover" />
+                  <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy/90 to-transparent p-3 pt-8 font-display text-lg font-bold text-white">{t.label}</span>
+                </li>
               ))}
             </ul>
-            <p className="mt-6 text-muted">
-              Serving{" "}
-              {site.cities.map((c, i) => (
-                <span key={c}>
-                  <Link href={`/areas/${citySlug(c)}`} className="text-navy underline decoration-orange underline-offset-2 hover:text-orange">{c}</Link>
-                  {i < site.cities.length - 1 ? ", " : ""}
-                </span>
-              ))}{" "}
-              and the rest of San Diego County.
-            </p>
-          </div>
-          <div className="rounded-lg border-l-4 border-orange bg-navy-50 p-8">
-            <h2 className="font-display text-3xl font-bold text-navy">You own everything</h2>
-            <p className="mt-3 text-ink">
-              Your domain, website hosting, business email, Google profile and social accounts are in your name and paid
-              directly by you. We charge only for our work, and we list third-party costs separately so there are no surprises.
-            </p>
-            <h2 className="mt-8 font-display text-3xl font-bold text-navy">Straight talk</h2>
-            <p className="mt-3 text-ink">
-              We&apos;re a new San Diego agency, so you won&apos;t see made-up testimonials or inflated promises here. Our audits
-              stick to what we can verify, and we explain every recommendation in plain English.
-            </p>
+          )}
+          <div className="grid gap-12 md:grid-cols-2">
+            <div>
+              <Eyebrow>Who we help</Eyebrow>
+              <h2 className="mt-2 font-display text-4xl font-bold text-navy">Built for local service businesses</h2>
+              <ul className="mt-6 flex flex-wrap gap-2">
+                {site.industries.map((i) => (
+                  <li key={i} className="rounded-full bg-navy-50 px-3 py-1.5 text-sm font-medium text-navy">{i}</li>
+                ))}
+              </ul>
+              <p className="mt-6 text-muted">
+                Serving{" "}
+                {site.cities.map((c, i) => (
+                  <span key={c}>
+                    <Link href={`/areas/${citySlug(c)}`} className="text-navy underline decoration-orange underline-offset-2 hover:text-orange">{c}</Link>
+                    {i < site.cities.length - 1 ? ", " : ""}
+                  </span>
+                ))}{" "}
+                and the rest of San Diego County.
+              </p>
+            </div>
+            <div className="grid gap-4 rounded-2xl bg-navy p-4 sm:p-6">
+              <div className="rounded-xl bg-white/5 p-6 ring-1 ring-white/10">
+                <IconBadge name="key" tone="dark" />
+                <h2 className="mt-4 font-display text-3xl font-bold text-white">You own everything</h2>
+                <p className="mt-2 text-white/80">
+                  Your domain, website hosting, business email, Google profile and social accounts are in your name and paid
+                  directly by you. We charge only for our work, and we list third-party costs separately so there are no surprises.
+                </p>
+              </div>
+              <div className="rounded-xl bg-white/5 p-6 ring-1 ring-white/10">
+                <IconBadge name="handshake" tone="dark" />
+                <h2 className="mt-4 font-display text-3xl font-bold text-white">Straight talk</h2>
+                <p className="mt-2 text-white/80">
+                  {site.name} was founded by a career entrepreneur and business owner, so we know what it takes to win local
+                  customers. You won&apos;t see made-up testimonials or inflated promises here. Our audits stick to what we can
+                  verify, and we explain every recommendation in plain English.
+                </p>
+              </div>
+            </div>
           </div>
         </Container>
       </section>
