@@ -199,9 +199,19 @@ export default async function HomePage() {
           {photos.trades.length > 0 && (
             <ul className="mb-12 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
               {photos.trades.map((t) => (
-                <li key={t.label} className="relative overflow-hidden rounded-xl">
-                  <Image src={t.src} alt={t.alt} width={640} height={800} sizes="(min-width: 1024px) 180px, (min-width: 640px) 33vw, 50vw" className="aspect-[4/5] w-full object-cover" />
-                  <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy/90 to-transparent p-3 pt-8 font-display text-lg font-bold text-white">{t.label}</span>
+                <li key={t.label}>
+                  <Link
+                    href={`/free-audit?trade=${encodeURIComponent(t.trade)}`}
+                    className="group relative block overflow-hidden rounded-xl transition duration-200 hover:-translate-y-1 hover:shadow-xl hover:ring-2 hover:ring-orange focus-visible:ring-2 focus-visible:ring-orange"
+                  >
+                    <Image src={t.src} alt={t.alt} width={640} height={800} sizes="(min-width: 1024px) 180px, (min-width: 640px) 33vw, 50vw" className="aspect-[4/5] w-full object-cover transition duration-500 group-hover:scale-105" />
+                    <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy/90 to-transparent p-3 pt-8 text-white">
+                      <span className="block font-display text-lg font-bold">{t.label}</span>
+                      <span className="mt-0.5 flex items-center gap-1 text-xs font-semibold text-white/85 group-hover:text-orange">
+                        Get a free audit <Icon name="arrow" className="h-3.5 w-3.5 transition group-hover:translate-x-0.5" />
+                      </span>
+                    </span>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -212,7 +222,14 @@ export default async function HomePage() {
               <h2 className="mt-2 font-display text-4xl font-bold text-navy">Built for local service businesses</h2>
               <ul className="mt-6 flex flex-wrap gap-2">
                 {site.industries.map((i) => (
-                  <li key={i} className="rounded-full bg-navy-50 px-3 py-1.5 text-sm font-medium text-navy">{i}</li>
+                  <li key={i}>
+                    <Link
+                      href={`/free-audit?trade=${encodeURIComponent(i)}`}
+                      className="block rounded-full bg-navy-50 px-3 py-1.5 text-sm font-medium text-navy transition hover:-translate-y-0.5 hover:bg-orange hover:text-white"
+                    >
+                      {i}
+                    </Link>
+                  </li>
                 ))}
               </ul>
               <p className="mt-6 text-muted">

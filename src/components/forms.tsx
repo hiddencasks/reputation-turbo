@@ -1,9 +1,10 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, type FormEvent } from "react";
 import type { FormState } from "@/app/(site)/actions";
 import { submitAuditRequest, submitContact } from "@/app/(site)/actions";
 import { site } from "@/lib/site";
+import { formatPhone } from "@/lib/phone";
 import { Button } from "./ui";
 
 const initial: FormState = { ok: false, errors: {}, values: {} };
@@ -31,6 +32,13 @@ function Label({ htmlFor, label, required }: { htmlFor: string; label: string; r
 
 function ErrorText({ name, error }: { name: string; error?: string }) {
   return error ? <p id={`${name}-error`} className="mt-1 text-sm font-medium text-red-700">{error}</p> : null;
+}
+
+/** Formats a phone number as it's typed, only when the cursor is at the end so mid-number edits don't jump. */
+function formatWhileTyping(e: FormEvent<HTMLInputElement>) {
+  const input = e.currentTarget;
+  if (input.selectionStart !== input.value.length) return;
+  input.value = formatPhone(input.value);
 }
 
 type FieldProps = {
@@ -63,7 +71,11 @@ function Field({ name, label, state, type = "text", autoComplete, required, plac
   return (
     <div>
       <Label htmlFor={name} label={label} required={required} />
-      {textarea ? <textarea {...common} rows={5} /> : <input {...common} type={type} />}
+      {textarea ? (
+        <textarea {...common} rows={5} />
+      ) : (
+        <input {...common} type={type} onInput={type === "tel" ? formatWhileTyping : undefined} />
+      )}
       <ErrorText name={name} error={error} />
     </div>
   );
@@ -77,6 +89,7 @@ function SelectField({
   options,
   required,
   otherPlaceholder,
+  defaultChoice,
 }: {
   name: string;
   label: string;
@@ -84,9 +97,10 @@ function SelectField({
   options: readonly string[];
   required?: boolean;
   otherPlaceholder: string;
+  defaultChoice?: string;
 }) {
   const error = state.errors[name];
-  const [choice, setChoice] = useState(state.values[name] ?? "");
+  const [choice, setChoice] = useState(state.values[name] ?? defaultChoice ?? "");
   const otherName = `${name}Other`;
   return (
     <div>
@@ -177,7 +191,7 @@ function Success({ title, body }: { title: string; body: string }) {
   );
 }
 
-export function AuditForm({ focus, interest }: { focus?: "ai-search"; interest?: string }) {
+export function AuditForm({ focus, interest, trade }: { focus?: "ai-search"; interest?: string; trade?: string }) {
   const [state, action, pending] = useActionState(submitAuditRequest, initial);
   if (state.ok) {
     return (
@@ -206,9 +220,9 @@ export function AuditForm({ focus, interest }: { focus?: "ai-search"; interest?:
         <Field name="firstName" label="First name" state={state} autoComplete="given-name" placeholder="Sam" required />
         <Field name="lastName" label="Last name" state={state} autoComplete="family-name" />
       </div>
-      <Field name="businessName" label="Business name" state={state} autoComplete="organization" placeholder="Sam's Concrete" required />
+      <Field name="businessName" label="Business name" state={state} autoComplete="organization" placeholder="Sam's Concrete, or None" required />
       <div className="grid gap-4 sm:grid-cols-2">
-        <SelectField name="trade" label="Type of business" state={state} options={site.industries} required otherPlaceholder="What kind of business?" />
+        <SelectField name="trade" label="Type of business" state={state} options={site.industries} required otherPlaceholder="What kind of business?" defaultChoice={trade} />
         <SelectField name="city" label="City you're based in" state={state} options={site.cities} required otherPlaceholder="Your city" />
       </div>
       <div className="grid gap-4 sm:grid-cols-2">

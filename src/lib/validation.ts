@@ -1,10 +1,7 @@
 import { z } from "zod";
+import { phoneDigits } from "./phone";
 
-/** Digits only, without a leading US country code. */
-export function phoneDigits(phone: string): string {
-  const digits = phone.replace(/\D/g, "");
-  return digits.length === 11 && digits.startsWith("1") ? digits.slice(1) : digits;
-}
+export { formatPhone, phoneDigits } from "./phone";
 
 /** Adds https:// when missing; returns "" for blank input and null when it is not a usable web address. */
 export function normalizeWebsite(input: string): string | null {
@@ -22,6 +19,9 @@ export function normalizeWebsite(input: string): string | null {
 
 const text = (max: number) => z.string().trim().max(max);
 const required = (label: string, max = 100) => text(max).min(1, `Please enter your ${label}.`);
+
+/** "None", "N/A" and the like mean the visitor has no business name yet, so store a blank. */
+const businessNameOrNone = required("business name, or None", 120).transform((v) => (/^(none|n\/?a|no)\.?$/i.test(v) ? "" : v));
 
 const optionalPhone = z
   .string()
@@ -46,7 +46,7 @@ const website = z
 export const auditRequestSchema = z.object({
   firstName: required("first name", 60),
   lastName: text(60).default(""),
-  businessName: required("business name", 120),
+  businessName: businessNameOrNone,
   trade: required("type of business", 80),
   city: required("city", 80),
   phone: optionalPhone,

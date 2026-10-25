@@ -24,13 +24,15 @@ const checks = [
 export default async function FreeAuditPage({
   searchParams,
 }: {
-  searchParams: Promise<{ focus?: string | string[]; package?: string | string[] }>;
+  searchParams: Promise<{ focus?: string | string[]; package?: string | string[]; trade?: string | string[] }>;
 }) {
   const params = await searchParams;
   // Links from the AI search page and outreach use ?focus=ai-search so those leads are tagged in the dashboard.
   const aiSearch = params.focus === "ai-search";
   // Package buttons add ?package=<slug> so the request notes which package the visitor was looking at.
   const slug = typeof params.package === "string" ? params.package : "";
+  // The trade photos on the homepage add ?trade=<industry> to preselect the type of business.
+  const trade = site.industries.find((i) => i === params.trade);
   const interest = slug ? (await getOfferings({ activeOnly: true })).find((o) => o.slug === slug)?.name : undefined;
   return (
     <>
@@ -67,7 +69,7 @@ export default async function FreeAuditPage({
             )}
           </div>
           <div className="rounded-lg border border-line p-6 shadow-sm sm:p-8">
-            <AuditForm focus={aiSearch ? "ai-search" : undefined} interest={interest} />
+            <AuditForm focus={aiSearch ? "ai-search" : undefined} interest={interest} trade={trade} />
           </div>
         </Container>
       </section>
