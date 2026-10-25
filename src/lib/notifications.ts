@@ -39,9 +39,9 @@ export async function sendContactConfirmation(lead: Lead) {
   });
 }
 
-export async function notifyOwner(lead: Lead, kind: "audit" | "contact", details: string, duplicate: boolean) {
+export async function notifyOwner(lead: Lead, kind: "audit" | "contact" | "quiz", details: string, duplicate: boolean) {
   const to = process.env.OWNER_EMAIL ?? site.email;
-  const label = kind === "audit" ? "Free audit request" : "Contact form message";
+  const label = kind === "audit" ? "Free audit request" : kind === "quiz" ? "GEO quiz lead" : "Contact form message";
   return sendEmail({
     to,
     leadId: lead.id,

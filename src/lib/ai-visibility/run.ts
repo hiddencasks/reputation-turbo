@@ -221,7 +221,7 @@ export async function underDailyLimit(): Promise<boolean> {
   const limit = Number(process.env.AI_CHECK_DAILY_LIMIT) || 40;
   const [row] = await sql<{ n: number }[]>`
     select count(*)::int as n from ai_checks c join leads l on l.id = c.lead_id
-    where c.created_at > now() - interval '24 hours' and l.source in ('audit_form', 'ai_search')`;
+    where c.created_at > now() - interval '24 hours' and l.source in ('audit_form', 'ai_search', 'geo_quiz')`;
   return row.n < limit;
 }
 
