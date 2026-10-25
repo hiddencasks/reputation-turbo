@@ -4,8 +4,8 @@ export const site = {
   tagline: "Get Found. Build Trust. Grow Your Business.",
   url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
   email: "info@reputationturbo.com",
-  phoneDisplay: "(619) 609-4409",
-  phoneHref: "tel:+16196094409",
+  phoneDisplay: "(619) 663-9215",
+  phoneHref: "tel:+16196639215",
   /** Off for now so calls don't interrupt the owner's other job. Turn on to show the phone number everywhere again. */
   showPhone: false,
   /** 15-minute video call booking page (Cal.com, checks Google, Outlook and Apple calendars). */

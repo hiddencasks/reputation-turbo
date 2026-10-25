@@ -5,8 +5,8 @@ import { joinPackages, recommendPackages, splitPackages } from "@/lib/recommend"
 
 describe("phoneDigits", () => {
   it("strips formatting and a leading US country code", () => {
-    expect(phoneDigits("(619) 609-4409")).toBe("6196094409");
-    expect(phoneDigits("+1 619.609.4409")).toBe("6196094409");
+    expect(phoneDigits("(619) 555-0142")).toBe("6195550142");
+    expect(phoneDigits("+1 619.555.0142")).toBe("6195550142");
   });
 });
 
