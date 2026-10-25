@@ -9,7 +9,7 @@ import { AfterLaunch, GeoSteps, OfferingCard, priceText } from "@/components/Pri
 import { FaqList } from "@/components/FaqList";
 import { Icon, IconBadge, type IconName } from "@/components/Icon";
 import { JsonLd } from "@/components/JsonLd";
-import { AiRow } from "@/components/marketing";
+import { AiRow, StepFlow } from "@/components/marketing";
 import { ButtonLink, Container, Eyebrow, cardHover } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
@@ -22,6 +22,13 @@ const picker: { title: string; body: string; icon: IconName; href: string }[] = 
   { title: "I need a new website", body: "A fast, phone-friendly website with GEO built in.", icon: "browser", href: "#business-website-launch" },
   { title: "I like my website, help me get found", body: "Google profile, reviews and listings, no rebuild.", icon: "pin", href: "#starter-online-presence" },
   { title: "Just AI visibility", body: "Get recommended by AI assistants, nothing else.", icon: "sparkle", href: "#geo" },
+];
+
+const onboarding: { title: string; body: string; icon: IconName }[] = [
+  { title: "Kickoff call", icon: "video", body: "A short call to go over your business, your goals and what you want customers to see first." },
+  { title: "Share access", icon: "key", body: "We send simple steps to give us access to your Google profile and other accounts. You keep ownership, and we never ask for your passwords." },
+  { title: "We build, you review", icon: "wrench", body: "We do the work and send it to you for review. Ask for changes, and nothing goes live until you approve it." },
+  { title: "Launch and handoff", icon: "check", body: "We launch, check that everything works, and show you where everything lives. A monthly plan is optional." },
 ];
 
 const thirdParty: { item: string; cost: string; icon: IconName }[] = [
@@ -149,6 +156,14 @@ export default async function ServicesPage() {
             </Link>
             .
           </p>
+        </Container>
+      </section>
+
+      <section id="onboarding" className="scroll-mt-24 py-16">
+        <Container>
+          <Eyebrow>After you say yes</Eyebrow>
+          <h2 className="mt-2 font-display text-4xl font-bold text-navy">What getting started looks like</h2>
+          <StepFlow steps={onboarding} />
         </Container>
       </section>
 
