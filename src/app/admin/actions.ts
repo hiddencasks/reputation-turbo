@@ -14,6 +14,8 @@ import { processCheck, queueCheck, reportUrl, type AiCheck } from "@/lib/ai-visi
 import { providerLabel } from "@/lib/ai-visibility/providers";
 import { verifyPassword } from "@/lib/password";
 import { STAGE_IDS, stageLabel } from "@/lib/stages";
+import { joinPackages } from "@/lib/recommend";
+import { auditScore, type SiteAudit } from "@/lib/audit/checks";
 
 // ---------- Login ----------
 
@@ -49,10 +51,17 @@ export async function logout() {
 
 // ---------- Leads ----------
 
+function auditSummary(audit: SiteAudit): string {
+  const { good, total } = auditScore(audit);
+  const toFix = audit.sections.flatMap((sec) => sec.items).filter((i) => i.status === "fix").map((i) => (/^(Google|Facebook|Instagram|Yelp|Nextdoor)/.test(i.label) ? i.label : i.label.charAt(0).toLowerCase() + i.label.slice(1)));
+  const top = toFix.slice(0, 3).join(", ");
+  return `We reviewed your website, Google profile and online presence: ${good} of ${total} checks look good.${top ? ` The biggest opportunities: ${top}.` : ""}`;
+}
+
 const leadUpdate = z.object({
   stage: z.enum(STAGE_IDS),
   nextFollowUp: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).or(z.literal("")),
-  recommendedPackage: z.string().trim().max(120),
+  recommendedPackage: z.array(z.string().trim().max(80)).max(25),
   trade: z.string().trim().max(80),
   city: z.string().trim().max(80),
   quoteAmount: z.string().trim().regex(/^\d*(\.\d{0,2})?$/, "Enter a dollar amount like 1497 or 1497.50"),
@@ -60,7 +69,7 @@ const leadUpdate = z.object({
 
 export async function updateLead(leadId: string, formData: FormData) {
   await requireOwner();
-  const data = leadUpdate.parse(Object.fromEntries(formData));
+  const data = leadUpdate.parse({ ...Object.fromEntries(formData), recommendedPackage: formData.getAll("recommendedPackage").map(String) });
   const [before] = await sql<{ stage: string }[]>`select stage from leads where id = ${leadId}`;
   if (!before) throw new Error("Lead not found");
 
@@ -69,7 +78,7 @@ export async function updateLead(leadId: string, formData: FormData) {
     update leads set
       stage = ${data.stage},
       next_follow_up = ${data.nextFollowUp || null},
-      recommended_package = ${data.recommendedPackage},
+      recommended_package = ${joinPackages(data.recommendedPackage)},
       trade = ${data.trade},
       city = ${data.city},
       quote_amount_cents = ${quoteCents},
@@ -152,11 +161,12 @@ export async function approveReport(checkId: string, formData: FormData) {
       to: lead.email,
       leadId: lead.id,
       template: "ai_report",
-      subject: `Your free AI visibility report for ${check.business_name}`,
+      subject: check.site_audit ? `Your free online audit for ${check.business_name}` : `Your free AI visibility report for ${check.business_name}`,
       paragraphs: [
         `Hi ${lead.first_name || "there"},`,
+        ...(check.site_audit ? [auditSummary(check.site_audit)] : []),
         `More customers now ask AI assistants who to hire. We asked ${check.providers.map(providerLabel).join(", ")} the questions your customers ask, like "${check.questions[0]}", and recorded what they said.`,
-        `${check.business_name} was named in ${check.mentioned_count} of ${check.answer_count} answers. Your report shows each answer, which businesses were recommended instead, and what we'd fix first:`,
+        `${check.business_name} was named in ${check.mentioned_count} of ${check.answer_count} answers. Your report shows ${check.site_audit ? "every finding, " : ""}each AI answer, which businesses were recommended instead, and what we'd fix first:`,
         link,
         site.showPhone ? `Questions? Just reply to this email or call ${site.phoneDisplay}.` : `Questions? Just reply to this email, or book a 15-minute video call: ${site.bookingUrl}`,
         `The Reputation Turbo team`,

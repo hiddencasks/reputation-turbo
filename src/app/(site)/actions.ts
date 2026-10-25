@@ -6,6 +6,7 @@ import { after } from "next/server";
 import { auditRequestSchema, contactSchema, firstErrors, type FieldErrors } from "@/lib/validation";
 import { isSuppressed, recentSubmissions, upsertLead } from "@/lib/leads";
 import { notifyOwner, sendAuditConfirmation, sendContactConfirmation } from "@/lib/notifications";
+import { site } from "@/lib/site";
 import { aiChecksAvailable, hasRecentCheck, processCheck, queueCheck, underDailyLimit } from "@/lib/ai-visibility/run";
 
 export type FormState = {
@@ -49,6 +50,8 @@ export async function submitAuditRequest(_prev: FormState, formData: FormData): 
   const values = formValues(formData, [
     "firstName", "lastName", "businessName", "trade", "tradeOther", "city", "cityOther", "phone", "email", "website", "noWebsite",
   ]);
+  const helpWith = formData.getAll("helpWith").map(String).filter((h) => (site.helpOptions as readonly string[]).includes(h));
+  values.helpWith = helpWith.join("|");
   if (isBot(formData)) return { ok: true, errors: {}, values: {} };
 
   const input = withOther(values, ["trade", "city"]);
@@ -69,7 +72,7 @@ export async function submitAuditRequest(_prev: FormState, formData: FormData): 
       ...data,
       source: aiSearch ? "ai_search" : "audit_form",
       stage: "audit_in_progress",
-      note: `Requested a free online audit${aiSearch ? " with an AI search check" : ""}${data.website ? ` for ${data.website}` : " (no website given)"}.${interest ? ` Interested in: ${interest}.` : ""}`,
+      note: `Requested a free online audit${aiSearch ? " with an AI search check" : ""}${data.website ? ` for ${data.website}` : " (no website given)"}.${interest ? ` Interested in: ${interest}.` : ""}${helpWith.length ? ` Wants help with: ${helpWith.join(", ")}.` : ""}`,
       meta: { ipHash, website: data.website },
     });
 
@@ -85,7 +88,8 @@ export async function submitAuditRequest(_prev: FormState, formData: FormData): 
       : aiSearch
         ? "Next step: check what AI assistants say about them, run the audit and approve it before it is sent."
         : "Next step: run the audit and approve it before it is sent.";
-    await notifyOwner(lead, "audit", `${data.trade} in ${data.city}.\n\n${nextStep}`, duplicate);
+    const wants = helpWith.length ? `\nWants help with: ${helpWith.join(", ")}.` : "";
+    await notifyOwner(lead, "audit", `${data.trade} in ${data.city}.${wants}\n\n${nextStep}`, duplicate);
     return { ok: true, errors: {}, values: {} };
   } catch (err) {
     console.error("[audit-form]", err);

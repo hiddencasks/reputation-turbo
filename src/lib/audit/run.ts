@@ -1,0 +1,156 @@
+import "server-only";
+import { lookup } from "node:dns/promises";
+import { isIP } from "node:net";
+import { domainStem, normalizeName } from "../ai-visibility/match";
+import {
+  analyzeContact,
+  analyzeGoogle,
+  analyzeSocial,
+  analyzeWebsite,
+  type AuditContext,
+  type AuditSection,
+  type PlaceResult,
+  type SiteAudit,
+} from "./checks";
+
+const TIMEOUT_MS = 12_000;
+const MAX_BYTES = 1_500_000;
+
+/** Blocks addresses inside private networks, so a lead's "website" can't point the server at itself. */
+function isPrivate(ip: string): boolean {
+  if (ip.includes(":")) return ip === "::1" || /^f[cd]/i.test(ip) || /^fe80/i.test(ip) || ip.startsWith("::ffff:") && isPrivate(ip.slice(7));
+  const [a, b] = ip.split(".").map(Number);
+  return a === 10 || a === 127 || a === 0 || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || (a === 100 && b >= 64 && b <= 127);
+}
+
+async function assertPublic(url: URL) {
+  if (!/^https?:$/.test(url.protocol)) throw new Error("Only web addresses can be checked.");
+  const host = url.hostname.replace(/^\[|\]$/g, "");
+  const ips = isIP(host) ? [host] : (await lookup(host, { all: true })).map((r) => r.address);
+  if (ips.length === 0 || ips.some(isPrivate)) throw new Error("That address isn't a public website.");
+}
+
+/** Fetches the home page, following up to 5 redirects and checking each hop is a public address. */
+async function fetchHome(website: string): Promise<{ html: string; finalUrl: string; ms: number }> {
+  let url = new URL(website);
+  const started = Date.now();
+  for (let hop = 0; hop < 6; hop++) {
+    await assertPublic(url);
+    const res = await fetch(url, {
+      redirect: "manual",
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+      headers: { "user-agent": "Mozilla/5.0 (compatible; ReputationTurboAudit/1.0; +https://reputationturbo.com)", accept: "text/html" },
+    });
+    const location = res.headers.get("location");
+    if (res.status >= 300 && res.status < 400 && location) {
+      url = new URL(location, url);
+      continue;
+    }
+    if (!res.ok) throw new Error(`The website answered with an error (${res.status}).`);
+    const reader = res.body?.getReader();
+    let html = "";
+    if (reader) {
+      const decoder = new TextDecoder();
+      for (let size = 0; size < MAX_BYTES; ) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        size += value.length;
+        html += decoder.decode(value, { stream: true });
+      }
+      await reader.cancel().catch(() => {});
+    }
+    return { html, finalUrl: url.toString(), ms: Date.now() - started };
+  }
+  throw new Error("The website redirected too many times.");
+}
+
+/** Looks the business up on Google (Places API). Undefined when no key is set, null when nothing matching is found. */
+async function findPlace(ctx: AuditContext): Promise<PlaceResult | null | undefined> {
+  const key = process.env.GOOGLE_PLACES_API_KEY;
+  if (!key) return undefined;
+  const res = await fetch("https://places.googleapis.com/v1/places:searchText", {
+    method: "POST",
+    signal: AbortSignal.timeout(TIMEOUT_MS),
+    headers: {
+      "content-type": "application/json",
+      "x-goog-api-key": key,
+      "x-goog-fieldmask": "places.displayName,places.rating,places.userRatingCount,places.regularOpeningHours,places.nationalPhoneNumber,places.websiteUri,places.photos,places.googleMapsUri",
+    },
+    body: JSON.stringify({ textQuery: `${ctx.businessName} ${ctx.city} CA`, pageSize: 5 }),
+  });
+  if (!res.ok) throw new Error(`Google lookup failed (${res.status}).`);
+  type Place = {
+    displayName?: { text: string };
+    rating?: number;
+    userRatingCount?: number;
+    regularOpeningHours?: unknown;
+    nationalPhoneNumber?: string;
+    websiteUri?: string;
+    photos?: unknown[];
+    googleMapsUri?: string;
+  };
+  const { places = [] } = (await res.json()) as { places?: Place[] };
+  const want = normalizeName(ctx.businessName);
+  const stem = domainStem(ctx.website);
+  const match = places.find((p) => {
+    const name = normalizeName(p.displayName?.text ?? "");
+    return (name && want && (name.includes(want) || want.includes(name))) || (stem && domainStem(p.websiteUri ?? "") === stem);
+  });
+  if (!match) return null;
+  return {
+    name: match.displayName?.text ?? ctx.businessName,
+    rating: match.rating,
+    reviews: match.userRatingCount,
+    hasHours: Boolean(match.regularOpeningHours),
+    hasPhone: Boolean(match.nationalPhoneNumber),
+    hasWebsite: Boolean(match.websiteUri),
+    photos: match.photos?.length ?? 0,
+    mapsUrl: match.googleMapsUri,
+  };
+}
+
+/** A small sample site for tests (AI_CHECK_FAKE=1), so no real website is fetched. */
+const FAKE_HTML = `<html><head><title>Lopez Concrete | Driveways</title><meta name="viewport" content="width=device-width">
+<script type="application/ld+json">{"@type":"Organization"}</script></head>
+<body><a href="tel:6195550100">Call</a><a href="/contact">Contact</a><a href="https://www.facebook.com/lopezconcrete">Facebook</a></body></html>`;
+
+/** Runs the website, Google, social and contact checks. Each part fails on its own without stopping the rest. */
+export async function runSiteAudit(ctx: AuditContext): Promise<SiteAudit> {
+  const fake = process.env.AI_CHECK_FAKE === "1";
+  const sections: AuditSection[] = [];
+
+  let html: string | null = null;
+  if (!ctx.website) {
+    sections.push({
+      id: "website",
+      title: "Website",
+      items: [{ id: "website", label: "Website", status: "fix", detail: "No website yet. Customers and AI assistants look for one to confirm you're a real, established business." }],
+    });
+  } else {
+    try {
+      const home = fake ? { html: FAKE_HTML, finalUrl: ctx.website, ms: 900 } : await fetchHome(ctx.website);
+      html = home.html;
+      sections.push({ id: "website", title: "Website", items: analyzeWebsite(home.html, home.finalUrl, ctx, home.ms) });
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : String(err);
+      sections.push({
+        id: "website",
+        title: "Website",
+        items: [{ id: "website", label: "Website", status: "fix", detail: `We couldn't load ${ctx.website}. ${reason}` }],
+      });
+    }
+  }
+
+  let place: PlaceResult | null | undefined;
+  try {
+    place = fake ? undefined : await findPlace(ctx);
+  } catch (err) {
+    console.error("[audit] Google lookup failed:", err);
+    place = undefined;
+  }
+  sections.push(analyzeGoogle(place, ctx));
+  sections.push({ id: "social", title: "Social profiles", items: analyzeSocial(html) });
+  const contact = analyzeContact(ctx);
+  if (contact.length) sections.push({ id: "contact", title: "Contact details", items: contact });
+  return { sections };
+}

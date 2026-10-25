@@ -62,7 +62,7 @@ export default async function DashboardPage() {
             )}
             {aiReview.map((c) => (
               <li key={c.lead_id}>
-                Review and send the AI report for{" "}
+                Review and send the audit for{" "}
                 <Link href={`/admin/leads/${c.lead_id}`} className="text-orange underline">{c.business_name}</Link>{" "}
                 (named in {c.mentioned_count} of {c.answer_count})
               </li>
