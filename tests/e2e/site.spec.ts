@@ -149,7 +149,7 @@ test("dropdowns accept a typed answer under Other, and phone is optional", async
 test("bots filling the hidden field are ignored", async ({ page }) => {
   await page.goto("/free-audit");
   await page.evaluate(() => {
-    (document.querySelector('input[name="company_site"]') as HTMLInputElement).value = "spam";
+    (document.querySelector('input[name="rt_hp_v2"]') as HTMLInputElement).value = "spam";
   });
   await page.getByLabel("First name").fill("Bot");
   await page.getByLabel("Last name").fill("Bot");
