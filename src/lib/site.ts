@@ -30,6 +30,16 @@ export const site = {
     "Lemon Grove",
     "Chula Vista",
     "San Diego",
+    "Alpine",
+    "Jamul",
+    "Del Cerro",
+    "National City",
+    "Bonita",
+    "Eastlake",
+    "La Jolla",
+    "Poway",
+    "Escondido",
+    "Oceanside",
   ],
   industries: [
     "Concrete contractors",
@@ -62,7 +72,10 @@ export const aiAssistantList = "ChatGPT, Claude, Gemini, Perplexity and Copilot"
 /** The assistants the free audit's AI check actually asks (see lib/ai-visibility/providers.ts). Keep claims about the check to these. */
 export const checkedAssistantList = "ChatGPT, Gemini, Perplexity and Claude";
 
-export const profiles: string[] = [];
+export const profiles: string[] = [
+  // Google Business Profile
+  "https://share.google/aaY0E5tU0YEKdS4ag",
+];
 
 /** "El Cajon" -> "el-cajon" */
 export function citySlug(city: string): string {
