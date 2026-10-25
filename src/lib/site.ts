@@ -75,6 +75,7 @@ export const checkedAssistantList = "ChatGPT, Gemini, Perplexity and Claude";
 export const profiles: string[] = [
   // Google Business Profile
   "https://share.google/aaY0E5tU0YEKdS4ag",
+  "https://g.page/r/CWqMqUDHehn6ECE",
 ];
 
 /** "El Cajon" -> "el-cajon" */
