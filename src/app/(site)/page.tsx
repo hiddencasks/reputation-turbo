@@ -200,7 +200,7 @@ export default async function HomePage() {
             <ul className="mb-12 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
               {photos.trades.map((t) => (
                 <li key={t.label} className="relative overflow-hidden rounded-xl">
-                  <Image src={t.src} alt={t.alt} width={400} height={500} className="aspect-[4/5] w-full object-cover" />
+                  <Image src={t.src} alt={t.alt} width={640} height={800} sizes="(min-width: 1024px) 180px, (min-width: 640px) 33vw, 50vw" className="aspect-[4/5] w-full object-cover" />
                   <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-navy/90 to-transparent p-3 pt-8 font-display text-lg font-bold text-white">{t.label}</span>
                 </li>
               ))}
