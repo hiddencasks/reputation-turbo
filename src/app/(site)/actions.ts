@@ -26,9 +26,14 @@ function formValues(formData: FormData, keys: string[]): Record<string, string> 
   return Object.fromEntries(keys.map((k) => [k, String(formData.get(k) ?? "")]));
 }
 
-/** Bots fill the hidden "company_site" field; people never see it. */
+/**
+ * Bots fill the hidden "rt_hp_v2" field; people never see it. The name has no meaning on purpose:
+ * browsers can autofill a name like "company_site" for real visitors, which silently dropped their requests.
+ */
 function isBot(formData: FormData): boolean {
-  return String(formData.get("company_site") ?? "") !== "";
+  const bot = String(formData.get("rt_hp_v2") ?? "") !== "";
+  if (bot) console.warn("[forms] hidden spam field was filled; ignoring the submission");
+  return bot;
 }
 
 const genericError = "Something went wrong on our end. Please try again, or email us.";

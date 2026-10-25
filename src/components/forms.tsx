@@ -158,8 +158,8 @@ function Honeypot() {
   return (
     <div aria-hidden="true" className="absolute -left-[9999px] h-0 w-0 overflow-hidden">
       <label>
-        Leave this empty
-        <input type="text" name="company_site" tabIndex={-1} autoComplete="off" defaultValue="" />
+        Do not fill
+        <input type="text" name="rt_hp_v2" tabIndex={-1} autoComplete="off" defaultValue="" />
       </label>
     </div>
   );
