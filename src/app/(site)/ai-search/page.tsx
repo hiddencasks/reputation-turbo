@@ -132,8 +132,12 @@ export default async function AiSearchPage() {
           <div className="mt-10 grid gap-10 lg:grid-cols-[1.6fr_1fr] lg:items-start">
             <div>
               <Reveal as="ol" className="grid gap-8 sm:grid-cols-2">
+                {/* On wider screens the steps run in a loop: 1 → 2 across the top, down to 3, across to 4, back up to 1. */}
                 {steps.map((s, i) => (
-                  <li key={s.title} className="relative rounded-xl border border-line bg-white p-6">
+                  <li
+                    key={s.title}
+                    className={`relative rounded-xl border border-line bg-white p-6 ${i === 2 ? "sm:order-4" : i === 3 ? "sm:order-3" : ""}`}
+                  >
                     <div className="flex items-center gap-3">
                       <span className="flex h-12 w-12 items-center justify-center rounded-full bg-orange text-white shadow">
                         <Icon name={s.icon} className="h-6 w-6" />
@@ -142,18 +146,20 @@ export default async function AiSearchPage() {
                     </div>
                     <h3 className="mt-3 font-display text-xl font-bold text-navy">{s.title}</h3>
                     <p className="mt-1 text-sm text-muted">{s.body}</p>
-                    {i % 2 === 0 && (
-                      <Icon name="arrow" className="absolute -right-7 top-9 hidden h-6 w-6 text-orange sm:block" />
-                    )}
+                    {i === 0 && <Icon name="arrow" className="absolute -right-7 top-9 hidden h-6 w-6 text-orange sm:block" />}
                     {i === 1 && (
                       <Icon name="arrow" className="absolute -bottom-7 left-1/2 hidden h-6 w-6 -translate-x-1/2 rotate-90 text-orange sm:block" />
+                    )}
+                    {i === 2 && <Icon name="arrow" className="absolute -left-7 top-9 hidden h-6 w-6 rotate-180 text-orange sm:block" />}
+                    {i === 3 && (
+                      <Icon name="arrow" className="absolute -top-7 left-1/2 hidden h-6 w-6 -translate-x-1/2 -rotate-90 text-orange sm:block" />
                     )}
                   </li>
                 ))}
               </Reveal>
               <p className="mt-6 flex items-center gap-3 rounded-full border-2 border-dashed border-orange px-5 py-3 text-sm font-semibold text-navy">
                 <Icon name="refresh" className="h-5 w-5 shrink-0 text-orange" />
-                Step 4 leads back to step 1: every month on the monthly plan.
+                After step 4 we start again at step 1, every month on the monthly plan.
               </p>
             </div>
             <figure className="rounded-2xl bg-navy p-6 text-white shadow-xl">

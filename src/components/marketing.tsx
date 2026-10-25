@@ -21,40 +21,78 @@ const examplePros = [
   { name: "Valley Standard Plumbing", rating: "4.7", reviews: 98, why: "Offers 24/7 emergency calls in East County." },
 ];
 
-/** A made-up AI chat that shows how a customer gets three names and nothing else. */
+/** A made-up AI chat on a full-size phone that shows how a customer gets three names and nothing else. */
 export function AiChatDemo() {
   return (
-    <figure className="mx-auto w-full max-w-md" aria-label="Example of an AI assistant recommending three plumbers">
-      <div className="rounded-[2rem] border-[10px] border-navy bg-white shadow-2xl">
-        <div className="flex items-center gap-2 border-b border-line px-4 py-3">
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-navy text-white">
-            <Icon name="sparkle" className="h-4 w-4" />
-          </span>
-          <span className="text-sm font-semibold text-ink">AI assistant</span>
-          <span className="ml-auto text-xs text-muted">Example</span>
-        </div>
-        <div className="space-y-3 p-4">
-          <p className="ml-auto w-fit max-w-[85%] rounded-2xl rounded-br-sm bg-navy px-4 py-2.5 text-white">
-            Who&apos;s the best plumber in El Cajon?
-          </p>
-          <div className="max-w-[95%] rounded-2xl rounded-bl-sm bg-navy-50 px-4 py-3 text-sm text-ink">
-            <p>Here are 3 highly rated plumbers in El Cajon:</p>
-            <ol className="mt-2 space-y-2">
-              {examplePros.map((p, i) => (
-                <li key={p.name}>
-                  <p className="font-semibold">
-                    {i + 1}. {p.name}
-                  </p>
-                  <p className="text-xs text-muted">
-                    <span className="text-orange">★</span> {p.rating} ({p.reviews} reviews). {p.why}
-                  </p>
-                </li>
-              ))}
-            </ol>
+    <figure className="mx-auto w-full max-w-[360px]" aria-label="Example of an AI assistant recommending three plumbers">
+      {/* Phone body: rounded frame, side buttons, screen with a camera notch and home bar. */}
+      <div className="relative">
+        <span aria-hidden="true" className="absolute -left-[3px] top-28 h-8 w-[3px] rounded-l bg-ink/80" />
+        <span aria-hidden="true" className="absolute -left-[3px] top-40 h-14 w-[3px] rounded-l bg-ink/80" />
+        <span aria-hidden="true" className="absolute -left-[3px] top-56 h-14 w-[3px] rounded-l bg-ink/80" />
+        <span aria-hidden="true" className="absolute -right-[3px] top-44 h-20 w-[3px] rounded-r bg-ink/80" />
+        <div className="rounded-[3.25rem] bg-ink p-3 shadow-2xl ring-1 ring-black/40">
+          <div className="relative flex aspect-[9/19.5] flex-col overflow-hidden rounded-[2.6rem] bg-white">
+            {/* Status bar */}
+            <div aria-hidden="true" className="relative flex items-center justify-between px-7 pb-1 pt-3.5 text-[13px] font-semibold text-ink">
+              <span>9:41</span>
+              <span className="absolute left-1/2 top-2.5 h-7 w-24 -translate-x-1/2 rounded-full bg-ink" />
+              <span className="flex items-center gap-1.5">
+                <span className="flex items-end gap-[2px]">
+                  <span className="h-1.5 w-[3px] rounded-sm bg-ink" />
+                  <span className="h-2 w-[3px] rounded-sm bg-ink" />
+                  <span className="h-2.5 w-[3px] rounded-sm bg-ink" />
+                  <span className="h-3 w-[3px] rounded-sm bg-ink" />
+                </span>
+                <span className="relative h-3 w-6 rounded-[4px] border border-ink/70 p-[1.5px]">
+                  <span className="block h-full w-4/5 rounded-[2px] bg-ink" />
+                </span>
+              </span>
+            </div>
+            {/* App header */}
+            <div className="flex items-center gap-2 border-b border-line px-4 py-2.5">
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-navy text-white">
+                <Icon name="sparkle" className="h-4 w-4" />
+              </span>
+              <span className="text-sm font-semibold text-ink">AI assistant</span>
+              <span className="ml-auto rounded-full bg-navy-50 px-2 py-0.5 text-[11px] font-semibold text-muted">Example</span>
+            </div>
+            {/* Conversation */}
+            <div className="flex-1 space-y-3 overflow-hidden bg-navy-50/40 px-3.5 py-4">
+              <p className="ml-auto w-fit max-w-[85%] rounded-2xl rounded-br-sm bg-navy px-3.5 py-2 text-[15px] text-white">
+                Who&apos;s the best plumber in El Cajon?
+              </p>
+              <div className="max-w-[95%] rounded-2xl rounded-bl-sm bg-white px-3.5 py-3 text-[13px] leading-snug text-ink shadow-sm ring-1 ring-line">
+                <p>Here are 3 highly rated plumbers in El Cajon:</p>
+                <ol className="mt-2 space-y-2.5">
+                  {examplePros.map((p, i) => (
+                    <li key={p.name}>
+                      <p className="font-semibold">
+                        {i + 1}. {p.name}
+                      </p>
+                      <p className="text-xs text-muted">
+                        <span className="text-orange">★</span> {p.rating} ({p.reviews} reviews). {p.why}
+                      </p>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            </div>
+            {/* Message box and home bar */}
+            <div aria-hidden="true" className="border-t border-line bg-white px-3.5 pb-2 pt-2.5">
+              <div className="flex items-center gap-2 rounded-full border border-line px-4 py-2 text-[13px] text-muted">
+                Ask anything
+                <span className="ml-auto flex h-7 w-7 items-center justify-center rounded-full bg-navy text-white">
+                  <Icon name="arrow" className="h-3.5 w-3.5 -rotate-90" />
+                </span>
+              </div>
+              <span className="mx-auto mt-3 block h-1 w-28 rounded-full bg-ink" />
+            </div>
           </div>
         </div>
       </div>
-      <figcaption className="mt-5 flex items-start gap-3 rounded-xl border-2 border-orange bg-white p-4 shadow-sm">
+      {/* Pops up over the empty part of the screen, like a notification. */}
+      <figcaption className="relative z-10 -mt-60 mx-[-0.75rem] flex items-start gap-3 rounded-xl border-2 border-orange bg-white p-4 shadow-xl sm:mx-[-1.5rem]">
         <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange text-lg font-bold text-white">!</span>
         <span>
           <strong className="block font-display text-xl text-navy">Your business isn&apos;t on the list.</strong>

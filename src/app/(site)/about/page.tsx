@@ -16,7 +16,7 @@ const principles: { title: string; body: string; icon: IconName }[] = [
   { title: "Honest audits", icon: "shield", body: "We only report what we can verify. No invented rankings, traffic numbers or scare tactics." },
   { title: "You own it", icon: "key", body: "Your domain, hosting, email and profiles stay in your name and on your bill. We work with delegated access, never your passwords." },
   { title: "Plain English", icon: "chat", body: "Every recommendation comes with a reason you can understand and a price you know upfront." },
-  { title: "Built to be fast", icon: "bolt", body: "We use modern tools, including AI, to do the heavy lifting, and a person reviews every deliverable before you see it." },
+  { title: "Built to be fast", icon: "bolt", body: "Modern tools and a simple process mean less waiting on your end, and we personally review every deliverable before you see it." },
 ];
 
 export default function AboutPage() {
