@@ -58,6 +58,7 @@ async function submitAudit(page: import("@playwright/test").Page, email: string,
   await page.getByLabel("Email address").fill(email);
   if (website) await page.getByLabel("Website", { exact: true }).fill(website);
   else await page.getByLabel("No website yet").check();
+  await page.getByLabel("Showing up in AI search").check();
   await page.getByRole("button", { name: "Get My Free Audit" }).click();
   await expect(page.getByRole("heading", { name: "Request received" })).toBeVisible();
 }
@@ -88,6 +89,7 @@ test("audit request creates a lead, sends both emails, and merges duplicates", a
   expect(await db`select count(*)::int as n from ai_checks`).toEqual([{ n: 1 }]);
   const acts = await db`select meta->>'duplicate' as dup from activities where kind = 'audit_form' order by created_at`;
   expect(acts.map((a) => a.dup)).toEqual(["false", "true"]);
+  expect((await db`select body from activities where kind = 'audit_form' order by created_at`)[0].body).toContain("Wants help with: Showing up in AI search.");
   // A blank website on the second request does not erase the first one.
   expect((await db`select website_url from leads`)[0].website_url).toBe("https://lopezconcrete.com");
 });
@@ -189,7 +191,7 @@ test("dashboard requires sign-in and manages leads and pricing", async ({ page }
   await page.getByLabel("Password").fill(ADMIN_PASSWORD);
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page.getByRole("heading", { name: "Dashboard", exact: true })).toBeVisible();
-  await expect(page.getByText("Review and send the AI report for")).toBeVisible();
+  await expect(page.getByText("Review and send the audit for")).toBeVisible();
 
   // Pipeline board shows the lead in its stage; open it.
   await page.goto("/admin/leads");
@@ -269,11 +271,12 @@ test("audit requests run an AI check that the owner approves and emails", async 
   expect((await page.goto(`/report/${check.report_token}`))?.status()).toBe(404);
 
   await signIn(page);
-  await expect(page.getByText("Review and send the AI report for")).toBeVisible();
+  await expect(page.getByText("Review and send the audit for")).toBeVisible();
   await page.getByRole("link", { name: "Lopez Concrete" }).first().click();
-  const ai = page.getByRole("region", { name: "AI visibility" });
+  const ai = page.getByRole("region", { name: "Online audit" });
   await expect(ai.getByText("Named in 1 of 4 AI answers")).toBeVisible();
   await expect(ai.getByText("Canyon Crew (4)")).toBeVisible();
+  await expect(ai.getByText("Website, Google & contact: 7 of 12 look good.")).toBeVisible();
 
   // The owner can preview before approving.
   await page.goto(`/report/${check.report_token}`);
@@ -283,7 +286,7 @@ test("audit requests run an AI check that the owner approves and emails", async 
   await ai.getByRole("button", { name: "Approve & email to Maria" }).click();
   await expect(ai.getByText(/Emailed .*Link to share/)).toBeVisible();
   const [sent] = await db`select to_email, subject from emails where template = 'ai_report'`;
-  expect(sent).toEqual({ to_email: "maria@example.com", subject: "Your free AI visibility report for Lopez Concrete" });
+  expect(sent).toEqual({ to_email: "maria@example.com", subject: "Your free online audit for Lopez Concrete" });
   const [lead] = await db`select stage, next_follow_up from leads`;
   expect(lead.stage).toBe("audit_delivered");
   expect(lead.next_follow_up).not.toBeNull();
@@ -293,6 +296,8 @@ test("audit requests run an AI check that the owner approves and emails", async 
   await page.goto(`/report/${check.report_token}`);
   await expect(page.getByRole("heading", { name: "Lopez Concrete" })).toBeVisible();
   await expect(page.getByText("Who AI recommends instead")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "7 of 12 checks look good" })).toBeVisible();
+  await expect(page.getByText("doesn't mention El Cajon").first()).toBeVisible();
   await expect(page.getByText("Preview: only you can see this")).toHaveCount(0);
   await page.getByText("Didn't name you").first().click();
   await expect(page.getByText("Businesses named: Summit Pro Services, Canyon Crew, Valley Standard Co").first()).toBeVisible();

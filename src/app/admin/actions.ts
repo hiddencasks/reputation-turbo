@@ -15,6 +15,7 @@ import { providerLabel } from "@/lib/ai-visibility/providers";
 import { verifyPassword } from "@/lib/password";
 import { STAGE_IDS, stageLabel } from "@/lib/stages";
 import { joinPackages } from "@/lib/recommend";
+import { auditScore, type SiteAudit } from "@/lib/audit/checks";
 
 // ---------- Login ----------
 
@@ -49,6 +50,13 @@ export async function logout() {
 }
 
 // ---------- Leads ----------
+
+function auditSummary(audit: SiteAudit): string {
+  const { good, total } = auditScore(audit);
+  const toFix = audit.sections.flatMap((sec) => sec.items).filter((i) => i.status === "fix").map((i) => (/^(Google|Facebook|Instagram|Yelp|Nextdoor)/.test(i.label) ? i.label : i.label.charAt(0).toLowerCase() + i.label.slice(1)));
+  const top = toFix.slice(0, 3).join(", ");
+  return `We reviewed your website, Google profile and online presence: ${good} of ${total} checks look good.${top ? ` The biggest opportunities: ${top}.` : ""}`;
+}
 
 const leadUpdate = z.object({
   stage: z.enum(STAGE_IDS),
@@ -153,11 +161,12 @@ export async function approveReport(checkId: string, formData: FormData) {
       to: lead.email,
       leadId: lead.id,
       template: "ai_report",
-      subject: `Your free AI visibility report for ${check.business_name}`,
+      subject: check.site_audit ? `Your free online audit for ${check.business_name}` : `Your free AI visibility report for ${check.business_name}`,
       paragraphs: [
         `Hi ${lead.first_name || "there"},`,
+        ...(check.site_audit ? [auditSummary(check.site_audit)] : []),
         `More customers now ask AI assistants who to hire. We asked ${check.providers.map(providerLabel).join(", ")} the questions your customers ask, like "${check.questions[0]}", and recorded what they said.`,
-        `${check.business_name} was named in ${check.mentioned_count} of ${check.answer_count} answers. Your report shows each answer, which businesses were recommended instead, and what we'd fix first:`,
+        `${check.business_name} was named in ${check.mentioned_count} of ${check.answer_count} answers. Your report shows ${check.site_audit ? "every finding, " : ""}each AI answer, which businesses were recommended instead, and what we'd fix first:`,
         link,
         site.showPhone ? `Questions? Just reply to this email or call ${site.phoneDisplay}.` : `Questions? Just reply to this email, or book a 15-minute video call: ${site.bookingUrl}`,
         `The Reputation Turbo team`,

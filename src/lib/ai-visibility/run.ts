@@ -8,6 +8,8 @@ import { analyzeAnswers } from "./extract";
 import { tallyCompetitors, type Competitor } from "./match";
 import { enabledProviders, providerLabel } from "./providers";
 import { buildQuestions } from "./questions";
+import { runSiteAudit } from "../audit/run";
+import type { SiteAudit } from "../audit/checks";
 
 export type AiCheck = {
   id: string;
@@ -29,6 +31,7 @@ export type AiCheck = {
   created_at: Date;
   started_at: Date | null;
   finished_at: Date | null;
+  site_audit: SiteAudit | null;
 };
 
 export type AiCheckAnswer = {
@@ -94,6 +97,8 @@ export async function processCheck(checkId: string): Promise<void> {
     const providers = enabledProviders().filter((p) => check.providers.includes(p.id));
     if (providers.length === 0) throw new Error("None of this check's AI services are set up anymore.");
 
+    await saveSiteAudit(check);
+
     const jobs = check.questions.flatMap((question) => providers.map((provider) => ({ question, provider })));
     const results: { provider: string; question: string; text: string; sources: string[]; error: string | null }[] = [];
     await pool(jobs, CONCURRENCY, async ({ question, provider }) => {
@@ -152,6 +157,24 @@ export async function processCheck(checkId: string): Promise<void> {
   }
 }
 
+/** Runs the website, Google and contact checks for the full audit. A failure here never stops the AI check. */
+async function saveSiteAudit(check: AiCheck) {
+  try {
+    const [lead] = await sql<{ email: string }[]>`select email from leads where id = ${check.lead_id}`;
+    const audit = await runSiteAudit({
+      businessName: check.business_name,
+      website: check.website_url,
+      email: lead?.email ?? "",
+      city: check.city,
+      trade: check.trade,
+    });
+    await sql`update ai_checks set site_audit = ${sql.json(audit)} where id = ${check.id}`;
+  } catch (err) {
+    // Most likely db/updates/2026-10-full-audit.sql hasn't been run yet.
+    console.error("[audit] website checks not saved:", err);
+  }
+}
+
 /** Records the result on the lead, moves a waiting audit to Audit Ready, and tells the owner a report needs review. */
 async function afterCheck(check: AiCheck) {
   const top = check.competitors.slice(0, 3).map((c) => c.name).join(", ");
@@ -172,7 +195,7 @@ async function afterCheck(check: AiCheck) {
     to: process.env.OWNER_EMAIL ?? site.email,
     leadId: check.lead_id,
     template: "owner_ai_check",
-    subject: `AI report ready to review: ${check.business_name}`,
+    subject: `Audit ready to review: ${check.business_name}`,
     paragraphs: [
       summary,
       `Asked ${check.questions.length} questions in ${check.providers.map(providerLabel).join(", ")}.`,

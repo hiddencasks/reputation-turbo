@@ -109,8 +109,11 @@ create table if not exists ai_checks (
   sent_at timestamptz,
   created_at timestamptz not null default now(),
   started_at timestamptz,
-  finished_at timestamptz
+  finished_at timestamptz,
+  -- Website, Google profile, social and contact findings for the full online audit (src/lib/audit/checks.ts).
+  site_audit jsonb
 );
+alter table ai_checks add column if not exists site_audit jsonb;
 
 create index if not exists ai_checks_lead_idx on ai_checks (lead_id, created_at desc);
 create index if not exists ai_checks_status_idx on ai_checks (status);

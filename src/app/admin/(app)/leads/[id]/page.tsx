@@ -10,6 +10,7 @@ import { AutoRefresh } from "@/components/AutoRefresh";
 import { PackagePicker } from "@/components/PackagePicker";
 import { getOfferings } from "@/lib/offerings";
 import { recommendPackages, splitPackages } from "@/lib/recommend";
+import { auditScore, fixIds } from "@/lib/audit/checks";
 import { addNote, approveReport, runAiCheck, setAiMonitoring, updateLead } from "../../../actions";
 
 // Leaves time for AI visibility checks started from this page.
@@ -49,6 +50,7 @@ export default async function LeadPage({ params, searchParams }: { params: Promi
   const rec = recommendPackages({
     website: lead.website_url,
     aiCheck: lastCheck ? { mentioned: lastCheck.mentioned_count, answers: lastCheck.answer_count } : null,
+    fixes: fixIds(lastCheck?.site_audit ?? null),
   });
   const nameOf = new Map(offerings.map((o) => [o.slug, o.name]));
   const suggestions = rec.suggestions.filter((x) => nameOf.has(x.slug));
@@ -124,7 +126,7 @@ export default async function LeadPage({ params, searchParams }: { params: Promi
       <section aria-labelledby="ai-heading" className="rounded-lg bg-white p-5 shadow-sm">
         {checkRunning && <AutoRefresh />}
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 id="ai-heading" className="font-display text-xl font-bold text-navy">AI visibility</h2>
+          <h2 id="ai-heading" className="font-display text-xl font-bold text-navy">Online audit</h2>
           <div className="flex flex-wrap gap-2">
             <form action={setAiMonitoring.bind(null, lead.id)}>
               <input type="hidden" name="on" value={lead.ai_monitoring ? "false" : "true"} />
@@ -134,7 +136,7 @@ export default async function LeadPage({ params, searchParams }: { params: Promi
             </form>
             <form action={runAiCheck.bind(null, lead.id)}>
               <button disabled={!canCheck || checkRunning} className="rounded-md bg-orange px-3 py-2 text-sm font-semibold text-white disabled:opacity-50">
-                {checkRunning ? "Check running..." : "Run AI check"}
+                {checkRunning ? "Audit running..." : "Run audit"}
               </button>
             </form>
           </div>
@@ -158,6 +160,16 @@ export default async function LeadPage({ params, searchParams }: { params: Promi
                   </p>
                   <p className="text-xs text-muted">{fmt(c.created_at)} · {c.trade} in {c.city} · {c.providers.map(providerLabel).join(", ")}</p>
                 </div>
+                {c.site_audit && (() => {
+                  const sc = auditScore(c.site_audit);
+                  const toFix = c.site_audit.sections.flatMap((x) => x.items).filter((i) => i.status === "fix");
+                  return (
+                    <p className="mt-1 text-sm">
+                      <span className="font-semibold text-navy">Website, Google &amp; contact: {sc.good} of {sc.total} look good.</span>
+                      {toFix.length > 0 && <span className="text-muted"> To fix: {toFix.map((i) => i.label).join(", ")}.</span>}
+                    </p>
+                  );
+                })()}
                 {c.status === "failed" && <p className="mt-1 text-sm text-red-700">{c.error}</p>}
                 {c.status === "done" && (
                   <>

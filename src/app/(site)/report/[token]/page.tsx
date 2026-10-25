@@ -7,10 +7,12 @@ import { getAnswers, getPreviousCheck, type AiCheck } from "@/lib/ai-visibility/
 import { providerLabel } from "@/lib/ai-visibility/providers";
 import { plainText } from "@/lib/ai-visibility/match";
 import { tradePhrase, withArticle } from "@/lib/ai-visibility/questions";
+import { auditScore, type AuditItem } from "@/lib/audit/checks";
+import { Icon } from "@/components/Icon";
 import { ButtonLink, Container, Eyebrow } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
-export const metadata: Metadata = { title: "AI Visibility Report", robots: { index: false, follow: false } };
+export const metadata: Metadata = { title: "Online Audit Report", robots: { index: false, follow: false } };
 
 const fmtDate = (d: Date) => d.toLocaleDateString("en-US", { timeZone: "America/Los_Angeles", dateStyle: "long" });
 
@@ -39,6 +41,12 @@ const fixes = [
   { title: "Get recent, specific reviews", body: "Reviews that mention the job and the city (\"repaired our AC in La Mesa\") are what AI assistants quote when they recommend a business." },
 ];
 
+const badge: Record<AuditItem["status"], { label: string; className: string }> = {
+  good: { label: "Looks good", className: "bg-green-100 text-green-800" },
+  fix: { label: "To fix", className: "bg-orange/10 text-orange-600" },
+  info: { label: "We'll review", className: "bg-navy-50 text-navy" },
+};
+
 export default async function ReportPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   if (!/^[0-9a-f]{36}$/.test(token)) notFound();
@@ -57,6 +65,8 @@ export default async function ReportPage({ params }: { params: Promise<{ token: 
     return { id: p, label: providerLabel(p), named: rows.filter((a) => a.mentioned).length, total: rows.length };
   });
   const maxCompetitor = Math.max(1, ...check.competitors.map((c) => c.count));
+  const audit = check.site_audit;
+  const score = audit ? auditScore(audit) : null;
 
   return (
     <>
@@ -67,18 +77,64 @@ export default async function ReportPage({ params }: { params: Promise<{ token: 
       )}
       <section className="bg-navy text-white">
         <Container className="py-12 sm:py-16">
-          <Eyebrow>AI visibility report</Eyebrow>
+          <Eyebrow>{audit ? "Free online audit" : "AI visibility report"}</Eyebrow>
           <h1 className="mt-2 font-display text-4xl font-extrabold italic uppercase sm:text-5xl">{check.business_name}</h1>
           <p className="mt-3 text-lg text-white/85">
-            What AI assistants say when customers look for {withArticle(tradePhrase(check.trade))} in {check.city}. Checked{" "}
+            {audit ? "How customers, Google and AI assistants see your business" : "What AI assistants say"} when customers look for{" "}
+            {withArticle(tradePhrase(check.trade))} in {check.city}. Checked{" "}
             {fmtDate(check.finished_at ?? check.created_at)}.
           </p>
         </Container>
       </section>
 
-      <section className="py-12">
+      {audit && score && (
+        <section className="py-12">
+          <Container>
+            <Eyebrow>At a glance</Eyebrow>
+            <h2 className="mt-2 font-display text-3xl font-bold text-navy">
+              {score.good} of {score.total} checks look good
+            </h2>
+            <p className="mt-2 max-w-2xl text-muted">
+              Plus AI visibility below: named in {check.mentioned_count} of {check.answer_count} AI answers. Everything marked
+              &ldquo;To fix&rdquo; is something we can help with.
+            </p>
+            <div className="mt-8 grid gap-6 md:grid-cols-2 md:items-start">
+              {audit.sections.map((section) => (
+                <div key={section.id} className="rounded-lg border border-line p-6">
+                  <h3 className="font-display text-2xl font-bold text-navy">{section.title}</h3>
+                  <ul className="mt-4 space-y-4">
+                    {section.items.map((item) => (
+                      <li key={item.id} className="flex gap-3">
+                        <Icon
+                          name={item.status === "good" ? "check" : item.status === "fix" ? "arrow" : "search"}
+                          className={`mt-0.5 h-5 w-5 shrink-0 ${item.status === "good" ? "text-green-700" : item.status === "fix" ? "text-orange" : "text-navy"}`}
+                        />
+                        <div>
+                          <p className="flex flex-wrap items-center gap-2 font-semibold text-navy">
+                            {item.label}
+                            <span className={`rounded px-1.5 text-[0.7rem] font-bold uppercase ${badge[item.status].className}`}>{badge[item.status].label}</span>
+                          </p>
+                          <p className="text-sm text-muted">{item.detail}</p>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </Container>
+        </section>
+      )}
+
+      <section className={audit ? "bg-navy-50 py-12" : "py-12"}>
+        {audit && (
+          <Container>
+            <Eyebrow>AI visibility</Eyebrow>
+            <h2 className="mb-8 mt-2 font-display text-3xl font-bold text-navy">What AI assistants say about you</h2>
+          </Container>
+        )}
         <Container className="grid gap-8 lg:grid-cols-[1fr_1.4fr] lg:items-start">
-          <div className="rounded-lg border border-line p-6 text-center">
+          <div className="rounded-lg border border-line bg-white p-6 text-center">
             <p className="text-sm font-semibold uppercase tracking-wide text-muted">Named in</p>
             <p className="font-display text-7xl font-extrabold text-navy">
               {check.mentioned_count}<span className="text-4xl text-muted"> / {check.answer_count}</span>
@@ -124,13 +180,13 @@ export default async function ReportPage({ params }: { params: Promise<{ token: 
         </Container>
       </section>
 
-      <section className="bg-navy-50 py-12">
+      <section className={audit ? "py-12" : "bg-navy-50 py-12"}>
         <Container>
           <Eyebrow>The questions we asked</Eyebrow>
           <h2 className="mt-2 font-display text-3xl font-bold text-navy">Every answer, word for word</h2>
           <div className="mt-6 space-y-6">
             {check.questions.map((q) => (
-              <div key={q} className="rounded-lg bg-white p-5">
+              <div key={q} className={`rounded-lg p-5 ${audit ? "border border-line" : "bg-white"}`}>
                 <h3 className="font-display text-xl font-bold text-navy">&ldquo;{q}&rdquo;</h3>
                 <ul className="mt-3 space-y-2">
                   {answered.filter((a) => a.question === q).map((a) => (

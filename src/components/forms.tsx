@@ -153,6 +153,26 @@ function WebsiteField({ state }: { state: FormState }) {
   );
 }
 
+/** Optional checkboxes; the answers steer what the audit recommends. */
+function HelpWith({ state }: { state: FormState }) {
+  const chosen = (state.values.helpWith ?? "").split("|");
+  return (
+    <fieldset>
+      <legend className="block text-sm font-semibold text-ink">
+        What do you want help with? <span className="font-normal text-muted">(optional)</span>
+      </legend>
+      <div className="mt-2 grid gap-2 sm:grid-cols-2">
+        {site.helpOptions.map((o) => (
+          <label key={o} className="flex items-center gap-2 text-sm text-ink">
+            <input type="checkbox" name="helpWith" value={o} defaultChecked={chosen.includes(o)} className="h-4 w-4 accent-orange" />
+            {o}
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  );
+}
+
 /** Hidden from people; bots that fill it are ignored. */
 function Honeypot() {
   return (
@@ -230,6 +250,7 @@ export function AuditForm({ focus, interest, trade }: { focus?: "ai-search"; int
         <Field name="phone" label="Phone number" type="tel" state={state} autoComplete="tel" placeholder="(619) 555-0123" />
       </div>
       <WebsiteField state={state} />
+      <HelpWith state={state} />
       <FormError state={state} />
       <Button type="submit" disabled={pending} className="w-full sm:w-auto">
         {pending ? "Sending..." : "Get My Free Audit"}

@@ -103,6 +103,11 @@ describe("package suggestions", () => {
       "starter-online-presence", "ai-search-setup", "ai-visibility-plan",
     ]);
   });
+  it("uses audit findings", () => {
+    const many = new Set(["mobile", "speed", "call", "title", "reviews"]);
+    expect(slugs(recommendPackages({ website: "https://a.com", aiCheck: null, fixes: many }))).toEqual(["business-website-launch", "review-automation"]);
+    expect(slugs(recommendPackages({ website: "https://a.com", aiCheck: null, fixes: new Set(["title", "faq", "schema"]) }))).toEqual(["starter-online-presence"]);
+  });
   it("round-trips the stored list", () => {
     expect(splitPackages(joinPackages(["GEO Setup", "Care"]))).toEqual(["GEO Setup", "Care"]);
     expect(splitPackages("")).toEqual([]);

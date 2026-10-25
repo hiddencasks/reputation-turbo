@@ -47,6 +47,8 @@ export const site = {
     "Pressure washing",
     "Pool services",
   ],
+  /** Optional "What do you want help with?" choices on the audit form. */
+  helpOptions: ["A new or better website", "Google profile and reviews", "Showing up in AI search", "Social media", "Not sure yet"],
 } as const;
 
 /**
