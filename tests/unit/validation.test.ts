@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { auditRequestSchema, contactSchema, normalizeWebsite, phoneDigits } from "@/lib/validation";
+import { auditRequestSchema, contactSchema, formatPhone, normalizeWebsite, phoneDigits } from "@/lib/validation";
 import { hashPassword, verifyPassword } from "@/lib/password";
 
 describe("phoneDigits", () => {
@@ -69,5 +69,23 @@ describe("password hashing", () => {
     expect(await verifyPassword("correct horse battery", hash)).toBe(true);
     expect(await verifyPassword("wrong", hash)).toBe(false);
     expect(await verifyPassword("x", "garbage")).toBe(false);
+  });
+});
+
+describe("phone and business name", () => {
+  it("formats phone numbers while typing", () => {
+    expect(formatPhone("619")).toBe("(619");
+    expect(formatPhone("6195")).toBe("(619) 5");
+    expect(formatPhone("6195550123")).toBe("(619) 555-0123");
+    expect(formatPhone("(619) 555-0123")).toBe("(619) 555-0123");
+    expect(formatPhone("+44 20 7946 0958")).toBe("+44 20 7946 0958");
+  });
+
+  it("stores None as no business name", () => {
+    const base = { firstName: "Sam", trade: "Concrete contractors", city: "El Cajon", email: "sam@example.com" };
+    expect(auditRequestSchema.parse({ ...base, businessName: "None" }).businessName).toBe("");
+    expect(auditRequestSchema.parse({ ...base, businessName: "n/a" }).businessName).toBe("");
+    expect(auditRequestSchema.parse({ ...base, businessName: "Sam's Concrete" }).businessName).toBe("Sam's Concrete");
+    expect(auditRequestSchema.safeParse({ ...base, businessName: "" }).success).toBe(false);
   });
 });

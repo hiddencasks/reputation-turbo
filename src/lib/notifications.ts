@@ -8,14 +8,15 @@ function adminLink(lead: Lead): string {
 }
 
 export async function sendAuditConfirmation(lead: Lead) {
+  const business = lead.business_name || "your business";
   return sendEmail({
     to: lead.email,
     leadId: lead.id,
     template: "audit_confirmation",
-    subject: `We received your free online audit request for ${lead.business_name}`,
+    subject: `We received your free online audit request for ${business}`,
     paragraphs: [
       `Hi ${lead.first_name},`,
-      `Thanks for requesting a free online presence audit for ${lead.business_name}. We'll review your website, Google listing and other public information, and a real person checks every finding before it reaches you.`,
+      `Thanks for requesting a free online presence audit for ${business}. We'll review your website, Google listing and other public information, and a real person checks every finding before it reaches you.`,
       `We'll email your audit ${site.auditTurnaround || "as soon as it's ready"}. If anything is unclear, such as which business listing is yours, we'll reach out first.`,
       site.showPhone ? `Questions in the meantime? Just reply to this email or call ${site.phoneDisplay}.` : "Questions in the meantime? Just reply to this email.",
       `The Reputation Turbo team`,

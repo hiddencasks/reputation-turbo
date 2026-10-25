@@ -43,7 +43,7 @@ test("audit form shows errors for missing and invalid fields", async ({ page }) 
   await expect(page.getByText("Please enter your type of business.")).toBeVisible();
   await expect(page.getByText("Please enter a 10-digit phone number, or leave it blank.")).toBeVisible();
   await expect(page.getByText("Please enter a valid email address.")).toBeVisible();
-  await expect(page.getByLabel("Phone number")).toHaveValue("123");
+  await expect(page.getByLabel("Phone number")).toHaveValue("(123");
   expect((await db`select count(*)::int as n from leads`)[0].n).toBe(0);
 });
 
@@ -102,6 +102,18 @@ test("audit requests from AI search links are tagged in the dashboard", async ({
   expect(["audit_in_progress", "audit_ready"]).toContain(lead.stage);
   const [act] = await db`select body from activities where kind = 'ai_search'`;
   expect(act.body).toContain("AI search check");
+});
+
+test("trade photos open the audit with the trade picked, and phone numbers format as typed", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("link", { name: /Roofing/ }).click();
+  await expect(page).toHaveURL(/\/free-audit\?trade=Roofers/);
+  await expect(page.getByLabel("Type of business")).toHaveValue("Roofers");
+  await page.getByLabel("Phone number").pressSequentially("6195550123");
+  await expect(page.getByLabel("Phone number")).toHaveValue("(619) 555-0123");
+  await page.goto("/");
+  await page.getByRole("link", { name: "Painters", exact: true }).click();
+  await expect(page.getByLabel("Type of business")).toHaveValue("Painters");
 });
 
 test("hidden pages redirect to the homepage", async ({ page }) => {
