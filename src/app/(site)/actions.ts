@@ -4,9 +4,11 @@ import { createHash } from "node:crypto";
 import { headers } from "next/headers";
 import { after } from "next/server";
 import { auditRequestSchema, contactSchema, firstErrors, type FieldErrors } from "@/lib/validation";
-import { isSuppressed, recentSubmissions, upsertLead } from "@/lib/leads";
+import { isSuppressed, recentSubmissions, upsertLead, type Lead } from "@/lib/leads";
 import { notifyOwner, sendAuditConfirmation, sendContactConfirmation } from "@/lib/notifications";
 import { site } from "@/lib/site";
+import { sql } from "@/lib/db";
+import { QUIZ, quizScore, quizSummary } from "@/lib/quiz";
 import { aiChecksAvailable, hasRecentCheck, processCheck, queueCheck, underDailyLimit } from "@/lib/ai-visibility/run";
 
 export type FormState = {
@@ -46,6 +48,26 @@ function withOther(values: Record<string, string>, keys: string[]): Record<strin
   return out;
 }
 
+/**
+ * Everything after an audit request is saved: the visitor's confirmation, the AI and website
+ * checks, and the owner's email. Used by the audit form and the quiz's "send my audit" button.
+ */
+async function startAudit(lead: Lead, duplicate: boolean, details: string, aiSearch = false) {
+  if (!(await isSuppressed(lead.email))) await sendAuditConfirmation(lead);
+  // Start the AI visibility check right away; it runs after the visitor sees the confirmation.
+  // A repeat request within a day reuses the check already started.
+  const check =
+    aiChecksAvailable() && !(await hasRecentCheck(lead.id, 24)) && (await underDailyLimit()) ? await queueCheck(lead.id) : null;
+  if (check && "id" in check) after(() => processCheck(check.id));
+
+  const nextStep = check && "id" in check
+    ? "The AI visibility check is running. You'll get an email when its report is ready to review. Then run the rest of the audit and approve both before they are sent."
+    : aiSearch
+      ? "Next step: check what AI assistants say about them, run the audit and approve it before it is sent."
+      : "Next step: run the audit and approve it before it is sent.";
+  await notifyOwner(lead, "audit", `${details}\n\n${nextStep}`, duplicate);
+}
+
 export async function submitAuditRequest(_prev: FormState, formData: FormData): Promise<FormState> {
   const values = formValues(formData, [
     "firstName", "lastName", "businessName", "trade", "tradeOther", "city", "cityOther", "phone", "email", "website", "noWebsite",
@@ -76,20 +98,8 @@ export async function submitAuditRequest(_prev: FormState, formData: FormData): 
       meta: { ipHash, website: data.website },
     });
 
-    if (!(await isSuppressed(lead.email))) await sendAuditConfirmation(lead);
-    // Start the AI visibility check right away; it runs after the visitor sees the confirmation.
-    // A repeat request within a day reuses the check already started.
-    const check =
-      aiChecksAvailable() && !(await hasRecentCheck(lead.id, 24)) && (await underDailyLimit()) ? await queueCheck(lead.id) : null;
-    if (check && "id" in check) after(() => processCheck(check.id));
-
-    const nextStep = check && "id" in check
-      ? "The AI visibility check is running. You'll get an email when its report is ready to review. Then run the rest of the audit and approve both before they are sent."
-      : aiSearch
-        ? "Next step: check what AI assistants say about them, run the audit and approve it before it is sent."
-        : "Next step: run the audit and approve it before it is sent.";
     const wants = helpWith.length ? `\nWants help with: ${helpWith.join(", ")}.` : "";
-    await notifyOwner(lead, "audit", `${data.trade} in ${data.city}.${wants}\n\n${nextStep}`, duplicate);
+    await startAudit(lead, duplicate, `${data.trade} in ${data.city}.${wants}`, aiSearch);
     return { ok: true, errors: {}, values: {} };
   } catch (err) {
     console.error("[audit-form]", err);
@@ -125,5 +135,67 @@ export async function submitContact(_prev: FormState, formData: FormData): Promi
   } catch (err) {
     console.error("[contact-form]", err);
     return { ok: false, errors: { form: genericError }, values };
+  }
+}
+
+// ---------- GEO quiz ----------
+
+export type QuizState = FormState & { score?: number; leadId?: string; answers?: Record<string, string> };
+
+/** Saves a quiz taker as a lead with their answers, then shows them their score. */
+export async function submitQuiz(_prev: QuizState, formData: FormData): Promise<QuizState> {
+  const values = formValues(formData, ["firstName", "businessName", "trade", "tradeOther", "city", "cityOther", "email", "website", "noWebsite"]);
+  const answers = Object.fromEntries(
+    QUIZ.map((q) => [q.id, ["yes", "no", "unsure"].includes(String(formData.get(`q_${q.id}`))) ? String(formData.get(`q_${q.id}`)) : "unsure"]),
+  );
+  if (isBot(formData)) return { ok: true, errors: {}, values: {}, score: quizScore(answers), answers };
+
+  const input = withOther(values, ["trade", "city"]);
+  if (input.noWebsite === "on") input.website = "";
+  const parsed = auditRequestSchema.safeParse({ ...input, lastName: "", phone: "" });
+  if (!parsed.success) return { ok: false, errors: firstErrors(parsed.error), values, answers };
+
+  try {
+    const ipHash = await visitorHash();
+    if ((await recentSubmissions(ipHash, 10)) >= MAX_SUBMISSIONS_PER_10_MIN) {
+      return { ok: false, errors: { form: "Too many requests from this connection. Please try again later." }, values, answers };
+    }
+    const summary = quizSummary(answers);
+    const { lead, duplicate } = await upsertLead({
+      ...parsed.data,
+      source: "geo_quiz",
+      stage: "new_prospect",
+      note: summary,
+      meta: { ipHash, quiz: answers, score: quizScore(answers) },
+    });
+    await notifyOwner(lead, "quiz", `${parsed.data.trade} in ${parsed.data.city}.\n${summary}\n\nThey haven't asked for the audit yet. If they click "Send my free audit", you'll get a second email.`, duplicate);
+    return { ok: true, errors: {}, values: {}, score: quizScore(answers), leadId: lead.id, answers };
+  } catch (err) {
+    console.error("[geo-quiz]", err);
+    return { ok: false, errors: { form: genericError }, values, answers };
+  }
+}
+
+/** The quiz results page's "Send my free audit" button. Only works for a quiz taken in the last day. */
+export async function requestQuizAudit(leadId: string): Promise<{ ok: boolean; error?: string }> {
+  if (!/^[0-9a-f-]{36}$/.test(leadId)) return { ok: false, error: genericError };
+  try {
+    const [lead] = await sql<Lead[]>`
+      select l.* from leads l
+      where l.id = ${leadId} and exists (
+        select 1 from activities a where a.lead_id = l.id and a.kind = 'geo_quiz' and a.created_at > now() - interval '1 day'
+      )`;
+    if (!lead) return { ok: false, error: "This quiz has expired. Please request your audit from the free audit page." };
+    if (lead.stage === "new_prospect" || lead.stage === "lost") {
+      await sql`update leads set stage = 'audit_in_progress', updated_at = now() where id = ${lead.id}`;
+    }
+    await sql`
+      insert into activities (lead_id, kind, body)
+      values (${lead.id}, 'audit_form', ${`Requested a free online audit from the GEO quiz${lead.website_url ? ` for ${lead.website_url}` : " (no website given)"}.`})`;
+    await startAudit({ ...lead, stage: "audit_in_progress" }, true, `${lead.trade} in ${lead.city}.\nCame from the GEO quiz.`);
+    return { ok: true };
+  } catch (err) {
+    console.error("[geo-quiz audit]", err);
+    return { ok: false, error: genericError };
   }
 }

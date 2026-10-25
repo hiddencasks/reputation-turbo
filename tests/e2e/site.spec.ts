@@ -122,6 +122,45 @@ test("trade photos open the audit with the trade picked, and phone numbers forma
   await expect(page.getByLabel("Type of business (other)")).toBeVisible();
 });
 
+test("the GEO quiz saves the answers as a lead and sends the free audit on request", async ({ page }) => {
+  await page.goto("/geo-quiz");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("Is AI recommending you");
+  // Yes, No, then Not sure for the rest; Back changes an answer.
+  await page.getByRole("button", { name: "Yes", exact: true }).click();
+  await page.getByRole("button", { name: "No", exact: true }).click();
+  await page.getByRole("button", { name: "Back" }).click();
+  await page.getByRole("button", { name: "Yes", exact: true }).click();
+  for (let i = 0; i < 5; i++) await page.getByRole("button", { name: "Not sure" }).click();
+
+  const form = page.getByRole("form", { name: "See my GEO score" });
+  await form.getByRole("button", { name: "See My Score" }).click();
+  await expect(form.getByText("Please enter your first name.")).toBeVisible();
+  await form.getByLabel("First name").fill("Maria");
+  await form.getByLabel("Email address").fill("quiz@example.com");
+  await form.getByLabel("Business name").fill("Lopez Concrete");
+  await form.locator("#trade").selectOption("Concrete contractors");
+  await form.locator("#city").selectOption("El Cajon");
+  await form.getByLabel("Website", { exact: true }).fill("lopezconcrete.com");
+  await form.getByRole("button", { name: "See My Score" }).click();
+
+  await expect(page.getByText("2 / 7")).toBeVisible();
+  const leads = await db`select * from leads`;
+  expect(leads).toHaveLength(1);
+  expect(leads[0]).toMatchObject({ source: "geo_quiz", stage: "new_prospect", email: "quiz@example.com" });
+  const act = await db`select body, meta from activities where kind = 'geo_quiz'`;
+  expect(act[0].body).toContain("2 of 7");
+  expect(act[0].meta.quiz).toMatchObject({ named: "yes", competitors: "yes", reviews: "unsure" });
+  expect((await db`select template from emails`).map((e) => e.template)).toEqual(["owner_quiz"]);
+  expect(await db`select count(*)::int as n from ai_checks`).toEqual([{ n: 0 }]);
+
+  await page.getByRole("button", { name: "Send My Free Audit" }).click();
+  await expect(page.getByText("Your audit is on its way")).toBeVisible();
+  expect((await db`select stage from leads`)[0].stage).toMatch(/audit_in_progress|audit_ready/);
+  expect(await db`select count(*)::int as n from ai_checks`).toEqual([{ n: 1 }]);
+  const templates = (await db`select template from emails where template <> 'owner_ai_check' order by template`).map((e) => e.template);
+  expect(templates).toEqual(["audit_confirmation", "owner_audit", "owner_quiz"]);
+});
+
 test("hidden pages redirect to the homepage", async ({ page }) => {
   for (const path of ["/our-work", "/one-sheet"]) {
     await page.goto(path);

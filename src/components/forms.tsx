@@ -2,7 +2,8 @@
 
 import { useActionState, useState, type FormEvent } from "react";
 import type { FormState } from "@/app/(site)/actions";
-import { submitAuditRequest, submitContact } from "@/app/(site)/actions";
+import { requestQuizAudit, submitAuditRequest, submitContact, submitQuiz, type QuizState } from "@/app/(site)/actions";
+import { QUIZ, quizBand, type QuizAnswer } from "@/lib/quiz";
 import { site } from "@/lib/site";
 import { formatPhone } from "@/lib/phone";
 import { Button } from "./ui";
@@ -295,5 +296,150 @@ export function ContactForm({ message }: { message?: string }) {
         {pending ? "Sending..." : "Send Message"}
       </Button>
     </form>
+  );
+}
+
+const answerLabels: { value: QuizAnswer; label: string }[] = [
+  { value: "yes", label: "Yes" },
+  { value: "no", label: "No" },
+  { value: "unsure", label: "Not sure" },
+];
+
+/** The GEO quiz: one question at a time, then contact details, then the score and a one-click free audit. */
+export function GeoQuiz() {
+  const [state, action, pending] = useActionState(submitQuiz, initial as QuizState);
+  const [answers, setAnswers] = useState<Record<string, QuizAnswer>>({});
+  const [step, setStep] = useState(0);
+
+  if (state.ok && state.score !== undefined) return <QuizResults state={state} />;
+
+  const done = step >= QUIZ.length;
+  const q = QUIZ[Math.min(step, QUIZ.length - 1)];
+  const pick = (a: QuizAnswer) => {
+    setAnswers((prev) => ({ ...prev, [q.id]: a }));
+    setStep((n) => n + 1);
+  };
+
+  return (
+    <div>
+      <div className="flex items-center justify-between text-sm font-semibold text-muted">
+        <span>{done ? "Last step" : `Question ${step + 1} of ${QUIZ.length}`}</span>
+        {step > 0 && (
+          <button type="button" onClick={() => setStep((n) => n - 1)} className="text-navy underline underline-offset-4 hover:text-orange">
+            Back
+          </button>
+        )}
+      </div>
+      <div className="mt-2 h-2 rounded bg-navy-50" aria-hidden="true">
+        <div className="h-2 rounded bg-orange transition-all" style={{ width: `${(Math.min(step, QUIZ.length) / QUIZ.length) * 100}%` }} />
+      </div>
+
+      {!done ? (
+        <fieldset key={q.id} className="mt-6">
+          <legend className="font-display text-2xl font-bold leading-snug text-navy sm:text-3xl">{q.question}</legend>
+          <div className="mt-6 grid gap-3 sm:grid-cols-3">
+            {answerLabels.map((a) => (
+              <button
+                key={a.value}
+                type="button"
+                onClick={() => pick(a.value)}
+                aria-pressed={answers[q.id] === a.value}
+                className={`rounded-lg border-2 px-4 py-3 text-lg font-semibold transition hover:border-orange hover:text-orange ${
+                  answers[q.id] === a.value ? "border-orange bg-orange/5 text-orange" : "border-line text-navy"
+                }`}
+              >
+                {a.label}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+      ) : (
+        <form action={action} noValidate className="relative mt-6 space-y-4" aria-label="See my GEO score">
+          <Honeypot />
+          {QUIZ.map((x) => <input key={x.id} type="hidden" name={`q_${x.id}`} value={answers[x.id] ?? "unsure"} />)}
+          <h2 className="font-display text-2xl font-bold text-navy sm:text-3xl">Last step: see your score</h2>
+          <p className="text-muted">Your score shows up right away. If you want the free audit after, we&apos;ll know where to send it.</p>
+          <RequiredNote />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field name="firstName" label="First name" state={state} autoComplete="given-name" placeholder="Sam" required />
+            <Field name="email" label="Email address" type="email" state={state} autoComplete="email" placeholder="you@email.com" required />
+          </div>
+          <Field name="businessName" label="Business name" state={state} autoComplete="organization" placeholder="Sam's Concrete, or None" required />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <SelectField name="trade" label="Type of business" state={state} options={site.industries} required otherPlaceholder="What kind of business?" />
+            <SelectField name="city" label="City you're based in" state={state} options={site.cities} required otherPlaceholder="Your city" />
+          </div>
+          <WebsiteField state={state} />
+          <FormError state={state} />
+          <Button type="submit" disabled={pending} className="w-full sm:w-auto">
+            {pending ? "Scoring..." : "See My Score"}
+          </Button>
+          <p className="text-xs text-muted">
+            We&apos;ll use your details only to follow up about your score and audit. See our{" "}
+            <a href="/privacy" className="underline">privacy policy</a>.
+          </p>
+        </form>
+      )}
+    </div>
+  );
+}
+
+function QuizResults({ state }: { state: QuizState }) {
+  const score = state.score ?? 0;
+  const band = quizBand(score);
+  const gaps = QUIZ.filter((q) => state.answers?.[q.id] !== "yes");
+  const [audit, setAudit] = useState<"idle" | "sending" | "sent" | string>("idle");
+
+  const sendAudit = async () => {
+    if (!state.leadId) return;
+    setAudit("sending");
+    const res = await requestQuizAudit(state.leadId);
+    setAudit(res.ok ? "sent" : res.error ?? "error");
+  };
+
+  return (
+    <div role="status">
+      <p className="text-sm font-semibold uppercase tracking-wide text-muted">Your GEO score</p>
+      <p className="font-display text-7xl font-extrabold text-navy">
+        {score}<span className="text-4xl text-muted"> / {QUIZ.length}</span>
+      </p>
+      <h2 className="mt-2 font-display text-3xl font-bold text-navy">{band.title}</h2>
+      <p className="mt-2 text-lg text-ink">{band.body}</p>
+
+      {gaps.length > 0 && (
+        <ul className="mt-6 space-y-3">
+          {gaps.map((q) => (
+            <li key={q.id} className="flex gap-3">
+              <span aria-hidden="true" className="mt-2 h-2 w-2 shrink-0 -skew-x-[20deg] bg-orange" />
+              <span className="text-ink">{q.fix}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <div className="mt-8 rounded-lg bg-navy p-6 text-white">
+        {audit === "sent" ? (
+          <>
+            <h3 className="font-display text-2xl font-bold">Your audit is on its way</h3>
+            <p className="mt-2 text-white/85">
+              Check your inbox for a confirmation. We&apos;ll send your audit{site.auditTurnaround ? ` ${site.auditTurnaround}` : " soon"}, once a
+              person has checked every finding.
+            </p>
+          </>
+        ) : (
+          <>
+            <h3 className="font-display text-2xl font-bold">Want the real answers for your business?</h3>
+            <p className="mt-2 text-white/85">
+              Our free online audit asks the AI assistants what your customers ask, shows who they recommend instead, and checks your
+              website and Google profile. A real person reviews every finding.
+            </p>
+            {audit !== "idle" && audit !== "sending" && <p role="alert" className="mt-3 rounded-md bg-red-50 p-3 text-sm font-medium text-red-800">{audit}</p>}
+            <Button type="button" onClick={sendAudit} disabled={audit === "sending" || !state.leadId} className="mt-5 w-full sm:w-auto">
+              {audit === "sending" ? "Sending..." : "Send My Free Audit"}
+            </Button>
+          </>
+        )}
+      </div>
+    </div>
   );
 }

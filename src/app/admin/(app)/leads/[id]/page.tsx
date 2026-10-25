@@ -22,6 +22,7 @@ type EmailRow = { id: string; subject: string; template: string; status: string;
 const kindLabel: Record<string, string> = {
   audit_form: "Audit request",
   ai_search: "AI search audit request",
+  geo_quiz: "GEO quiz",
   outreach: "Outreach prospect",
   ai_check: "AI visibility",
   contact_form: "Contact form",

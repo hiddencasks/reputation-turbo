@@ -32,7 +32,7 @@ export type LeadInput = {
   website?: string;
   trade?: string;
   city?: string;
-  source: "audit_form" | "ai_search" | "contact_form" | "outreach";
+  source: "audit_form" | "ai_search" | "contact_form" | "outreach" | "geo_quiz";
   stage: StageId;
   note: string;
   meta?: Record<string, unknown>;
