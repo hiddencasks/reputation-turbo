@@ -111,7 +111,7 @@ export default async function HomePage() {
           </div>
           {hero && (
             <div className="relative">
-              <Image src={hero.src} alt={hero.alt} width={900} height={1100} priority className="aspect-[4/5] w-full rounded-2xl object-cover shadow-2xl ring-4 ring-white/10" />
+              <Image src={hero.src} alt={hero.alt} width={900} height={1100} priority sizes="(min-width: 1024px) 480px, 100vw" className="aspect-[4/3] w-full rounded-2xl object-cover object-[center_30%] shadow-2xl ring-4 ring-white/10 lg:aspect-[4/5]" />
             </div>
           )}
         </Container>

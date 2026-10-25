@@ -8,7 +8,7 @@ export const photos: {
   founder: Photo | null;
   trades: (Photo & { label: string })[];
 } = {
-  hero: null,
+  hero: { src: "/images/hero-contractor.jpg", alt: "A contractor smiling at his phone in front of a new concrete driveway in a sunny San Diego neighborhood" },
   servicesHero: null,
   founder: null,
   trades: [],
