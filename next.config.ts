@@ -13,6 +13,14 @@ const nextConfig: NextConfig = {
       },
     },
   },
+  // Hidden for now. The pages still exist; delete a line here (and add it back to the
+  // menu in SiteHeader.tsx and the sitemap) to bring one back.
+  async redirects() {
+    return [
+      { source: "/our-work", destination: "/", permanent: false },
+      { source: "/one-sheet", destination: "/", permanent: false },
+    ];
+  },
   async headers() {
     return [
       {

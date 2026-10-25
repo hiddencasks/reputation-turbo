@@ -42,6 +42,12 @@ describe("auditRequestSchema", () => {
     expect(auditRequestSchema.parse({ ...valid, website: "" }).website).toBe("");
   });
 
+  it("makes last name and phone optional", () => {
+    const r = auditRequestSchema.parse({ ...valid, lastName: "", phone: "" });
+    expect(r.lastName).toBe("");
+    expect(r.phone).toBe("");
+  });
+
   it("reports each missing or invalid field", () => {
     const r = auditRequestSchema.safeParse({ ...valid, firstName: "", trade: " ", city: "", phone: "123", email: "nope", website: "bad site" });
     expect(r.success).toBe(false);

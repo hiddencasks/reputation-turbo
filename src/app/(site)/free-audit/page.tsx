@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { AuditForm } from "@/components/forms";
+import { getOfferings } from "@/lib/offerings";
+import { checkedAssistantList, site } from "@/lib/site";
 import { Container, PageHeader } from "@/components/ui";
 
 // Leaves time for the AI visibility check that starts after an audit request.
@@ -16,12 +18,20 @@ const checks = [
   "Google listing: business details, website link, phone, reviews and rating",
   "Social profiles: whether they're easy to find and consistent",
   "Lead capture: how easy it is for a customer to reach you",
-  "AI search: whether ChatGPT and Google's AI answers mention you when customers ask for your service nearby",
+  `AI search: whether ${checkedAssistantList} recommend you when customers ask for your service nearby`,
 ];
 
-export default async function FreeAuditPage({ searchParams }: { searchParams: Promise<{ focus?: string | string[] }> }) {
+export default async function FreeAuditPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ focus?: string | string[]; package?: string | string[] }>;
+}) {
+  const params = await searchParams;
   // Links from the AI search page and outreach use ?focus=ai-search so those leads are tagged in the dashboard.
-  const aiSearch = (await searchParams).focus === "ai-search";
+  const aiSearch = params.focus === "ai-search";
+  // Package buttons add ?package=<slug> so the request notes which package the visitor was looking at.
+  const slug = typeof params.package === "string" ? params.package : "";
+  const interest = slug ? (await getOfferings({ activeOnly: true })).find((o) => o.slug === slug)?.name : undefined;
   return (
     <>
       <PageHeader
@@ -29,7 +39,7 @@ export default async function FreeAuditPage({ searchParams }: { searchParams: Pr
         title="See how customers see you"
         intro={
           aiSearch
-            ? "Tell us about your business and we'll send a personalized audit of your online presence, including what ChatGPT and Google's AI answers say about you. It's free, with no obligation."
+            ? `Tell us about your business and we'll send a personalized audit of your online presence, including what ${checkedAssistantList} say about you. It's free, with no obligation.`
             : "Tell us about your business and we'll send a personalized audit of your online presence. It's free, with no obligation."
         }
       />
@@ -50,9 +60,14 @@ export default async function FreeAuditPage({ searchParams }: { searchParams: Pr
               Your strengths, your biggest opportunities, and the evidence behind each one, followed by practical next steps.
               A real person reviews every audit before it&apos;s sent, and we never make up numbers.
             </p>
+            {site.auditTurnaround && (
+              <p className="mt-4 rounded-lg border-l-4 border-orange bg-navy-50 p-4 font-semibold text-navy">
+                Your audit arrives {site.auditTurnaround}.
+              </p>
+            )}
           </div>
           <div className="rounded-lg border border-line p-6 shadow-sm sm:p-8">
-            <AuditForm focus={aiSearch ? "ai-search" : undefined} />
+            <AuditForm focus={aiSearch ? "ai-search" : undefined} interest={interest} />
           </div>
         </Container>
       </section>

@@ -23,10 +23,11 @@ export function normalizeWebsite(input: string): string | null {
 const text = (max: number) => z.string().trim().max(max);
 const required = (label: string, max = 100) => text(max).min(1, `Please enter your ${label}.`);
 
-const phone = z
+const optionalPhone = z
   .string()
   .trim()
-  .refine((v) => phoneDigits(v).length === 10, "Please enter a 10-digit phone number.");
+  .default("")
+  .refine((v) => v === "" || phoneDigits(v).length === 10, "Please enter a 10-digit phone number, or leave it blank.");
 
 const email = z.string().trim().toLowerCase().max(200).email("Please enter a valid email address.");
 
@@ -44,11 +45,11 @@ const website = z
 
 export const auditRequestSchema = z.object({
   firstName: required("first name", 60),
-  lastName: required("last name", 60),
+  lastName: text(60).default(""),
   businessName: required("business name", 120),
   trade: required("type of business", 80),
   city: required("city", 80),
-  phone,
+  phone: optionalPhone,
   email,
   website,
 });
@@ -72,11 +73,7 @@ export const contactSchema = z.object({
   firstName: required("first name", 60),
   lastName: text(60).default(""),
   businessName: text(120).default(""),
-  phone: z
-    .string()
-    .trim()
-    .default("")
-    .refine((v) => v === "" || phoneDigits(v).length === 10, "Please enter a 10-digit phone number."),
+  phone: optionalPhone,
   email,
   message: required("message", 3000),
 });

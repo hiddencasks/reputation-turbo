@@ -1,4 +1,4 @@
-import { addressOneLine, citySlug, site } from "@/lib/site";
+import { addressOneLine, aiAssistantList, citySlug, site } from "@/lib/site";
 import { getOfferings, getShowPrices } from "@/lib/offerings";
 import { priceText } from "@/components/Pricing";
 
@@ -18,11 +18,10 @@ export async function GET() {
 
   const text = `# ${site.name}
 
-> ${site.name} is a local marketing agency in ${site.address.city}, California. It helps contractors and home service businesses in ${site.serviceArea}, get found on Google and in AI answers like ChatGPT, through GEO (generative engine optimization), websites, Google Business Profile optimization and online reviews.
+> ${site.name} is a local marketing agency in ${site.address.city}, California. It helps contractors and home service businesses in ${site.serviceArea}, get found on Google and in AI answers from ${aiAssistantList}, through GEO (generative engine optimization), websites, Google Business Profile optimization and online reviews.
 
 - Address: ${addressOneLine}
-- Phone: ${site.phoneDisplay}
-- Email: ${site.email}
+${site.showPhone ? `- Phone: ${site.phoneDisplay}\n` : ""}- Email: ${site.email}
 - Cities served: ${site.cities.join(", ")}, and the rest of San Diego County
 - Industries: ${site.industries.join(", ")}
 - Every website ${site.name} builds includes GEO. GEO is also available on its own for businesses that don't need a new website.

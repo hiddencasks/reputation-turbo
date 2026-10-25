@@ -8,7 +8,7 @@ export const metadata: Metadata = { title: "Terms of Use" };
 export default function TermsPage() {
   return (
     <>
-      <PageHeader title="Terms of Use" intro="Last updated October 22, 2026" />
+      <PageHeader title="Terms of Use" intro="Last updated October 25, 2026" />
       <section className="py-14">
         <Container>
           <Prose>
@@ -32,6 +32,12 @@ export default function TermsPage() {
             <p>Do not misuse the site, submit false information, or attempt to disrupt or gain unauthorized access to it.</p>
             <h2>Intellectual property</h2>
             <p>The {site.name} name, logo and site content belong to us. Content you provide to us remains yours.</p>
+            <h2>Trademarks</h2>
+            <p>
+              Google, ChatGPT, Claude, Gemini, Perplexity, Copilot and other product names mentioned on this site are trademarks of
+              their respective owners and are used only to describe the services they offer. {site.name} is not affiliated with or
+              endorsed by Google, OpenAI, Anthropic, Microsoft or Perplexity.
+            </p>
             <h2>Limitation of liability</h2>
             <p>
               To the extent allowed by law, we are not liable for indirect or consequential damages arising from use of this
@@ -41,7 +47,7 @@ export default function TermsPage() {
             <p>These terms are governed by the laws of the State of California.</p>
             <h2>Contact</h2>
             <p>
-              {site.name}, {addressOneLine}. {site.phoneDisplay}. <a href={`mailto:${site.email}`}>{site.email}</a>
+              {site.name}, {addressOneLine}.{site.showPhone ? ` ${site.phoneDisplay}.` : ""} <a href={`mailto:${site.email}`}>{site.email}</a>
             </p>
           </Prose>
         </Container>

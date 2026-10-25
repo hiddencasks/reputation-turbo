@@ -16,8 +16,8 @@ export async function sendAuditConfirmation(lead: Lead) {
     paragraphs: [
       `Hi ${lead.first_name},`,
       `Thanks for requesting a free online presence audit for ${lead.business_name}. We'll review your website, Google listing and other public information, and a real person checks every finding before it reaches you.`,
-      `We'll email your audit as soon as it's ready. If anything is unclear, such as which business listing is yours, we'll reach out first.`,
-      `Questions in the meantime? Just reply to this email or call ${site.phoneDisplay}.`,
+      `We'll email your audit ${site.auditTurnaround || "as soon as it's ready"}. If anything is unclear, such as which business listing is yours, we'll reach out first.`,
+      site.showPhone ? `Questions in the meantime? Just reply to this email or call ${site.phoneDisplay}.` : "Questions in the meantime? Just reply to this email.",
       `The Reputation Turbo team`,
     ],
   });
@@ -32,7 +32,7 @@ export async function sendContactConfirmation(lead: Lead) {
     paragraphs: [
       `Hi ${lead.first_name},`,
       `Thanks for reaching out. We received your message and will get back to you shortly.`,
-      `If it's urgent, call us at ${site.phoneDisplay}.`,
+      site.showPhone ? `If it's urgent, call us at ${site.phoneDisplay}.` : `Prefer to talk? Book a 15-minute video call: ${site.bookingUrl}`,
       `The Reputation Turbo team`,
     ],
   });

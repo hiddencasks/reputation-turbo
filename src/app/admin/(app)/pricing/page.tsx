@@ -52,7 +52,7 @@ export default async function PricingPage() {
         <h2 className="font-display text-xl font-bold text-navy">Prices on the website: {showPrices ? "shown" : "hidden"}</h2>
         <p className="mt-1 text-sm text-muted">
           {showPrices
-            ? "Visitors see prices on Services & Pricing and the One-Sheet."
+            ? "Visitors see prices on Services & Pricing and the AI Search page."
             : "Visitors see services and are asked to request a free audit or quote. Turn this on once you approve final prices."}
         </p>
         <form action={setShowPrices} className="mt-3">

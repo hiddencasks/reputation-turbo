@@ -21,6 +21,7 @@ The Reputation Turbo public website and owner dashboard: one Next.js app with a 
 3. Copy `.env.example` to `.env.local` and fill it in (see the comments in that file).
 4. `npm run db:setup` creates the tables and loads the starting packages, add-ons and plans.
    Already set up a database before GEO was added? Run `npm run db:setup` again to add the GEO package and plan, then run `db/updates/2026-10-geo-wording.sql` once (Supabase SQL editor or psql) to add GEO to the existing package wording.
+   Then run `db/updates/2026-10-site-refresh.sql` once for the October 2026 site refresh (new package names: GEO Setup and AI Visibility Monitoring, plus updated AI wording). It keeps your prices and any wording you've edited.
 5. `npm run dev`, then open http://localhost:3000 and http://localhost:3000/admin.
 
 Without `RESEND_API_KEY`, emails are recorded in the database (status `logged`) instead of being sent.

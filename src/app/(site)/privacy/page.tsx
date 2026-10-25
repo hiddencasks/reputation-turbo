@@ -8,7 +8,7 @@ export const metadata: Metadata = { title: "Privacy Policy" };
 export default function PrivacyPage() {
   return (
     <>
-      <PageHeader title="Privacy Policy" intro="Last updated October 22, 2026" />
+      <PageHeader title="Privacy Policy" intro="Last updated October 25, 2026" />
       <section className="py-14">
         <Container>
           <Prose>
@@ -48,7 +48,7 @@ export default function PrivacyPage() {
             <h2>Your choices</h2>
             <p>
               You can ask us what information we hold about you, ask us to correct or delete it, or opt out of communications by
-              emailing <a href={`mailto:${site.email}`}>{site.email}</a> or calling {site.phoneDisplay}.
+              emailing <a href={`mailto:${site.email}`}>{site.email}</a>{site.showPhone ? ` or calling ${site.phoneDisplay}` : ""}.
             </p>
             <h2>Contact</h2>
             <p>

@@ -31,13 +31,24 @@ function isBot(formData: FormData): boolean {
   return String(formData.get("company_site") ?? "") !== "";
 }
 
-const genericError = "Something went wrong on our end. Please try again, or call us.";
+const genericError = "Something went wrong on our end. Please try again, or email us.";
+
+/** Dropdowns send "Other" plus a typed answer in `${key}Other`; use the typed answer. */
+function withOther(values: Record<string, string>, keys: string[]): Record<string, string> {
+  const out = { ...values };
+  for (const k of keys) if (out[k] === "Other") out[k] = (values[`${k}Other`] ?? "").trim();
+  return out;
+}
 
 export async function submitAuditRequest(_prev: FormState, formData: FormData): Promise<FormState> {
-  const values = formValues(formData, ["firstName", "lastName", "businessName", "trade", "city", "phone", "email", "website"]);
+  const values = formValues(formData, [
+    "firstName", "lastName", "businessName", "trade", "tradeOther", "city", "cityOther", "phone", "email", "website", "noWebsite",
+  ]);
   if (isBot(formData)) return { ok: true, errors: {}, values: {} };
 
-  const parsed = auditRequestSchema.safeParse(values);
+  const input = withOther(values, ["trade", "city"]);
+  if (input.noWebsite === "on") input.website = "";
+  const parsed = auditRequestSchema.safeParse(input);
   if (!parsed.success) return { ok: false, errors: firstErrors(parsed.error), values };
 
   try {
@@ -48,11 +59,12 @@ export async function submitAuditRequest(_prev: FormState, formData: FormData): 
 
     const data = parsed.data;
     const aiSearch = formData.get("focus") === "ai-search";
+    const interest = String(formData.get("interest") ?? "").trim().slice(0, 80);
     const { lead, duplicate } = await upsertLead({
       ...data,
       source: aiSearch ? "ai_search" : "audit_form",
       stage: "audit_in_progress",
-      note: `Requested a free online audit${aiSearch ? " with an AI search check" : ""}${data.website ? ` for ${data.website}` : " (no website given)"}.`,
+      note: `Requested a free online audit${aiSearch ? " with an AI search check" : ""}${data.website ? ` for ${data.website}` : " (no website given)"}.${interest ? ` Interested in: ${interest}.` : ""}`,
       meta: { ipHash, website: data.website },
     });
 

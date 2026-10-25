@@ -12,7 +12,7 @@ export function businessJsonLd() {
     slogan: site.tagline,
     url: site.url,
     email: site.email,
-    telephone: site.phoneHref.replace("tel:", ""),
+    ...(site.showPhone ? { telephone: site.phoneHref.replace("tel:", "") } : {}),
     address: {
       "@type": "PostalAddress",
       streetAddress: site.address.line1,

@@ -28,7 +28,7 @@ export default async function OneSheetPage() {
       <article className="mx-auto w-full max-w-[8.5in] bg-white shadow-lg print:shadow-none">
         <header className="flex flex-col gap-3 bg-navy px-8 py-7 text-white sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <Logo tone="light" className="text-3xl" />
+            <Logo tone="light" className="h-14 w-auto" />
             <p className="mt-2 font-display text-xl italic">{site.tagline}</p>
           </div>
           <p className="text-sm text-white/80">GEO · Websites · Google Profiles · Reviews</p>

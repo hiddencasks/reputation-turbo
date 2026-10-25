@@ -173,7 +173,11 @@ export default async function ReportPage({ params }: { params: Promise<{ token: 
             <h2 className="font-display text-3xl font-extrabold italic uppercase">Want help getting named?</h2>
             <p className="mt-2 text-white/90">We&apos;ll walk you through this report and what it would take, with a clear, upfront price.</p>
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-              <ButtonLink href={site.phoneHref} variant="dark">Call {site.phoneDisplay}</ButtonLink>
+              {site.showPhone ? (
+                <ButtonLink href={site.phoneHref} variant="dark">Call {site.phoneDisplay}</ButtonLink>
+              ) : (
+                <ButtonLink href={site.bookingUrl} target="_blank" rel="noopener" variant="dark">{site.bookingLabel}</ButtonLink>
+              )}
               <ButtonLink href="/ai-search" variant="ghostLight">How GEO works</ButtonLink>
             </div>
           </div>
