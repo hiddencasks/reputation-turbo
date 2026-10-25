@@ -14,6 +14,7 @@ import { processCheck, queueCheck, reportUrl, type AiCheck } from "@/lib/ai-visi
 import { providerLabel } from "@/lib/ai-visibility/providers";
 import { verifyPassword } from "@/lib/password";
 import { STAGE_IDS, stageLabel } from "@/lib/stages";
+import { joinPackages } from "@/lib/recommend";
 
 // ---------- Login ----------
 
@@ -52,7 +53,7 @@ export async function logout() {
 const leadUpdate = z.object({
   stage: z.enum(STAGE_IDS),
   nextFollowUp: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).or(z.literal("")),
-  recommendedPackage: z.string().trim().max(120),
+  recommendedPackage: z.array(z.string().trim().max(80)).max(25),
   trade: z.string().trim().max(80),
   city: z.string().trim().max(80),
   quoteAmount: z.string().trim().regex(/^\d*(\.\d{0,2})?$/, "Enter a dollar amount like 1497 or 1497.50"),
@@ -60,7 +61,7 @@ const leadUpdate = z.object({
 
 export async function updateLead(leadId: string, formData: FormData) {
   await requireOwner();
-  const data = leadUpdate.parse(Object.fromEntries(formData));
+  const data = leadUpdate.parse({ ...Object.fromEntries(formData), recommendedPackage: formData.getAll("recommendedPackage").map(String) });
   const [before] = await sql<{ stage: string }[]>`select stage from leads where id = ${leadId}`;
   if (!before) throw new Error("Lead not found");
 
@@ -69,7 +70,7 @@ export async function updateLead(leadId: string, formData: FormData) {
     update leads set
       stage = ${data.stage},
       next_follow_up = ${data.nextFollowUp || null},
-      recommended_package = ${data.recommendedPackage},
+      recommended_package = ${joinPackages(data.recommendedPackage)},
       trade = ${data.trade},
       city = ${data.city},
       quote_amount_cents = ${quoteCents},

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { auditRequestSchema, contactSchema, formatPhone, normalizeWebsite, phoneDigits } from "@/lib/validation";
 import { hashPassword, verifyPassword } from "@/lib/password";
+import { joinPackages, recommendPackages, splitPackages } from "@/lib/recommend";
 
 describe("phoneDigits", () => {
   it("strips formatting and a leading US country code", () => {
@@ -87,5 +88,23 @@ describe("phone and business name", () => {
     expect(auditRequestSchema.parse({ ...base, businessName: "n/a" }).businessName).toBe("");
     expect(auditRequestSchema.parse({ ...base, businessName: "Sam's Concrete" }).businessName).toBe("Sam's Concrete");
     expect(auditRequestSchema.safeParse({ ...base, businessName: "" }).success).toBe(false);
+  });
+});
+
+describe("package suggestions", () => {
+  const slugs = (r: ReturnType<typeof recommendPackages>) => r.suggestions.map((s) => s.slug);
+  it("suggests a website when there is none", () => {
+    expect(slugs(recommendPackages({ website: "", aiCheck: null }))).toEqual(["business-website-launch", "care-plan"]);
+    expect(slugs(recommendPackages({ website: "", aiCheck: { mentioned: 0, answers: 12 } }))[0]).toBe("premium-digital-presence");
+  });
+  it("suggests Starter, plus GEO when AI assistants rarely name them", () => {
+    expect(slugs(recommendPackages({ website: "https://a.com", aiCheck: { mentioned: 9, answers: 12 } }))).toEqual(["starter-online-presence"]);
+    expect(slugs(recommendPackages({ website: "https://a.com", aiCheck: { mentioned: 2, answers: 12 } }))).toEqual([
+      "starter-online-presence", "ai-search-setup", "ai-visibility-plan",
+    ]);
+  });
+  it("round-trips the stored list", () => {
+    expect(splitPackages(joinPackages(["GEO Setup", "Care"]))).toEqual(["GEO Setup", "Care"]);
+    expect(splitPackages("")).toEqual([]);
   });
 });

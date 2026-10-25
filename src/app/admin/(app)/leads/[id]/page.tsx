@@ -7,6 +7,9 @@ import { site } from "@/lib/site";
 import { aiChecksAvailable, getChecksForLead, reportUrl } from "@/lib/ai-visibility/run";
 import { providerLabel } from "@/lib/ai-visibility/providers";
 import { AutoRefresh } from "@/components/AutoRefresh";
+import { PackagePicker } from "@/components/PackagePicker";
+import { getOfferings } from "@/lib/offerings";
+import { recommendPackages, splitPackages } from "@/lib/recommend";
 import { addNote, approveReport, runAiCheck, setAiMonitoring, updateLead } from "../../../actions";
 
 // Leaves time for AI visibility checks started from this page.
@@ -31,15 +34,24 @@ export default async function LeadPage({ params, searchParams }: { params: Promi
   const { id } = await params;
   const { ai: aiMessage } = await searchParams;
   if (!/^[0-9a-f-]{36}$/.test(id)) notFound();
-  const [[lead], activities, emails, checks] = await Promise.all([
+  const [[lead], activities, emails, checks, offerings] = await Promise.all([
     sql<Lead[]>`select * from leads where id = ${id}`,
     sql<Activity[]>`select id, kind, body, created_at from activities where lead_id = ${id} order by created_at desc`,
     sql<EmailRow[]>`select id, subject, template, status, to_email, created_at from emails where lead_id = ${id} order by created_at desc`,
     getChecksForLead(id),
+    getOfferings({ activeOnly: true }),
   ]);
   if (!lead) notFound();
   const checkRunning = checks.some((c) => c.status === "queued" || c.status === "running");
   const canCheck = aiChecksAvailable() && Boolean(lead.business_name && lead.trade && lead.city);
+
+  const lastCheck = checks.find((c) => c.status === "done");
+  const rec = recommendPackages({
+    website: lead.website_url,
+    aiCheck: lastCheck ? { mentioned: lastCheck.mentioned_count, answers: lastCheck.answer_count } : null,
+  });
+  const nameOf = new Map(offerings.map((o) => [o.slug, o.name]));
+  const suggestions = rec.suggestions.filter((x) => nameOf.has(x.slug));
 
   const input = "mt-1 w-full rounded-md border border-line bg-white px-3 py-2";
 
@@ -73,9 +85,24 @@ export default async function LeadPage({ params, searchParams }: { params: Promi
             <label className="text-sm font-semibold">Next follow-up
               <input type="date" name="nextFollowUp" defaultValue={lead.next_follow_up ?? ""} className={input} />
             </label>
-            <label className="text-sm font-semibold">Recommended package
-              <input name="recommendedPackage" defaultValue={lead.recommended_package} className={input} />
-            </label>
+            <div className="sm:col-span-2">
+              <PackagePicker
+                options={offerings.map((o) => ({ name: o.name, kind: o.kind }))}
+                selected={splitPackages(lead.recommended_package)}
+                suggested={suggestions.map((x) => nameOf.get(x.slug)!)}
+              />
+              {suggestions.length > 0 && (
+                <div className="mt-2 rounded-md bg-navy-50 p-3 text-sm">
+                  <p className="font-semibold text-navy">Suggested</p>
+                  <ul className="mt-1 space-y-1">
+                    {suggestions.map((x) => (
+                      <li key={x.slug}><span className="font-medium">{nameOf.get(x.slug)}</span>: <span className="text-muted">{x.reason}</span></li>
+                    ))}
+                  </ul>
+                  {rec.note && <p className="mt-1 text-xs text-muted">{rec.note}</p>}
+                </div>
+              )}
+            </div>
             <label className="text-sm font-semibold">Type of business
               <input name="trade" defaultValue={lead.trade} list="trade-options" className={input} />
               <datalist id="trade-options">{site.industries.map((i) => <option key={i} value={i} />)}</datalist>
