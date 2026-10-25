@@ -221,7 +221,7 @@ export default async function HomePage() {
               <Eyebrow>Who we help</Eyebrow>
               <h2 className="mt-2 font-display text-4xl font-bold text-navy">Built for local service businesses</h2>
               <ul className="mt-6 flex flex-wrap gap-2">
-                {site.industries.map((i) => (
+                {[...site.industries, "Other"].map((i) => (
                   <li key={i}>
                     <Link
                       href={`/free-audit?trade=${encodeURIComponent(i)}`}
