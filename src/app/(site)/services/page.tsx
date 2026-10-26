@@ -73,6 +73,10 @@ function faqsFor(showPrices: boolean): Faq[] {
       q: "Who owns the website and accounts?",
       a: "You do. Your domain, hosting, email, Google profile and social accounts are in your name, so you stay in control even if you stop working with us.",
     },
+    {
+      q: "Do you do AEO (answer engine optimization)?",
+      a: `Yes. It's included in our GEO work, not a separate service. AEO helps your business show up as the answer in Google's answer boxes and featured snippets and in voice assistants like Siri and Alexa. The same steps that help ${aiAssistantList} recommend you, like clear FAQs, structured data and a complete Google Business Profile, also help you get picked as the answer.`,
+    },
   ];
 }
 
@@ -244,7 +248,7 @@ export default async function ServicesPage() {
       <section className="py-16">
         <Container>
           <Eyebrow>Questions</Eyebrow>
-          <h2 className="mt-2 font-display text-4xl font-bold text-navy">Pricing questions</h2>
+          <h2 className="mt-2 font-display text-4xl font-bold text-navy">Common questions</h2>
           <FaqList faqs={faqs} />
         </Container>
       </section>
