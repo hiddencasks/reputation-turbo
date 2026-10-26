@@ -122,9 +122,12 @@ export function StepFlow({
             <span className="font-display text-sm font-bold uppercase tracking-[0.18em] text-orange">Step {i + 1}</span>
             {s.badge && <span className="rounded-full bg-navy px-2.5 py-0.5 text-xs font-bold uppercase tracking-wide text-white">{s.badge}</span>}
           </div>
-          <h3 className="mt-3 font-display text-2xl font-bold text-navy">{s.title}</h3>
-          <p className="mt-1 text-muted">{s.body}</p>
-          {s.preview && <div className="mt-4">{s.preview}</div>}
+          {/* On phones the text sits to the right of the timeline line so the line never runs through it. */}
+          <div className="pl-[4.25rem] md:pl-0">
+            <h3 className="mt-1 font-display text-2xl font-bold text-navy md:mt-3">{s.title}</h3>
+            <p className="mt-1 text-muted">{s.body}</p>
+            {s.preview && <div className="mt-4">{s.preview}</div>}
+          </div>
         </li>
       ))}
     </Reveal>
