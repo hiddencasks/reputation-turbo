@@ -157,8 +157,12 @@ export async function processCheck(checkId: string): Promise<void> {
   }
 }
 
-/** Runs the website, Google and contact checks for the full audit. A failure here never stops the AI check. */
+/**
+ * Runs the website, Google and contact checks for the full audit. A failure here never stops the AI check.
+ * Skipped when the audit form already ran them for its instant summary.
+ */
 async function saveSiteAudit(check: AiCheck) {
+  if (check.site_audit) return;
   try {
     const [lead] = await sql<{ email: string }[]>`select email from leads where id = ${check.lead_id}`;
     const audit = await runSiteAudit({

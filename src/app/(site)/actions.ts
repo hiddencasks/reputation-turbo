@@ -10,12 +10,17 @@ import { site } from "@/lib/site";
 import { sql } from "@/lib/db";
 import { QUIZ, quizScore, quizSummary } from "@/lib/quiz";
 import { aiChecksAvailable, hasRecentCheck, processCheck, queueCheck, underDailyLimit } from "@/lib/ai-visibility/run";
+import { runSiteAudit } from "@/lib/audit/run";
+import { auditSnapshot, type AuditSnapshot, type SiteAudit } from "@/lib/audit/checks";
 
 export type FormState = {
   ok: boolean;
   errors: FieldErrors;
   values: Record<string, string>;
 };
+
+/** The audit form's success state also carries the instant summary, when the quick checks finished in time. */
+export type AuditFormState = FormState & { snapshot?: AuditSnapshot };
 
 const MAX_SUBMISSIONS_PER_10_MIN = 5;
 
@@ -52,7 +57,7 @@ function withOther(values: Record<string, string>, keys: string[]): Record<strin
  * Everything after an audit request is saved: the visitor's confirmation, the AI and website
  * checks, and the owner's email. Used by the audit form and the quiz's "send my audit" button.
  */
-async function startAudit(lead: Lead, duplicate: boolean, details: string, aiSearch = false) {
+async function startAudit(lead: Lead, duplicate: boolean, details: string, aiSearch = false): Promise<string | null> {
   if (!(await isSuppressed(lead.email))) await sendAuditConfirmation(lead);
   // Start the AI visibility check right away; it runs after the visitor sees the confirmation.
   // A repeat request within a day reuses the check already started.
@@ -66,9 +71,23 @@ async function startAudit(lead: Lead, duplicate: boolean, details: string, aiSea
       ? "Next step: check what AI assistants say about them, run the audit and approve it before it is sent."
       : "Next step: run the audit and approve it before it is sent.";
   await notifyOwner(lead, "audit", `${details}\n\n${nextStep}`, duplicate);
+  return check && "id" in check ? check.id : null;
 }
 
-export async function submitAuditRequest(_prev: FormState, formData: FormData): Promise<FormState> {
+/** How long the visitor waits for the instant summary before we show the plain confirmation instead. */
+const SNAPSHOT_WAIT_MS = 9_000;
+
+/** Runs the quick website, Google, social and contact checks, or gives up after SNAPSHOT_WAIT_MS. */
+async function quickAudit(lead: Lead): Promise<SiteAudit | null> {
+  const run = runSiteAudit({ businessName: lead.business_name, website: lead.website_url, email: lead.email, city: lead.city, trade: lead.trade });
+  const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), SNAPSHOT_WAIT_MS));
+  return Promise.race([run, timeout]).catch((err) => {
+    console.error("[audit-form] quick checks failed:", err);
+    return null;
+  });
+}
+
+export async function submitAuditRequest(_prev: AuditFormState, formData: FormData): Promise<AuditFormState> {
   const values = formValues(formData, [
     "firstName", "lastName", "businessName", "trade", "tradeOther", "city", "cityOther", "phone", "email", "website", "noWebsite",
   ]);
@@ -99,8 +118,11 @@ export async function submitAuditRequest(_prev: FormState, formData: FormData): 
     });
 
     const wants = helpWith.length ? `\nWants help with: ${helpWith.join(", ")}.` : "";
-    await startAudit(lead, duplicate, `${data.trade} in ${data.city}.${wants}`, aiSearch);
-    return { ok: true, errors: {}, values: {} };
+    const [checkId, audit] = await Promise.all([startAudit(lead, duplicate, `${data.trade} in ${data.city}.${wants}`, aiSearch), quickAudit(lead)]);
+    if (!audit) return { ok: true, errors: {}, values: {} };
+    // Reuse these results in the full report so the website isn't checked twice.
+    if (checkId) await sql`update ai_checks set site_audit = ${sql.json(audit)} where id = ${checkId}`.catch(() => {});
+    return { ok: true, errors: {}, values: {}, snapshot: auditSnapshot(audit, { website: lead.website_url }) };
   } catch (err) {
     console.error("[audit-form]", err);
     return { ok: false, errors: { form: genericError }, values };

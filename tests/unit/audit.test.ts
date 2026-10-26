@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { analyzeContact, analyzeGoogle, analyzeSocial, analyzeWebsite, auditScore, schemaTypes } from "@/lib/audit/checks";
+import { analyzeContact, analyzeGoogle, analyzeSocial, analyzeWebsite, auditScore, auditSnapshot, schemaTypes } from "@/lib/audit/checks";
 
 const ctx = { businessName: "Lopez Concrete", website: "https://lopezconcrete.com", email: "maria@gmail.com", city: "El Cajon", trade: "Concrete contractors" };
 const status = (items: { id: string; status: string }[]) => Object.fromEntries(items.map((i) => [i.id, i.status]));
@@ -42,5 +42,22 @@ describe("other audit sections", () => {
     const g = analyzeGoogle({ name: "Lopez Concrete", rating: 4.9, reviews: 8, hasHours: true, hasPhone: true, hasWebsite: false, photos: 3 }, ctx);
     expect(status(g.items)).toEqual({ gbp: "good", reviews: "fix", hours: "good", "gbp-phone": "good", "gbp-website": "fix", photos: "fix" });
     expect(auditScore({ sections: [g] })).toEqual({ good: 3, total: 6 });
+  });
+});
+
+describe("instant audit summary", () => {
+  const unreachable = { id: "website" as const, title: "Website", items: [{ id: "website", label: "Website", status: "fix" as const, detail: "We couldn't load it." }] };
+  const contact = { id: "contact" as const, title: "Contact details", items: analyzeContact(ctx) };
+
+  it("shows a website we couldn't load as reviewed by hand, and leaves out details", () => {
+    const snap = auditSnapshot({ sections: [unreachable, contact] }, ctx);
+    expect(snap.sections[0].items).toEqual([{ id: "website", label: "Website", status: "info" }]);
+    expect(snap).toMatchObject({ good: 0, total: 1 });
+    expect(snap.sections.flatMap((s) => s.items).some((i) => "detail" in i)).toBe(false);
+  });
+
+  it("keeps a missing website as something to fix", () => {
+    const snap = auditSnapshot({ sections: [unreachable] }, { website: "" });
+    expect(snap.sections[0].items[0].status).toBe("fix");
   });
 });

@@ -6,7 +6,10 @@
 export type AuditStatus = "good" | "fix" | "info";
 export type AuditItem = { id: string; label: string; status: AuditStatus; detail: string };
 export type AuditSection = { id: "website" | "google" | "social" | "contact"; title: string; items: AuditItem[]; note?: string };
-export type SiteAudit = { sections: AuditSection[] };
+/** A business ranking near the top of Google Maps for the lead's trade and city. */
+export type MapsCompetitor = { name: string; rating?: number; reviews?: number; mapsUrl?: string };
+/** `competitors` is missing when the Google lookup isn't set up or failed. */
+export type SiteAudit = { sections: AuditSection[]; competitors?: MapsCompetitor[] };
 
 export type AuditContext = { businessName: string; website: string; email: string; city: string; trade: string };
 
@@ -207,3 +210,29 @@ export function auditScore(audit: SiteAudit): { good: number; total: number } {
 /** The finding ids marked "fix", for package suggestions. */
 export const fixIds = (audit: SiteAudit | null) =>
   new Set((audit?.sections ?? []).flatMap((s) => s.items).filter((i) => i.status === "fix").map((i) => i.id));
+
+/** The instant on-screen summary shown right after the audit form is sent: labels and status only, no details. */
+export type AuditSnapshot = {
+  good: number;
+  total: number;
+  competitors?: MapsCompetitor[];
+  sections: { id: AuditSection["id"]; title: string; items: { id: string; label: string; status: AuditStatus }[] }[];
+};
+
+/**
+ * Builds the instant summary. A website we couldn't load is shown as "we'll review" rather than "to fix",
+ * since a person checks it by hand (some sites block automated visits).
+ */
+export function auditSnapshot(audit: SiteAudit, ctx: Pick<AuditContext, "website">): AuditSnapshot {
+  const sections = audit.sections.map((s) => ({
+    id: s.id,
+    title: s.title,
+    items: s.items.map((i) => ({
+      id: i.id,
+      label: i.label,
+      status: s.id === "website" && i.id === "website" && ctx.website ? ("info" as const) : i.status,
+    })),
+  }));
+  const scored = sections.flatMap((s) => s.items).filter((i) => i.status !== "info");
+  return { good: scored.filter((i) => i.status === "good").length, total: scored.length, sections, competitors: audit.competitors };
+}
