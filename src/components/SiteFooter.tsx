@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { addressOneLine, site } from "@/lib/site";
 import { Logo } from "./Logo";
-import { navLinks } from "./SiteHeader";
+import { navLinks } from "@/lib/nav";
 
 export function SiteFooter() {
   return (
