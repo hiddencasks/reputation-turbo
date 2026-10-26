@@ -6,9 +6,10 @@ import { site } from "@/lib/site";
 import { getAnswers, getPreviousCheck, type AiCheck } from "@/lib/ai-visibility/run";
 import { providerLabel } from "@/lib/ai-visibility/providers";
 import { plainText } from "@/lib/ai-visibility/match";
-import { tradePhrase, withArticle } from "@/lib/ai-visibility/questions";
+import { placeName, tradePhrase, withArticle } from "@/lib/ai-visibility/questions";
 import { auditScore, type AuditItem } from "@/lib/audit/checks";
 import { Icon } from "@/components/Icon";
+import { MapsCompetitors } from "@/components/MapsCompetitors";
 import { ButtonLink, Container, Eyebrow } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
@@ -122,6 +123,11 @@ export default async function ReportPage({ params }: { params: Promise<{ token: 
                 </div>
               ))}
             </div>
+            {audit.competitors && audit.competitors.length > 0 && (
+              <div className="mt-6">
+                <MapsCompetitors competitors={audit.competitors} search={`${withArticle(tradePhrase(check.trade))} in ${placeName(check.city)}`} />
+              </div>
+            )}
           </Container>
         </section>
       )}
@@ -145,11 +151,18 @@ export default async function ReportPage({ params }: { params: Promise<{ token: 
                 Last check ({fmtDate(previous.finished_at ?? previous.created_at)}): {previous.mentioned_count} of {previous.answer_count}
               </p>
             )}
-            <ul className="mt-5 space-y-2 text-left text-sm">
+            <ul className="mt-5 space-y-2 text-left text-sm" aria-label="Results by AI assistant">
               {byProvider.map((p) => (
-                <li key={p.id} className="flex justify-between gap-3 border-t border-line pt-2">
-                  <span>{p.label}</span>
-                  <span className="font-semibold">{p.named} of {p.total}</span>
+                <li key={p.id} className="flex items-center gap-3 border-t border-line pt-2">
+                  <span className="min-w-0 flex-1 font-medium">{p.label}</span>
+                  <span className="text-muted">{p.named} of {p.total}</span>
+                  <span
+                    className={`w-24 shrink-0 rounded-full px-2 py-0.5 text-center text-xs font-bold uppercase ${
+                      p.total === 0 ? "bg-navy-50 text-muted" : p.named > 0 ? "bg-green-100 text-green-800" : "bg-orange/10 text-orange-600"
+                    }`}
+                  >
+                    {p.total === 0 ? "No answer" : p.named > 0 ? "Found" : "Not found"}
+                  </span>
                 </li>
               ))}
             </ul>

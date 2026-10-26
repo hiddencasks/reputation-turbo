@@ -61,6 +61,10 @@ async function submitAudit(page: import("@playwright/test").Page, email: string,
   await page.getByLabel("Showing up in AI search").check();
   await page.getByRole("button", { name: "Get My Free Audit" }).click();
   await expect(page.getByRole("heading", { name: "Request received" })).toBeVisible();
+  // The quick checks show on screen right away; the details wait for the reviewed audit.
+  await expect(page.getByText("Quick check", { exact: true })).toBeVisible();
+  await expect(page.getByText("Business email address")).toBeVisible();
+  await expect(page.getByText("Who shows up first on Google Maps")).toBeVisible();
 }
 
 test("audit request creates a lead, sends both emails, and merges duplicates", async ({ page }) => {

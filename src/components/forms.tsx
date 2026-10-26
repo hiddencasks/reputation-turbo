@@ -1,10 +1,13 @@
 "use client";
 
 import { useActionState, useState, type FormEvent } from "react";
-import type { FormState } from "@/app/(site)/actions";
+import type { AuditFormState, FormState } from "@/app/(site)/actions";
 import { requestQuizAudit, submitAuditRequest, submitContact, submitQuiz, type QuizState } from "@/app/(site)/actions";
 import { QUIZ, quizBand, type QuizAnswer } from "@/lib/quiz";
-import { site } from "@/lib/site";
+import { checkedAssistantList, site } from "@/lib/site";
+import type { AuditSnapshot } from "@/lib/audit/checks";
+import { Icon } from "./Icon";
+import { MapsCompetitors } from "./MapsCompetitors";
 import { formatPhone } from "@/lib/phone";
 import { Button } from "./ui";
 
@@ -212,8 +215,66 @@ function Success({ title, body }: { title: string; body: string }) {
   );
 }
 
+const snapshotBadge = {
+  good: { label: "Looks good", icon: "check", className: "bg-green-100 text-green-800", iconClass: "text-green-700" },
+  fix: { label: "To fix", icon: "arrow", className: "bg-orange/10 text-orange-600", iconClass: "text-orange" },
+  info: { label: "We'll review", icon: "search", className: "bg-navy-50 text-navy", iconClass: "text-navy" },
+} as const;
+
+/** The instant summary after the audit form is sent: what passed and what needs work, with the details saved for the full audit. */
+function AuditSnapshotView({ snapshot }: { snapshot: AuditSnapshot }) {
+  const pct = snapshot.total ? Math.round((snapshot.good / snapshot.total) * 100) : 0;
+  return (
+    <div role="status" className="space-y-6">
+      <div>
+        <h2 className="font-display text-2xl font-bold text-navy">Request received</h2>
+        <p className="mt-1 text-ink">Here&apos;s your quick check. We just looked at your website, listings and contact details.</p>
+      </div>
+      {snapshot.total > 0 && (
+        <div className="rounded-lg bg-navy p-5 text-white">
+          <p className="text-sm font-semibold uppercase tracking-wide text-white/70">Quick check</p>
+          <p className="font-display text-5xl font-extrabold">
+            {snapshot.good}<span className="text-2xl text-white/60"> of {snapshot.total} look good</span>
+          </p>
+          <div className="mt-3 h-2 rounded bg-white/15" aria-hidden="true">
+            <div className="h-2 rounded bg-orange" style={{ width: `${pct}%` }} />
+          </div>
+        </div>
+      )}
+      <div className="grid gap-4 sm:grid-cols-2 sm:items-start">
+        {snapshot.sections.map((section) => (
+          <div key={section.id} className="rounded-lg border border-line p-4">
+            <h3 className="font-display text-lg font-bold text-navy">{section.title}</h3>
+            <ul className="mt-2 space-y-2">
+              {section.items.map((item) => {
+                const b = snapshotBadge[item.status];
+                return (
+                  <li key={item.id} className="flex items-start gap-2 text-sm">
+                    <Icon name={b.icon} className={`mt-0.5 h-4 w-4 shrink-0 ${b.iconClass}`} />
+                    <span className="min-w-0 flex-1 font-medium text-ink">{item.label}</span>
+                    <span className={`shrink-0 rounded px-1.5 text-[0.65rem] font-bold uppercase ${b.className}`}>{b.label}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))}
+      </div>
+      {snapshot.competitors && <MapsCompetitors competitors={snapshot.competitors} search="your type of business in your city" />}
+      <div className="rounded-lg border-l-4 border-orange bg-navy-50 p-4 text-ink">
+        <p className="font-semibold text-navy">Your full audit arrives{site.auditTurnaround ? ` ${site.auditTurnaround}` : " soon"}.</p>
+        <p className="mt-1 text-sm">
+          A person checks every finding and adds what {checkedAssistantList} say when customers ask for a business like yours, who they
+          recommend instead, and how to fix each item marked &ldquo;To fix&rdquo;. Check your inbox for a confirmation email.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export function AuditForm({ focus, interest, trade }: { focus?: "ai-search"; interest?: string; trade?: string }) {
-  const [state, action, pending] = useActionState(submitAuditRequest, initial);
+  const [state, action, pending] = useActionState(submitAuditRequest, initial as AuditFormState);
+  if (state.ok && state.snapshot) return <AuditSnapshotView snapshot={state.snapshot} />;
   if (state.ok) {
     return (
       <Success
@@ -254,7 +315,7 @@ export function AuditForm({ focus, interest, trade }: { focus?: "ai-search"; int
       <HelpWith state={state} />
       <FormError state={state} />
       <Button type="submit" disabled={pending} className="w-full sm:w-auto">
-        {pending ? "Sending..." : "Get My Free Audit"}
+        {pending ? "Checking your business..." : "Get My Free Audit"}
       </Button>
       <p className="text-xs text-muted">
         We&apos;ll use your details only to prepare and send your audit and to follow up about it. See our{" "}

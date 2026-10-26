@@ -2,6 +2,7 @@ import "server-only";
 import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
 import { domainStem, normalizeName } from "../ai-visibility/match";
+import { placeName, tradePhrase } from "../ai-visibility/questions";
 import {
   analyzeContact,
   analyzeGoogle,
@@ -9,6 +10,7 @@ import {
   analyzeWebsite,
   type AuditContext,
   type AuditSection,
+  type MapsCompetitor,
   type PlaceResult,
   type SiteAudit,
 } from "./checks";
@@ -90,12 +92,7 @@ async function findPlace(ctx: AuditContext): Promise<PlaceResult | null | undefi
     googleMapsUri?: string;
   };
   const { places = [] } = (await res.json()) as { places?: Place[] };
-  const want = normalizeName(ctx.businessName);
-  const stem = domainStem(ctx.website);
-  const match = places.find((p) => {
-    const name = normalizeName(p.displayName?.text ?? "");
-    return (name && want && (name.includes(want) || want.includes(name))) || (stem && domainStem(p.websiteUri ?? "") === stem);
-  });
+  const match = places.find((p) => isSameBusiness(ctx, p.displayName?.text ?? "", p.websiteUri ?? ""));
   if (!match) return null;
   return {
     name: match.displayName?.text ?? ctx.businessName,
@@ -109,10 +106,50 @@ async function findPlace(ctx: AuditContext): Promise<PlaceResult | null | undefi
   };
 }
 
+/** Whether a Places result is the lead's own business, by name or website. */
+function isSameBusiness(ctx: AuditContext, name: string, website: string): boolean {
+  const want = normalizeName(ctx.businessName);
+  const stem = domainStem(ctx.website);
+  const n = normalizeName(name);
+  return Boolean((n && want && (n.includes(want) || want.includes(n))) || (stem && domainStem(website) === stem));
+}
+
+/**
+ * The top 3 businesses Google Maps shows for "<trade> in <city>", leaving out the lead's own business.
+ * One Places Text Search call (Enterprise fields, about $0.035 after Google's free monthly allowance).
+ */
+async function findCompetitors(ctx: AuditContext): Promise<MapsCompetitor[] | undefined> {
+  const key = process.env.GOOGLE_PLACES_API_KEY;
+  if (!key || !ctx.trade || !ctx.city) return undefined;
+  const res = await fetch("https://places.googleapis.com/v1/places:searchText", {
+    method: "POST",
+    signal: AbortSignal.timeout(TIMEOUT_MS),
+    headers: {
+      "content-type": "application/json",
+      "x-goog-api-key": key,
+      "x-goog-fieldmask": "places.displayName,places.rating,places.userRatingCount,places.websiteUri,places.googleMapsUri",
+    },
+    body: JSON.stringify({ textQuery: `${tradePhrase(ctx.trade)} in ${placeName(ctx.city)}`, pageSize: 6 }),
+  });
+  if (!res.ok) throw new Error(`Google competitor lookup failed (${res.status}).`);
+  type Place = { displayName?: { text: string }; rating?: number; userRatingCount?: number; websiteUri?: string; googleMapsUri?: string };
+  const { places = [] } = (await res.json()) as { places?: Place[] };
+  return places
+    .filter((p) => p.displayName?.text && !isSameBusiness(ctx, p.displayName.text, p.websiteUri ?? ""))
+    .slice(0, 3)
+    .map((p) => ({ name: p.displayName!.text, rating: p.rating, reviews: p.userRatingCount, mapsUrl: p.googleMapsUri }));
+}
+
 /** A small sample site for tests (AI_CHECK_FAKE=1), so no real website is fetched. */
 const FAKE_HTML = `<html><head><title>Lopez Concrete | Driveways</title><meta name="viewport" content="width=device-width">
 <script type="application/ld+json">{"@type":"Organization"}</script></head>
 <body><a href="tel:6195550100">Call</a><a href="/contact">Contact</a><a href="https://www.facebook.com/lopezconcrete">Facebook</a></body></html>`;
+
+const FAKE_COMPETITORS: MapsCompetitor[] = [
+  { name: "Summit Pro Services", rating: 4.9, reviews: 212 },
+  { name: "Canyon Crew", rating: 4.7, reviews: 96 },
+  { name: "Valley Standard Co.", rating: 4.8, reviews: 61 },
+];
 
 /** Runs the website, Google, social and contact checks. Each part fails on its own without stopping the rest. */
 export async function runSiteAudit(ctx: AuditContext): Promise<SiteAudit> {
@@ -141,16 +178,19 @@ export async function runSiteAudit(ctx: AuditContext): Promise<SiteAudit> {
     }
   }
 
-  let place: PlaceResult | null | undefined;
-  try {
-    place = fake ? undefined : await findPlace(ctx);
-  } catch (err) {
-    console.error("[audit] Google lookup failed:", err);
-    place = undefined;
-  }
+  const [place, competitors] = await Promise.all([
+    (fake ? Promise.resolve(undefined) : findPlace(ctx)).catch((err): PlaceResult | null | undefined => {
+      console.error("[audit] Google lookup failed:", err);
+      return undefined;
+    }),
+    (fake ? Promise.resolve(FAKE_COMPETITORS) : findCompetitors(ctx)).catch((err): MapsCompetitor[] | undefined => {
+      console.error("[audit] Google competitor lookup failed:", err);
+      return undefined;
+    }),
+  ]);
   sections.push(analyzeGoogle(place, ctx));
   sections.push({ id: "social", title: "Social profiles", items: analyzeSocial(html) });
   const contact = analyzeContact(ctx);
   if (contact.length) sections.push({ id: "contact", title: "Contact details", items: contact });
-  return { sections };
+  return { sections, competitors };
 }
