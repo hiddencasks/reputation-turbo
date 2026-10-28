@@ -33,7 +33,7 @@ export default function AboutPage() {
         <Container className="grid gap-12 md:grid-cols-[1fr_1.4fr] md:items-start">
           <figure className="mx-auto w-full max-w-sm">
             {founder ? (
-              <Image src={founder.src} alt={founder.alt} width={800} height={1000} className="aspect-[4/5] w-full rounded-2xl object-cover shadow-xl" />
+              <Image src={founder.src} alt={founder.alt} width={960} height={1200} sizes="384px" className="aspect-[4/5] w-full rounded-2xl object-cover shadow-xl" />
             ) : (
               <div className="flex aspect-[4/5] w-full items-center justify-center rounded-2xl bg-navy p-8 shadow-xl">
                 <Image src={logoFullWhite} alt="" className="h-auto w-full" />
