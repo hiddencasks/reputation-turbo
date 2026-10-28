@@ -55,12 +55,22 @@ export function AiSearchTyper({ questions }: { questions: string[] }) {
 
       {motion ? (
         <>
-          <div className="mt-4 flex items-center gap-3 rounded-full border-2 border-navy bg-white px-5 py-4 shadow-md">
+          <div className="mt-4 flex items-center gap-3 rounded-3xl border-2 border-navy bg-white px-5 py-4 shadow-md">
             <Icon name="sparkle" className="h-5 w-5 shrink-0 text-orange" />
-            <p className="min-h-[3rem] flex-1 text-lg text-ink sm:min-h-0" aria-hidden="true">
-              {typed}
-              <span className="caret ml-0.5 inline-block h-5 w-0.5 translate-y-1 bg-navy" />
-            </p>
+            {/* Every question sits invisibly in the same grid cell, so the box is always as tall as
+                the longest one at the current width and never resizes while typing. */}
+            <div className="grid flex-1 text-base text-ink sm:text-lg" aria-hidden="true">
+              {questions.map((q) => (
+                <p key={q} className="invisible [grid-area:1/1]">
+                  {q}
+                  <span className="ml-0.5 inline-block h-5 w-0.5" />
+                </p>
+              ))}
+              <p className="[grid-area:1/1]">
+                {typed}
+                <span className="caret ml-0.5 inline-block h-5 w-0.5 translate-y-1 bg-navy" />
+              </p>
+            </div>
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-navy text-white">
               <Icon name="arrow" className="h-4 w-4" />
             </span>
