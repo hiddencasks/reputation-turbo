@@ -99,15 +99,19 @@ export default async function HomePage() {
               <AiRow />
             </div>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <ButtonLink href="/free-audit" className="text-lg">Get Your Free Online Audit</ButtonLink>
+              <ButtonLink href="/free-audit" className="flex-col !gap-0 sm:whitespace-nowrap text-lg leading-tight">
+                <span>Get Your Free Online Audit</span>
+                <span className="mt-0.5 text-sm font-normal text-white/85">See where your business stands <strong className="font-extrabold italic uppercase text-navy">right now &rarr;</strong></span>
+              </ButtonLink>
               {site.showPhone ? (
                 <ButtonLink href={site.phoneHref} variant="ghostLight" className="text-lg">Call {site.phoneDisplay}</ButtonLink>
               ) : (
-                <ButtonLink href={site.bookingUrl} target="_blank" rel="noopener" variant="ghostLight" className="text-lg">
+                <ButtonLink href={site.bookingUrl} target="_blank" rel="noopener" variant="ghostLight" className="text-lg sm:whitespace-nowrap">
                   <Icon name="video" className="h-5 w-5" /> {site.bookingLabel}
                 </ButtonLink>
               )}
             </div>
+            <p className="mt-3 text-sm text-white/60">Takes about 60 seconds</p>
           </div>
           {hero && (
             <div className="relative">
