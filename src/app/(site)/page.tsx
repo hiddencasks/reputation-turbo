@@ -101,7 +101,7 @@ export default async function HomePage() {
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <ButtonLink href="/free-audit" className="flex-col !gap-0 text-lg leading-tight">
                 <span>Get Your Free Online Audit</span>
-                <span className="mt-0.5 text-sm font-normal text-white/85">See where your business stands <strong className="ml-0.5 font-display text-base font-extrabold italic uppercase tracking-wide text-white">right now</strong></span>
+                <span className="mt-0.5 text-sm font-normal text-white/85">See where your business stands <strong className="ml-0.5 font-display text-base font-extrabold italic uppercase tracking-wide text-navy">right now</strong></span>
               </ButtonLink>
               {site.showPhone ? (
                 <ButtonLink href={site.phoneHref} variant="ghostLight" className="text-lg">Call {site.phoneDisplay}</ButtonLink>
