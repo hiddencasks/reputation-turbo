@@ -19,6 +19,11 @@ describe("website audit", () => {
     expect(items.every((i) => i.status === "good")).toBe(true);
   });
 
+  it("shows the page title with HTML entities decoded", () => {
+    const items = analyzeWebsite("<html><title>Lopez Concrete | Driveways &amp; Patios</title></html>", "https://lopezconcrete.com", ctx);
+    expect(items.find((i) => i.id === "title")?.detail).toContain('"Lopez Concrete | Driveways & Patios"');
+  });
+
   it("reads JSON-LD types", () => {
     expect(schemaTypes(`<script type="application/ld+json">{"@type":"Plumber","address":{"@type":"PostalAddress"}}</script>`)).toEqual(["Plumber", "PostalAddress"]);
   });

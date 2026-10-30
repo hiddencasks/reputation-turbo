@@ -4,7 +4,7 @@ import { sql } from "@/lib/db";
 import { STAGES } from "@/lib/stages";
 import type { Lead } from "@/lib/leads";
 import { site } from "@/lib/site";
-import { aiChecksAvailable, getChecksForLead, reportUrl } from "@/lib/ai-visibility/run";
+import { aiChecksAvailable, getChecksForLead, getProviderErrors, reportUrl } from "@/lib/ai-visibility/run";
 import { providerLabel } from "@/lib/ai-visibility/providers";
 import { AutoRefresh } from "@/components/AutoRefresh";
 import { PackagePicker } from "@/components/PackagePicker";
@@ -44,6 +44,7 @@ export default async function LeadPage({ params, searchParams }: { params: Promi
     getOfferings({ activeOnly: true }),
   ]);
   if (!lead) notFound();
+  const providerErrors = await getProviderErrors(checks.filter((c) => c.status === "done").map((c) => c.id));
   const checkRunning = checks.some((c) => c.status === "queued" || c.status === "running");
   const canCheck = aiChecksAvailable() && Boolean(lead.business_name && lead.trade && lead.city);
 
@@ -174,6 +175,11 @@ export default async function LeadPage({ params, searchParams }: { params: Promi
                 {c.status === "failed" && <p className="mt-1 text-sm text-red-700">{c.error}</p>}
                 {c.status === "done" && (
                   <>
+                    {providerErrors.filter((e) => e.check_id === c.id).map((e) => (
+                      <p key={e.provider} className="mt-1 text-sm text-red-700">
+                        {providerLabel(e.provider)} failed: {e.error}
+                      </p>
+                    ))}
                     {c.competitors.length > 0 && (
                       <p className="mt-1 text-sm">
                         <span className="text-muted">Named instead: </span>

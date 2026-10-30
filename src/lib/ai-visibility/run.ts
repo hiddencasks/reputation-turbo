@@ -256,6 +256,15 @@ export async function getChecksForLead(leadId: string): Promise<AiCheck[]> {
   return sql<AiCheck[]>`select * from ai_checks where lead_id = ${leadId} order by created_at desc limit 12`;
 }
 
+/** For each check, the AI services whose answers failed and the first error each gave, so a broken key is easy to spot. */
+export async function getProviderErrors(checkIds: string[]): Promise<{ check_id: string; provider: string; error: string }[]> {
+  if (checkIds.length === 0) return [];
+  return sql<{ check_id: string; provider: string; error: string }[]>`
+    select check_id, provider, min(error) as error
+    from ai_check_answers where check_id in ${sql(checkIds)} and error is not null
+    group by check_id, provider order by provider`;
+}
+
 export async function getAnswers(checkId: string): Promise<AiCheckAnswer[]> {
   return sql<AiCheckAnswer[]>`
     select id, provider, question, answer, mentioned, businesses, sources, error
