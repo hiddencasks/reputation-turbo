@@ -70,6 +70,7 @@ export const site = {
 export const aiAssistants = ["ChatGPT", "Claude", "Gemini", "Perplexity", "Copilot"] as const;
 export const aiAssistantList = "ChatGPT, Claude, Gemini, Perplexity and Copilot";
 /** The assistants the free audit's AI check actually asks (see lib/ai-visibility/providers.ts). Keep claims about the check to these. */
+export const checkedAssistants = ["ChatGPT", "Gemini", "Perplexity", "Claude"] as const;
 export const checkedAssistantList = "ChatGPT, Gemini, Perplexity and Claude";
 
 export const profiles: string[] = [
