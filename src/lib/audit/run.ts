@@ -66,33 +66,15 @@ async function fetchHome(website: string): Promise<{ html: string; finalUrl: str
   throw new Error("The website redirected too many times.");
 }
 
-/** Looks the business up on Google (Places API). Undefined when no key is set, null when nothing matching is found. */
+/**
+ * Looks the business up on Google (Places API). Undefined when no key is set, null when nothing matching is found.
+ * If "<name> <city> CA" finds nothing, it tries "<name> CA": a service-area business with a hidden address,
+ * or one based in a different town from the city entered, often only turns up without the city.
+ */
 async function findPlace(ctx: AuditContext): Promise<PlaceResult | null | undefined> {
   const key = process.env.GOOGLE_PLACES_API_KEY;
   if (!key) return undefined;
-  const res = await fetch("https://places.googleapis.com/v1/places:searchText", {
-    method: "POST",
-    signal: AbortSignal.timeout(TIMEOUT_MS),
-    headers: {
-      "content-type": "application/json",
-      "x-goog-api-key": key,
-      "x-goog-fieldmask": "places.displayName,places.rating,places.userRatingCount,places.regularOpeningHours,places.nationalPhoneNumber,places.websiteUri,places.photos,places.googleMapsUri",
-    },
-    body: JSON.stringify({ textQuery: `${ctx.businessName} ${ctx.city} CA`, pageSize: 5 }),
-  });
-  if (!res.ok) throw new Error(`Google lookup failed (${res.status}).`);
-  type Place = {
-    displayName?: { text: string };
-    rating?: number;
-    userRatingCount?: number;
-    regularOpeningHours?: unknown;
-    nationalPhoneNumber?: string;
-    websiteUri?: string;
-    photos?: unknown[];
-    googleMapsUri?: string;
-  };
-  const { places = [] } = (await res.json()) as { places?: Place[] };
-  const match = places.find((p) => isSameBusiness(ctx, p.displayName?.text ?? "", p.websiteUri ?? ""));
+  const match = (await searchPlaces(key, `${ctx.businessName} ${ctx.city} CA`, ctx)) ?? (ctx.city ? await searchPlaces(key, `${ctx.businessName} CA`, ctx) : undefined);
   if (!match) return null;
   return {
     name: match.displayName?.text ?? ctx.businessName,
@@ -104,6 +86,34 @@ async function findPlace(ctx: AuditContext): Promise<PlaceResult | null | undefi
     photos: match.photos?.length ?? 0,
     mapsUrl: match.googleMapsUri,
   };
+}
+
+type Place = {
+  displayName?: { text: string };
+  rating?: number;
+  userRatingCount?: number;
+  regularOpeningHours?: unknown;
+  nationalPhoneNumber?: string;
+  websiteUri?: string;
+  photos?: unknown[];
+  googleMapsUri?: string;
+};
+
+/** One Places Text Search; returns the result that is the lead's own business, if any. */
+async function searchPlaces(key: string, textQuery: string, ctx: AuditContext): Promise<Place | undefined> {
+  const res = await fetch("https://places.googleapis.com/v1/places:searchText", {
+    method: "POST",
+    signal: AbortSignal.timeout(TIMEOUT_MS),
+    headers: {
+      "content-type": "application/json",
+      "x-goog-api-key": key,
+      "x-goog-fieldmask": "places.displayName,places.rating,places.userRatingCount,places.regularOpeningHours,places.nationalPhoneNumber,places.websiteUri,places.photos,places.googleMapsUri",
+    },
+    body: JSON.stringify({ textQuery, pageSize: 5 }),
+  });
+  if (!res.ok) throw new Error(`Google lookup failed (${res.status}).`);
+  const { places = [] } = (await res.json()) as { places?: Place[] };
+  return places.find((p) => isSameBusiness(ctx, p.displayName?.text ?? "", p.websiteUri ?? ""));
 }
 
 /** Whether a Places result is the lead's own business, by name or website. */

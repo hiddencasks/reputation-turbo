@@ -22,6 +22,10 @@ const text = (html: string) =>
     .replace(/&nbsp;|&amp;/g, " ")
     .replace(/\s+/g, " ");
 
+/** Turns the common HTML entities back into characters, so a title reads "A & B", not "A &amp; B". */
+const decodeEntities = (s: string) =>
+  s.replace(/&(amp|quot|#39|apos|lt|gt|nbsp);/g, (_, e: string) => ({ amp: "&", quot: '"', "#39": "'", apos: "'", lt: "<", gt: ">", nbsp: " " })[e]!);
+
 function metaContent(html: string, name: string): string {
   const re = new RegExp(`<meta[^>]+(?:name|property)=["']${name}["'][^>]*>`, "i");
   const tag = html.match(re)?.[0] ?? "";
@@ -68,7 +72,7 @@ export function analyzeWebsite(html: string, finalUrl: string, ctx: AuditContext
     );
   }
 
-  const title = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/\s+/g, " ").trim() ?? "";
+  const title = decodeEntities(html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] ?? "").replace(/\s+/g, " ").trim();
   const cityInTitle = ctx.city && title.toLowerCase().includes(ctx.city.toLowerCase());
   items.push(
     !title
