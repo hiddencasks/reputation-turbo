@@ -9,6 +9,7 @@ import { Icon, IconBadge, type IconName } from "@/components/Icon";
 import { JsonLd } from "@/components/JsonLd";
 import { AiChatDemo, AiRow, AuditPreview, LaunchPreview, PlanPreview, StepFlow } from "@/components/marketing";
 import { ButtonLink, Container, Eyebrow, cardHover } from "@/components/ui";
+import { HeroScorecard } from "@/components/HeroVisuals";
 
 // Reads the "Show prices" setting for the pricing question.
 export const dynamic = "force-dynamic";
@@ -78,14 +79,13 @@ function faqsFor(showPrices: boolean): Faq[] {
 
 export default async function HomePage() {
   const faqs = faqsFor(await getShowPrices());
-  const hero = photos.hero;
   return (
     <>
       <JsonLd data={businessJsonLd()} />
       <JsonLd data={faqJsonLd(faqs)} />
       <section className="relative overflow-hidden bg-navy text-white">
         <div aria-hidden="true" className="pointer-events-none absolute -right-24 top-0 h-full w-1/2 -skew-x-[20deg] bg-gradient-to-l from-orange/25 to-transparent" />
-        <Container className={`relative py-16 sm:py-24 ${hero ? "grid gap-10 lg:grid-cols-[1.25fr_1fr] lg:items-center" : ""}`}>
+        <Container className="relative grid gap-10 py-16 sm:py-24 lg:grid-cols-[1.25fr_1fr] lg:items-center">
           <div>
             <Eyebrow>San Diego County · East County</Eyebrow>
             <h1 className="mt-3 max-w-3xl font-display text-5xl font-extrabold italic uppercase leading-[0.95] sm:text-7xl">
@@ -113,11 +113,7 @@ export default async function HomePage() {
             </div>
             <p className="mt-3 text-sm text-white/60">Takes about 60 seconds</p>
           </div>
-          {hero && (
-            <div className="relative">
-              <Image src={hero.src} alt={hero.alt} width={900} height={1100} priority sizes="(min-width: 1024px) 480px, 100vw" className="aspect-[4/3] w-full rounded-2xl object-cover object-[center_30%] shadow-2xl ring-4 ring-white/10 lg:aspect-[4/5]" />
-            </div>
-          )}
+          <HeroScorecard />
         </Container>
       </section>
 
