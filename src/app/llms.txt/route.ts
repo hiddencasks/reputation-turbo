@@ -1,6 +1,7 @@
 import { addressOneLine, aiAssistantList, citySlug, site } from "@/lib/site";
 import { getOfferings, getShowPrices } from "@/lib/offerings";
 import { priceText } from "@/components/Pricing";
+import { isLive, posts } from "@/lib/blog";
 
 // A plain-text summary of the business for AI tools (the llms.txt convention).
 // Built from the live packages, so it stays in step with the pricing editor.
@@ -15,6 +16,10 @@ export async function GET() {
   const packages = offerings.filter((o) => o.kind === "package");
   const plans = offerings.filter((o) => o.kind === "plan");
   const url = (path: string) => `${site.url}${path}`;
+  const blogLines = posts
+    .filter((p) => isLive(p))
+    .map((p) => `- [${p.title}](${url(`/blog/${p.slug}`)}): ${p.description}\n`)
+    .join("");
 
   const text = `# ${site.name}
 
@@ -45,6 +50,7 @@ ${plans.map(line).join("\n")}
 - [Contact](${url("/contact")})
 - [Areas We Serve](${url("/areas")})
 ${site.cities.map((c) => `- [${c}](${url(`/areas/${citySlug(c)}`)}): services in ${c}, CA`).join("\n")}
-`;
+- [Blog](${url("/blog")}): local marketing tips
+${blogLines}`;
   return new Response(text, { headers: { "content-type": "text/plain; charset=utf-8" } });
 }
