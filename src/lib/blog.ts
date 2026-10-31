@@ -24,39 +24,39 @@ export const author = { name: "Alvin Shamoun", role: "Founder, Reputation Turbo"
 // Oldest first. Tuesdays at 6 AM Pacific.
 export const posts: BlogPost[] = [
   {
-    slug: "does-ai-recommend-your-business",
-    title: "Does ChatGPT Recommend Your Business? How to Check in 10 Minutes",
+    slug: "is-ai-sending-customers-to-competitors",
+    title: "Is AI Sending Your Customers to a Competitor?",
     description:
-      "More customers ask ChatGPT, Claude, Gemini, Perplexity and Copilot who to hire. Here's a simple test any San Diego County business owner can run today, and what to do with the results.",
+      "More customers ask ChatGPT, Claude, Gemini, Perplexity and Copilot who to hire, and get back just a few names. Why some local businesses get named and others get skipped.",
     publishAt: "2026-11-03T06:00:00-08:00",
-    readMinutes: 6,
+    readMinutes: 4,
     topic: "AI search",
   },
   {
-    slug: "google-business-profile-fixes",
-    title: "9 Google Business Profile Fixes Most Local Contractors Miss",
+    slug: "google-profile-costing-you-calls",
+    title: "Why Your Google Profile Might Be Costing You Calls",
     description:
-      "Your Google profile is often the first thing a customer sees, and AI assistants read it too. Nine quick fixes that help you show up in Maps and look like the obvious choice.",
+      "The three businesses under the map get most of the calls. Five signs your Google Business Profile is sending customers to the competition, and why it happens.",
     publishAt: "2026-11-10T06:00:00-08:00",
-    readMinutes: 7,
+    readMinutes: 4,
     topic: "Google profile",
   },
   {
-    slug: "how-to-get-more-google-reviews",
-    title: "How to Get More Google Reviews Without Feeling Pushy",
+    slug: "what-your-reviews-say",
+    title: "What Your Google Reviews Say Before You Do",
     description:
-      "A simple, rule-friendly way to ask every happy customer for a review, what to say, and why reviews that mention the job and the city matter more than ever.",
+      "Customers and AI assistants size up your reviews in seconds, and they compare them with your competitors'. What they notice, and the shortcuts that backfire.",
     publishAt: "2026-11-17T06:00:00-08:00",
-    readMinutes: 6,
+    readMinutes: 4,
     topic: "Reviews",
   },
   {
-    slug: "slow-season-online-checklist",
-    title: "Slow Season To-Do List: 7 Online Fixes to Finish Before January",
+    slug: "signs-your-business-is-invisible-online",
+    title: "7 Signs Your Business Is Invisible Online (Even If Your Work Is Great)",
     description:
-      "When work slows down around the holidays, an afternoon on these seven fixes can mean more calls in the spring. A checklist for San Diego County contractors and home service businesses.",
+      "Is the slow season just the season, or can new customers not find you? Seven signs San Diego County contractors and home service businesses should watch for.",
     publishAt: "2026-11-24T06:00:00-08:00",
-    readMinutes: 6,
+    readMinutes: 4,
     topic: "Local SEO",
   },
 ];
