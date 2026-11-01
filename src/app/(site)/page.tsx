@@ -3,7 +3,7 @@ import Link from "next/link";
 import { aiAssistantList, checkedAssistantList, citySlug, site } from "@/lib/site";
 import { getShowPrices } from "@/lib/offerings";
 import { photos } from "@/lib/photos";
-import { businessJsonLd, faqJsonLd, type Faq } from "@/lib/structured-data";
+import { businessJsonLd, faqJsonLd, websiteJsonLd, type Faq } from "@/lib/structured-data";
 import { FaqList } from "@/components/FaqList";
 import { Icon, IconBadge, type IconName } from "@/components/Icon";
 import { JsonLd } from "@/components/JsonLd";
@@ -103,6 +103,7 @@ export default async function HomePage() {
   const faqs = faqsFor(await getShowPrices());
   return (
     <>
+      <JsonLd data={websiteJsonLd()} />
       <JsonLd data={businessJsonLd()} />
       <JsonLd data={faqJsonLd(faqs)} />
       <section className="relative overflow-hidden bg-navy text-white">
