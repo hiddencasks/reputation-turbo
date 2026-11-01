@@ -75,6 +75,7 @@ export const checkedAssistantList = "ChatGPT, Gemini, Perplexity and Claude";
 
 /** Social profiles shown in the site footer. Add Facebook, LinkedIn and others here as they go live. */
 export const socialLinks: { label: string; href: string }[] = [
+  { label: "Facebook", href: "https://www.facebook.com/profile.php?id=61595725937548" },
   { label: "Instagram", href: "https://www.instagram.com/reputationturbo" },
 ];
 
