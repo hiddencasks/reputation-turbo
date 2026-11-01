@@ -71,6 +71,28 @@ function faqsFor(showPrices: boolean): Faq[] {
       a: "Yes. Your domain, hosting, business email, Google profile and social accounts are in your name, so you stay in control even if you stop working with us.",
     },
     {
+      q: "Who does web design for small businesses in Spring Valley and East County?",
+      a: `Reputation Turbo is based in ${site.address.city} and builds websites for contractors and home service businesses across East County and San Diego County, including El Cajon, La Mesa, Santee and Lemon Grove. Every website includes GEO, and you own the domain, hosting and site.`,
+    },
+    {
+      q: "How much does a small business website cost in San Diego County?",
+      a: showPrices
+        ? "It ranges from a do-it-yourself builder subscription to several thousand dollars for an agency-built site. Our website packages have fixed, upfront prices on our Services & Pricing page. Your domain and hosting are separate, paid directly by you, and are often less than $20 a year for the domain."
+        : "It ranges from a do-it-yourself builder subscription to several thousand dollars for an agency-built site. We give every project a fixed, upfront quote. Your domain and hosting are separate, paid directly by you, and are often less than $20 a year for the domain.",
+    },
+    {
+      q: "What's the difference between a web designer and a marketing agency?",
+      a: "A web designer builds your website. A marketing agency works on how customers find you: your Google profile, reviews, listings and ads. Most small businesses need both to work together, which is why we do websites, Google profiles, reviews and GEO in one place.",
+    },
+    {
+      q: "How do I get my business recommended by ChatGPT?",
+      a: `AI assistants like ${aiAssistantList} recommend businesses they can find described the same way across the web: your website, Google profile, reviews and the directories they read. When those are missing or don't match, they name a competitor instead. Our free audit shows what ${checkedAssistantList} say about your business today.`,
+    },
+    {
+      q: "How long does it take to get more Google reviews?",
+      a: "It depends mostly on whether you ask. Businesses that ask every happy customer, with a direct link, often see new reviews within a few weeks. Businesses that never ask rarely get them, even when customers are happy.",
+    },
+    {
       q: "Can you guarantee I'll be number one on Google or in AI answers?",
       a: "No, and nobody honestly can. We fix the things search engines and AI assistants rely on, show you the evidence, and track whether it's working.",
     },

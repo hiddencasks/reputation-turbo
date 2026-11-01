@@ -22,7 +22,7 @@ export function businessJsonLd() {
       addressCountry: "US",
     },
     areaServed: site.cities.map((c) => ({ "@type": "City", name: `${c}, CA` })),
-    knowsAbout: ["Small business websites", "Google Business Profile optimization", "Local SEO", "Online reviews", "Generative engine optimization (GEO)"],
+    knowsAbout: ["Web design", "Small business websites", "Digital marketing", "Google Business Profile optimization", "Local SEO", "Online reviews", "Generative engine optimization (GEO)"],
     ...(profiles.length > 0 ? { sameAs: profiles } : {}),
   };
 }
