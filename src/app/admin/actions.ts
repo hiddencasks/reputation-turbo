@@ -123,6 +123,24 @@ export async function addNote(leadId: string, formData: FormData) {
   revalidatePath(`/admin/leads/${leadId}`);
 }
 
+/**
+ * Permanently deletes a lead. Its notes, history, audits and AI reports go
+ * with it (the database cascades those), and its email log rows are removed
+ * too. Opt-outs in the suppression list are kept on purpose, so someone who
+ * asked not to be contacted stays that way.
+ */
+export async function deleteLead(leadId: string, formData: FormData) {
+  await requireOwner();
+  if (formData.get("confirm") !== "delete") throw new Error("Delete was not confirmed.");
+  await sql.begin(async (tx) => {
+    await tx`delete from emails where lead_id = ${leadId}`;
+    await tx`delete from leads where id = ${leadId}`;
+  });
+  revalidatePath("/admin/leads");
+  revalidatePath("/admin");
+  redirect("/admin/leads?deleted=1");
+}
+
 // ---------- AI visibility checks ----------
 
 /** Starts an AI visibility check for a lead; it runs in the background and the page refreshes until it's done. */
