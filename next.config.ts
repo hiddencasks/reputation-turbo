@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { googleReviewUrl } from "./src/lib/site";
 
 const nextConfig: NextConfig = {
   // Pages that read the database opt into per-request rendering with
@@ -23,6 +24,9 @@ const nextConfig: NextConfig = {
     return [
       { source: "/our-work", destination: "/", permanent: false },
       { source: "/one-sheet", destination: "/", permanent: false },
+      // Short link to text or email customers: reputationturbo.com/review opens Google's review box.
+      { source: "/review", destination: googleReviewUrl, permanent: false },
+      { source: "/reviews", destination: googleReviewUrl, permanent: false },
     ];
   },
   async headers() {
