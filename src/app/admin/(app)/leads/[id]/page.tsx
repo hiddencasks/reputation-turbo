@@ -191,6 +191,9 @@ export default async function LeadPage({ params, searchParams }: { params: Promi
                       <a href={`/report/${c.report_token}`} target="_blank" className="rounded-md px-3 py-2 text-sm font-semibold text-navy ring-1 ring-line">
                         {c.approved_at ? "Open report" : "Preview report"}
                       </a>
+                      <a href={`/admin/audit-download/${c.id}`} download className="rounded-md px-3 py-2 text-sm font-semibold text-navy ring-1 ring-line">
+                        Download audit
+                      </a>
                       {!c.sent_at && lead.email && (
                         <form action={approveReport.bind(null, c.id)}>
                           <input type="hidden" name="send" value="email" />
