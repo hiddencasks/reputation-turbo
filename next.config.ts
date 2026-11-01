@@ -5,6 +5,10 @@ const nextConfig: NextConfig = {
   // `export const dynamic = "force-dynamic"`; everything else is static.
   cacheComponents: false,
   poweredByHeader: false,
+  // Fonts and logo that the social post images are drawn with.
+  outputFileTracingIncludes: {
+    "/social-image/[file]": ["./src/assets/fonts/*.ttf", "./public/brand/logo-full-white.png"],
+  },
   turbopack: {
     rules: {
       "*.css": {

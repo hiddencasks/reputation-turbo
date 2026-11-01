@@ -12,6 +12,7 @@ const nav = [
   { href: "/admin/leads", label: "Leads / CRM" },
   { href: "/admin/leads/new", label: "Add a lead" },
   { href: "/admin/finder", label: "Find prospects" },
+  { href: "/admin/social", label: "Social posts" },
   { href: "/admin/pricing", label: "Pricing" },
 ];
 
