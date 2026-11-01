@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { addressOneLine, site } from "@/lib/site";
+import { addressOneLine, site, socialLinks } from "@/lib/site";
 import { Logo } from "./Logo";
 import { navLinks } from "@/lib/nav";
 
@@ -29,6 +29,15 @@ export function SiteFooter() {
           )}
           <a href={`mailto:${site.email}`} className="block hover:text-orange">{site.email}</a>
           <span className="block">{addressOneLine}</span>
+          {socialLinks.length > 0 && (
+            <span className="mt-2 flex flex-wrap gap-x-4">
+              {socialLinks.map((l) => (
+                <a key={l.href} href={l.href} target="_blank" rel="noopener me" className="font-semibold text-white hover:text-orange">
+                  {l.label}
+                </a>
+              ))}
+            </span>
+          )}
         </address>
       </div>
       <div className="border-t border-white/10">

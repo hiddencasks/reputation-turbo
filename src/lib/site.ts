@@ -73,10 +73,16 @@ export const aiAssistantList = "ChatGPT, Claude, Gemini, Perplexity and Copilot"
 export const checkedAssistants = ["ChatGPT", "Gemini", "Perplexity", "Claude"] as const;
 export const checkedAssistantList = "ChatGPT, Gemini, Perplexity and Claude";
 
+/** Social profiles shown in the site footer. Add Facebook, LinkedIn and others here as they go live. */
+export const socialLinks: { label: string; href: string }[] = [
+  { label: "Instagram", href: "https://www.instagram.com/reputationturbo" },
+];
+
 export const profiles: string[] = [
   // Google Business Profile
   "https://share.google/aaY0E5tU0YEKdS4ag",
   "https://g.page/r/CWqMqUDHehn6ECE",
+  ...socialLinks.map((l) => l.href),
 ];
 
 /** "El Cajon" -> "el-cajon" */
