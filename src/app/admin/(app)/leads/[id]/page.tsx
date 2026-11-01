@@ -11,7 +11,8 @@ import { PackagePicker } from "@/components/PackagePicker";
 import { getOfferings } from "@/lib/offerings";
 import { recommendPackages, splitPackages } from "@/lib/recommend";
 import { auditScore, fixIds } from "@/lib/audit/checks";
-import { addNote, approveReport, runAiCheck, setAiMonitoring, updateLead } from "../../../actions";
+import { addNote, approveReport, deleteLead, runAiCheck, setAiMonitoring, updateLead } from "../../../actions";
+import { DeleteLead } from "./DeleteLead";
 
 // Leaves time for AI visibility checks started from this page.
 export const maxDuration = 300;
@@ -252,6 +253,14 @@ export default async function LeadPage({ params, searchParams }: { params: Promi
           )}
         </section>
       </div>
+
+      <section className="rounded-lg bg-white p-5 shadow-sm">
+        <h2 className="font-display text-xl font-bold text-navy">Delete this lead</h2>
+        <p className="mt-1 text-sm text-muted">For test entries or spam. To stop contacting a real business, set the stage to Do Not Contact instead.</p>
+        <div className="mt-3">
+          <DeleteLead name={lead.business_name || `${lead.first_name} ${lead.last_name}`.trim() || "this lead"} action={deleteLead.bind(null, lead.id)} />
+        </div>
+      </section>
     </div>
   );
 }

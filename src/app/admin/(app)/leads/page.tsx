@@ -10,14 +10,14 @@ import { ProspectForm } from "./ProspectForm";
 // Leaves time for AI visibility checks started when adding a prospect.
 export const maxDuration = 300;
 
-type Search = { q?: string; stage?: string; view?: string; sort?: string };
+type Search = { q?: string; stage?: string; view?: string; sort?: string; deleted?: string };
 
 function name(l: Lead) {
   return l.business_name || `${l.first_name} ${l.last_name}`.trim() || l.email;
 }
 
 export default async function LeadsPage({ searchParams }: { searchParams: Promise<Search> }) {
-  const { q = "", stage = "", view = "board", sort = "newest" } = await searchParams;
+  const { q = "", stage = "", view = "board", sort = "newest", deleted } = await searchParams;
   const like = `%${q.trim()}%`;
   const validStage = STAGES.some((s) => s.id === stage) ? stage : "";
   const order = sort === "oldest" ? sql`created_at asc` : sort === "name" ? sql`lower(business_name) asc` : sql`created_at desc`;
@@ -43,6 +43,8 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
           <Link href={qs("list")} className={tab("list")}>List</Link>
         </div>
       </div>
+
+      {deleted && <p role="status" className="rounded-md bg-green-50 p-3 text-sm font-medium text-green-800">Lead deleted.</p>}
 
       <details className="rounded-lg bg-white p-4 shadow-sm">
         <summary className="cursor-pointer font-semibold text-navy">Add a prospect for outreach</summary>
