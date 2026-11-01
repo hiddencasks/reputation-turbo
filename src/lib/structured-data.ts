@@ -27,6 +27,18 @@ export function businessJsonLd() {
   };
 }
 
+/** Tells Google the site's name, so results show "Reputation Turbo" instead of the bare domain. */
+export function websiteJsonLd() {
+  return {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "@id": `${site.url}/#website`,
+    name: site.name,
+    url: `${site.url}/`,
+    publisher: { "@id": `${site.url}/#business` },
+  };
+}
+
 export function faqJsonLd(faqs: Faq[]) {
   return {
     "@context": "https://schema.org",
