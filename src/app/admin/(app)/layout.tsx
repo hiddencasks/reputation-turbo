@@ -10,6 +10,8 @@ export const metadata: Metadata = { title: "Dashboard", robots: { index: false }
 const nav = [
   { href: "/admin", label: "Dashboard" },
   { href: "/admin/leads", label: "Leads / CRM" },
+  { href: "/admin/leads/new", label: "Add a lead" },
+  { href: "/admin/finder", label: "Find prospects" },
   { href: "/admin/pricing", label: "Pricing" },
 ];
 

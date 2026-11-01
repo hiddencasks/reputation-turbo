@@ -37,7 +37,13 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      <h1 className="font-display text-3xl font-bold text-navy">Dashboard</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="font-display text-3xl font-bold text-navy">Dashboard</h1>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/admin/leads/new" className="rounded-md bg-orange px-4 py-2 text-sm font-semibold text-white">+ Add a lead</Link>
+          <Link href="/admin/finder" className="rounded-md bg-white px-4 py-2 text-sm font-semibold text-navy ring-1 ring-line">Find prospects to audit</Link>
+        </div>
+      </div>
 
       <section aria-label="Key numbers" className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {tiles.map((t) => (
@@ -51,7 +57,7 @@ export default async function DashboardPage() {
       <section className="rounded-lg bg-white p-5 shadow-sm">
         <h2 className="font-display text-xl font-bold text-navy">What should I work on today?</h2>
         {counts.audits_waiting === 0 && due.length === 0 && aiReview.length === 0 ? (
-          <p className="mt-2 text-muted">Nothing urgent. A good time to reach out to new prospects.</p>
+          <p className="mt-2 text-muted">Nothing urgent. A good time to <Link href="/admin/finder" className="text-orange underline">find new prospects</Link>.</p>
         ) : (
           <ul className="mt-2 list-disc space-y-1 pl-5">
             {counts.audits_waiting > 0 && (
