@@ -51,6 +51,13 @@ export default async function ContactPage({ searchParams }: { searchParams: Prom
               <p>{addressOneLine}</p>
             </div>
             <div>
+              <h2 className="font-display text-xl font-bold text-navy">Worked with us?</h2>
+              <p className="mt-1 text-muted">A quick Google review helps other local business owners find us. Thank you!</p>
+              <ButtonLink href="/review" prefetch={false} target="_blank" rel="noopener" variant="secondary" className="mt-3">
+                <Icon name="star" className="h-5 w-5" /> Leave us a Google review
+              </ButtonLink>
+            </div>
+            <div>
               <h2 className="font-display text-xl font-bold text-navy">Service area</h2>
               <p>{site.cities.join(", ")} and the rest of San Diego County.</p>
             </div>

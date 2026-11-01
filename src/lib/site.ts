@@ -79,6 +79,13 @@ export const socialLinks: { label: string; href: string }[] = [
   { label: "Instagram", href: "https://www.instagram.com/reputationturbo" },
 ];
 
+/**
+ * Google's "write a review" page for our Business Profile. reputationturbo.com/review
+ * redirects here (see next.config.ts), so that short link is the one to text customers.
+ */
+export const googleReviewUrl = "https://g.page/r/CWqMqUDHehn6ECE/review";
+export const reviewShortLink = "reputationturbo.com/review";
+
 export const profiles: string[] = [
   // Google Business Profile
   "https://share.google/aaY0E5tU0YEKdS4ag",

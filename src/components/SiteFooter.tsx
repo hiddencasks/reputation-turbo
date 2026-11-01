@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { addressOneLine, site, socialLinks } from "@/lib/site";
+import { Icon } from "./Icon";
 import { Logo } from "./Logo";
 import { navLinks } from "@/lib/nav";
 
@@ -38,6 +39,14 @@ export function SiteFooter() {
               ))}
             </span>
           )}
+          <a
+            href="/review"
+            target="_blank"
+            rel="noopener"
+            className="mt-4 inline-flex items-center gap-2 rounded-md border border-white/30 px-3 py-1.5 font-semibold leading-6 text-white hover:border-orange hover:text-orange"
+          >
+            <Icon name="star" className="h-4 w-4 text-orange" /> Leave us a Google review
+          </a>
         </address>
       </div>
       <div className="border-t border-white/10">
