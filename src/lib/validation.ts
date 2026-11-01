@@ -61,6 +61,8 @@ export const prospectSchema = z.object({
   city: required("city", 80),
   website,
   firstName: text(60).default(""),
+  lastName: text(60).default(""),
+  note: text(2000).default(""),
   email: z.string().trim().toLowerCase().max(200).refine((v) => v === "" || z.email().safeParse(v).success, "Please enter a valid email address.").default(""),
   phone: z
     .string()

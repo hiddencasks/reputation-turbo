@@ -9,7 +9,9 @@ import { sql } from "@/lib/db";
 import { sendEmail } from "@/lib/email";
 import { isSuppressed, upsertLead, type Lead } from "@/lib/leads";
 import { site } from "@/lib/site";
-import { prospectSchema } from "@/lib/validation";
+import { normalizeWebsite, phoneDigits, prospectSchema } from "@/lib/validation";
+import { findProspects } from "@/lib/finder-search";
+import type { ScoredBusiness } from "@/lib/finder";
 import { processCheck, queueCheck, reportUrl, type AiCheck } from "@/lib/ai-visibility/run";
 import { providerLabel } from "@/lib/ai-visibility/providers";
 import { verifyPassword } from "@/lib/password";
@@ -219,11 +221,14 @@ export async function setAiMonitoring(leadId: string, formData: FormData) {
 
 export type ProspectState = { errors: Record<string, string | undefined>; values: Record<string, string> };
 
-/** Adds a business for outreach and, if asked, starts its AI visibility check. */
+/**
+ * Adds a lead by hand: a business to reach out to, or a customer who asked for
+ * an audit by phone or in person. If asked, it also starts the full audit.
+ */
 export async function createProspect(_prev: ProspectState, formData: FormData): Promise<ProspectState> {
   await requireOwner();
   const values = Object.fromEntries(
-    ["businessName", "trade", "city", "website", "firstName", "email", "phone"].map((k) => [k, String(formData.get(k) ?? "")]),
+    ["kind", "businessName", "trade", "city", "website", "firstName", "lastName", "email", "phone", "note"].map((k) => [k, String(formData.get(k) ?? "")]),
   );
   const parsed = prospectSchema.safeParse(values);
   if (!parsed.success) {
@@ -232,25 +237,93 @@ export async function createProspect(_prev: ProspectState, formData: FormData): 
     return { errors, values };
   }
   const d = parsed.data;
+  const customer = values.kind === "customer";
   const { lead } = await upsertLead({
     firstName: d.firstName,
-    lastName: "",
+    lastName: d.lastName,
     businessName: d.businessName,
     email: d.email,
     phone: d.phone,
     website: d.website,
     trade: d.trade,
     city: d.city,
-    source: "outreach",
-    stage: "new_prospect",
-    note: `Added as an outreach prospect (${d.trade} in ${d.city}).`,
+    source: customer ? "manual" : "outreach",
+    stage: customer ? "audit_in_progress" : "new_prospect",
+    note: customer
+      ? `Added by you for a customer who asked for an audit (${d.trade} in ${d.city}).`
+      : `Added as an outreach prospect (${d.trade} in ${d.city}).`,
   });
+  if (d.note) await sql`insert into activities (lead_id, kind, body) values (${lead.id}, 'note', ${d.note})`;
   if (formData.get("runCheck") === "on") {
     const result = await queueCheck(lead.id);
     if ("id" in result) after(() => processCheck(result.id));
     else redirect(`/admin/leads/${lead.id}?ai=${encodeURIComponent(result.error)}`);
   }
   redirect(`/admin/leads/${lead.id}`);
+}
+
+// ---------- Prospect finder ----------
+
+export type FinderState = { trade: string; city: string; error?: string; results?: ScoredBusiness[] };
+
+const finderSearch = z.object({ trade: z.string().trim().min(1).max(80), city: z.string().trim().min(1).max(80) });
+
+/** One Google Maps search for a trade in a city; nothing is saved and no audit runs. */
+export async function searchProspects(_prev: FinderState, formData: FormData): Promise<FinderState> {
+  await requireOwner();
+  const trade = String(formData.get("trade") ?? "");
+  const city = String(formData.get("city") ?? "");
+  const parsed = finderSearch.safeParse({ trade, city });
+  if (!parsed.success) return { trade, city, error: "Pick a type of business and a city." };
+  const result = await findProspects(parsed.data.trade, parsed.data.city);
+  revalidatePath("/admin/finder");
+  return "error" in result ? { trade, city, error: result.error } : { trade, city, results: result.results };
+}
+
+export type AddFoundState = { leadId?: string; audit?: boolean; error?: string };
+
+const foundBusiness = z.object({
+  name: z.string().trim().min(1).max(120),
+  trade: z.string().trim().min(1).max(80),
+  city: z.string().trim().min(1).max(80),
+  website: z.string().trim().max(500).default(""),
+  phone: z.string().trim().max(40).default(""),
+  summary: z.string().trim().max(500).default(""),
+  mapsUrl: z.string().trim().max(500).default(""),
+});
+
+/**
+ * Saves a business from the finder as an outreach prospect. With audit=1 it
+ * also starts that one business's full audit (paid AI calls), never in bulk.
+ */
+export async function addFoundBusiness(_prev: AddFoundState, formData: FormData): Promise<AddFoundState> {
+  await requireOwner();
+  const parsed = foundBusiness.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { error: "Something about this business didn't look right. Add it by hand instead." };
+  const d = parsed.data;
+  const website = normalizeWebsite(d.website) || "";
+  const phone = phoneDigits(d.phone).length === 10 ? d.phone : "";
+  const { lead } = await upsertLead({
+    firstName: "",
+    lastName: "",
+    businessName: d.name,
+    email: "",
+    phone,
+    website,
+    trade: d.trade,
+    city: d.city,
+    source: "outreach",
+    stage: "new_prospect",
+    note: `Found with the prospect finder (${d.trade} in ${d.city}). ${d.summary}${d.mapsUrl ? ` Google Maps: ${d.mapsUrl}` : ""}`.trim(),
+  });
+  const audit = formData.get("audit") === "1";
+  if (audit) {
+    const result = await queueCheck(lead.id);
+    if ("error" in result) return { leadId: lead.id, error: result.error };
+    after(() => processCheck(result.id));
+  }
+  revalidatePath("/admin/leads");
+  return { leadId: lead.id, audit };
 }
 
 // ---------- Pricing ----------

@@ -25,6 +25,7 @@ const kindLabel: Record<string, string> = {
   ai_search: "AI search audit request",
   geo_quiz: "GEO quiz",
   outreach: "Outreach prospect",
+  manual: "Added by you",
   ai_check: "AI visibility",
   contact_form: "Contact form",
   note: "Note",

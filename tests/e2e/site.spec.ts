@@ -349,15 +349,15 @@ test("audit requests run an AI check that the owner approves and emails", async 
 test("owner adds an outreach prospect and its AI check runs", async ({ page }) => {
   await signIn(page);
   await page.goto("/admin/leads");
-  await page.getByText("Add a prospect for outreach").click();
-  const form = page.getByRole("form", { name: "Add a prospect" });
-  await form.getByRole("button", { name: "Add prospect" }).click();
+  await page.getByRole("link", { name: "+ Add a lead" }).click();
+  const form = page.getByRole("form", { name: "Add a lead" });
+  await form.getByRole("button", { name: "Add lead" }).click();
   await expect(form.getByText("Please enter your business name.")).toBeVisible();
 
   await form.getByLabel("Business name").fill("Santee Rooter");
   await form.getByLabel("Type of business").fill("Plumbers");
   await form.getByLabel("City").fill("Santee");
-  await form.getByRole("button", { name: "Add prospect" }).click();
+  await form.getByRole("button", { name: "Add lead" }).click();
   await expect(page.getByRole("heading", { name: "Santee Rooter" })).toBeVisible();
   // The page refreshes itself until the check finishes.
   await expect(page.getByText("Named in 1 of 4 AI answers", { exact: true })).toBeVisible({ timeout: 30_000 });
@@ -371,6 +371,52 @@ test("owner adds an outreach prospect and its AI check runs", async ({ page }) =
 
   await page.getByRole("button", { name: "Turn on monthly tracking" }).click();
   await expect(page.getByText("Monthly tracking is on")).toBeVisible();
+});
+
+test("owner adds a lead on behalf of a customer who asked for an audit", async ({ page }) => {
+  await signIn(page);
+  await page.goto("/admin/leads/new");
+  const form = page.getByRole("form", { name: "Add a lead" });
+  await form.getByLabel("A customer who asked me for an audit").check();
+  await form.getByLabel("Business name").fill("Alpine Fence Co");
+  await form.getByLabel("Type of business").fill("Fencing");
+  await form.getByLabel("City").fill("Alpine");
+  await form.getByLabel("First name").fill("Dana");
+  await form.getByLabel("Email").fill("dana@example.com");
+  await form.getByLabel("Notes").fill("Called Saturday, wants a new website.");
+  await form.getByLabel(/Run the full audit now/).uncheck();
+  await form.getByRole("button", { name: "Add lead" }).click();
+  await expect(page.getByRole("heading", { name: "Alpine Fence Co" })).toBeVisible();
+  await expect(page.getByText("Called Saturday, wants a new website.")).toBeVisible();
+  const [lead] = await db`select source, stage, email, first_name from leads`;
+  expect(lead).toEqual({ source: "manual", stage: "audit_in_progress", email: "dana@example.com", first_name: "Dana" });
+  expect(await db`select 1 from ai_checks`).toHaveLength(0);
+});
+
+test("prospect finder scores businesses and adds one as a lead", async ({ page }) => {
+  await signIn(page);
+  await db`delete from settings where key = 'finder_searches'`;
+  await db`insert into leads (business_name, trade, city) values ('Ridgeline Works', 'Plumbers', 'El Cajon')`;
+  await page.goto("/admin/finder");
+  const search = page.getByRole("form", { name: "Search for prospects" });
+  await search.getByLabel("Type of business").fill("Plumbers");
+  await search.getByLabel("City").fill("El Cajon");
+  await search.getByRole("button", { name: "Search Google Maps" }).click();
+  await expect(page.getByRole("heading", { name: /7 businesses found, 3 strong prospects/ })).toBeVisible();
+  // Weakest first; solid ones are hidden until asked for.
+  const results = page.getByRole("region", { name: "Results" }).getByRole("listitem").filter({ has: page.getByRole("heading", { level: 3 }) });
+  await expect(results.first()).toContainText("Greenfield Brothers");
+  await expect(page.getByText("Summit Pro Services")).toHaveCount(0);
+  await page.getByLabel(/Show ones that look solid/).check();
+  await expect(page.getByText("Summit Pro Services")).toBeVisible();
+  await expect(results.filter({ hasText: "Ridgeline Works" })).toContainText("Already in your leads");
+
+  const row = results.filter({ hasText: "Mesa Family Services" });
+  await row.getByRole("button", { name: "Add to leads" }).click();
+  await expect(row.getByText("Added to leads")).toBeVisible();
+  const [lead] = await db`select source, stage, trade, city, phone from leads where business_name = 'Mesa Family Services'`;
+  expect(lead).toEqual({ source: "outreach", stage: "new_prospect", trade: "Plumbers", city: "El Cajon", phone: "(619) 555-0104" });
+  expect(await db`select 1 from ai_checks`).toHaveLength(0);
 });
 
 test("the scheduled job requires its secret", async ({ request }) => {
