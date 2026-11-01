@@ -116,7 +116,7 @@ export function analyzeWebsite(html: string, finalUrl: string, ctx: AuditContext
   }
 
   items.push(
-    /faq|frequently asked/i.test(body)
+    /faq|frequently asked/i.test(body) || types.includes("FAQPage")
       ? { id: "faq", label: "Answers common questions", status: "good", detail: "The site has a questions section, which AI assistants often quote." }
       : { id: "faq", label: "Answers common questions", status: "fix", detail: "No FAQ found. Plain-language answers to common customer questions are what AI assistants quote." },
   );
