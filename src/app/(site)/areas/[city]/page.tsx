@@ -20,8 +20,8 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
   const city = cityFromSlug((await params).city);
   if (!city) return {};
   return {
-    title: `GEO, Websites & Reviews in ${city}, CA`,
-    description: `Reputation Turbo helps ${city} contractors and home service businesses get found on Google and in AI answers from ${aiAssistantList}, with websites, Google profiles and reviews. Free online audit.`,
+    title: `Web Design, GEO & Reviews in ${city}, CA`,
+    description: `Web design, GEO, Google profiles and reviews in ${city}, CA. Reputation Turbo helps ${city} contractors and home service businesses get found on Google and in AI answers from ${aiAssistantList}. Free online audit.`,
     alternates: { canonical: `/areas/${citySlug(city)}` },
   };
 }
@@ -49,6 +49,10 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
       a: `Yes. We're based in ${site.address.city} and work with contractors and home service businesses in ${city} and across San Diego County.`,
     },
     {
+      q: `Who does web design for small businesses in ${city}?`,
+      a: `Reputation Turbo builds websites for contractors and home service businesses in ${city}, from our base in ${site.address.city}. Every website we build includes GEO, so Google and AI assistants can understand and recommend your business, and you own the domain, hosting and site.`,
+    },
+    {
       q: `Can you check what AI says about my ${city} business?`,
       a: `Yes. Our free online audit asks AI assistants like ${checkedAssistantList} the questions ${city} customers ask about your trade, and shows you whether you're named and who is named instead.`,
     },
@@ -65,8 +69,8 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
   const serviceJsonLd = {
     "@context": "https://schema.org",
     "@type": "Service",
-    name: `GEO, websites and online reputation in ${city}, CA`,
-    serviceType: ["Generative engine optimization (GEO)", "Small business websites", "Google Business Profile optimization", "Online reviews"],
+    name: `Web design, GEO and online reputation in ${city}, CA`,
+    serviceType: ["Web design", "Generative engine optimization (GEO)", "Small business websites", "Google Business Profile optimization", "Online reviews"],
     areaServed: { "@type": "City", name: `${city}, CA` },
     provider: businessJsonLd(),
   };
@@ -76,9 +80,9 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
       <JsonLd data={serviceJsonLd} />
       <JsonLd data={faqJsonLd(faqs)} />
       <PageHeader
-        eyebrow={`Serving ${city}, CA`}
+        eyebrow={`Web design & GEO in ${city}, CA`}
         title={`Get found in ${city}`}
-        intro={`We help ${city} contractors and home service businesses show up on Google and in AI answers from ${aiAssistantList}, so more local customers find you, trust you and call.`}
+        intro={`Web design, GEO, Google profiles and reviews for ${city} contractors and home service businesses. We help you show up on Google and in AI answers from ${aiAssistantList}, so more local customers find you, trust you and call.`}
       />
 
       <section className="py-14">

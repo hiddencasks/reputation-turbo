@@ -9,7 +9,7 @@ const heading = Barlow_Condensed({ variable: "--font-heading", subsets: ["latin"
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
   title: {
-    default: `${site.name} | GEO, Websites & Reviews for San Diego Contractors`,
+    default: `${site.name} | Web Design, GEO & Reviews for San Diego Contractors`,
     template: `%s | ${site.name}`,
   },
   description:
