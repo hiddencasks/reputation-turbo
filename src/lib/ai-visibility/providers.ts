@@ -30,8 +30,14 @@ async function postJson(url: string, headers: Record<string, string>, body: unkn
   });
   const data: unknown = await res.json().catch(() => null);
   if (!res.ok) {
-    const message = (data as { error?: { message?: string } } | null)?.error?.message ?? res.statusText;
-    throw new Error(`HTTP ${res.status}: ${message}`);
+    // Services shape errors differently: { error: { message } }, { error: "..." } or { message: "..." }.
+    const body = data as { error?: { message?: string } | string; message?: string; detail?: unknown } | null;
+    const message =
+      (typeof body?.error === "string" ? body.error : body?.error?.message) ??
+      body?.message ??
+      (typeof body?.detail === "string" ? body.detail : undefined) ??
+      res.statusText;
+    throw new Error(`HTTP ${res.status}: ${message || "request failed"}`);
   }
   return data;
 }
@@ -63,12 +69,18 @@ const openai: Provider = {
   },
 };
 
-// ---------- Perplexity (Sonar) ----------
+// ---------- Perplexity (Agent API) ----------
+// Perplexity retired the Sonar chat-completions API on 27 September 2026. The Agent API
+// replaces it: an effort preset picks the model and turns on web search, the way the
+// Perplexity app answers. The preset's own instructions are kept so the answer matches
+// what a customer sees, so our system prompt is not sent here.
 
 type PerplexityResponse = {
-  choices?: { message?: { content?: string } }[];
-  citations?: string[];
-  search_results?: { url?: string }[];
+  output?: {
+    type: string;
+    content?: { type: string; text?: string }[];
+    results?: { url?: string }[];
+  }[];
 };
 
 const perplexity: Provider = {
@@ -77,19 +89,20 @@ const perplexity: Provider = {
   enabled: () => Boolean(process.env.PERPLEXITY_API_KEY),
   async ask(question) {
     const data = (await postJson(
-      "https://api.perplexity.ai/chat/completions",
+      "https://api.perplexity.ai/v1/agent",
       { authorization: `Bearer ${process.env.PERPLEXITY_API_KEY}` },
-      {
-        model: process.env.PERPLEXITY_MODEL || "sonar",
-        messages: [
-          { role: "system", content: system },
-          { role: "user", content: question },
-        ],
-      },
+      { effort: process.env.PERPLEXITY_EFFORT || "fast", input: question },
     )) as PerplexityResponse;
+    const output = data.output ?? [];
+    const texts = output.filter((o) => o.type === "message").flatMap((o) => o.content ?? []).filter((c) => c.type === "output_text");
     return {
-      text: (data.choices?.[0]?.message?.content ?? "").trim(),
-      sources: unique([...(data.citations ?? []), ...(data.search_results ?? []).map((r) => r.url)]),
+      // Drop inline citation markers like [web:1] or [2]; the sources are listed separately.
+      text: texts
+        .map((c) => c.text ?? "")
+        .join("\n")
+        .replace(/ ?\[(?:web:)?\d+\]/g, "")
+        .trim(),
+      sources: unique(output.filter((o) => o.type === "search_results").flatMap((o) => (o.results ?? []).map((r) => r.url))),
     };
   },
 };
@@ -108,7 +121,7 @@ const gemini: Provider = {
   label: "Gemini (Google Search)",
   enabled: () => Boolean(process.env.GEMINI_API_KEY),
   async ask(question) {
-    const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+    const model = process.env.GEMINI_MODEL || "gemini-3.8-flash";
     const data = (await postJson(
       `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
       { "x-goog-api-key": process.env.GEMINI_API_KEY ?? "" },
