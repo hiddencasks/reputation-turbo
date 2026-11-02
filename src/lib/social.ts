@@ -48,9 +48,48 @@ export type SocialPost = {
   card: SocialCard;
   /** Optional description of the image for screen readers (Instagram alt text). */
   alt?: string;
+  /** The comment-to-DM keyword for this post (see `commentToDm`). Defaults to AUDIT. */
+  keyword?: Keyword;
 };
 
 export const freeAuditUrl = "https://reputationturbo.com/free-audit";
+
+/**
+ * Comment-to-DM: a viewer comments a keyword and an automation (set up in Meta
+ * Business Suite or ManyChat, outside this site) DMs them a link. Keep the set
+ * small and permanent so each automation is set up once and works on every post.
+ *
+ * `live` stays false until the automations are set up and tested, so no post
+ * promises a DM that never arrives. While false, captions and images don't
+ * mention keywords at all.
+ */
+export const commentToDm = {
+  live: false,
+  keywords: {
+    AUDIT: {
+      offer: "the link to your free online audit",
+      /** What the automation's DM should say. The links carry ?from= so the dashboard shows where the lead came from. */
+      dm: {
+        instagram: "Here's your free online audit: https://reputationturbo.com/free-audit?from=instagram-dm\n\nTell us about your business and we'll show you how customers (and AI) see you online.",
+        facebook: "Here's your free online audit: https://reputationturbo.com/free-audit?from=facebook-dm\n\nTell us about your business and we'll show you how customers (and AI) see you online.",
+      },
+    },
+    QUIZ: {
+      offer: "our 1-minute quiz: is AI recommending you, or your competitor?",
+      dm: {
+        instagram: "Here's the 1-minute quiz: https://reputationturbo.com/geo-quiz?from=instagram-dm\n\n7 quick questions to see whether ChatGPT, Claude, Gemini, Perplexity and Copilot recommend you.",
+        facebook: "Here's the 1-minute quiz: https://reputationturbo.com/geo-quiz?from=facebook-dm\n\n7 quick questions to see whether ChatGPT, Claude, Gemini, Perplexity and Copilot recommend you.",
+      },
+    },
+  },
+} as const;
+
+export type Keyword = keyof typeof commentToDm.keywords;
+
+/** The keyword a post shows, or undefined while comment-to-DM isn't live. */
+export function activeKeyword(post: SocialPost, live: boolean = commentToDm.live): Keyword | undefined {
+  return live ? (post.keyword ?? "AUDIT") : undefined;
+}
 const siteHost = "reputationturbo.com";
 
 /** Shared on Tuesdays, three hours after the blog post goes live at 6 AM. */
@@ -86,6 +125,7 @@ export const fridayPosts: SocialPost[] = [
     id: "2026-11-06-ai-test",
     publishAt: "2026-11-06T09:00:00-08:00",
     kind: "ai-check",
+    keyword: "QUIZ",
     body:
       "Try this 30-second test today.\n\nOpen ChatGPT, Claude, Gemini, Perplexity or Copilot and ask: \"Who is the best [your trade] in [your city]?\"\n\nDid it name your business? Did it name the shop down the street instead?\n\nMore customers are asking AI who to hire, and it only hands back a few names. Most business owners have never checked what it says about them.",
     card: { layout: "statement", kicker: "Try this today", headline: "Ask AI: who's the best contractor in your city?", subline: "Did it name you?" },
@@ -177,8 +217,10 @@ const instagramTags = "#SanDiegoSmallBusiness #EastCounty #SanDiegoContractors #
  * The caption for one network. Facebook links are clickable. Instagram captions
  * can't hold clickable links, so they point to the link in the profile bio.
  */
-export function captionFor(post: SocialPost, network: Network): string {
+export function captionFor(post: SocialPost, network: Network, live: boolean = commentToDm.live): string {
   const parts = [post.body.trim()];
+  const keyword = activeKeyword(post, live);
+  if (keyword) parts.push(`Comment ${keyword} and we'll DM you ${commentToDm.keywords[keyword].offer}.`);
   if (network === "facebook") {
     if (post.link) parts.push(`${post.link.label}: ${post.link.url}`);
     parts.push(`Get your free online audit: ${freeAuditUrl}`);

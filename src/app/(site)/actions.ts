@@ -12,6 +12,7 @@ import { QUIZ, quizScore, quizSummary } from "@/lib/quiz";
 import { aiChecksAvailable, hasRecentCheck, processCheck, queueCheck, underDailyLimit } from "@/lib/ai-visibility/run";
 import { runSiteAudit } from "@/lib/audit/run";
 import { auditSnapshot, type AuditSnapshot, type SiteAudit } from "@/lib/audit/checks";
+import { referralNote } from "@/lib/referral";
 
 export type FormState = {
   ok: boolean;
@@ -113,7 +114,7 @@ export async function submitAuditRequest(_prev: AuditFormState, formData: FormDa
       ...data,
       source: aiSearch ? "ai_search" : "audit_form",
       stage: "audit_in_progress",
-      note: `Requested a free online audit${aiSearch ? " with an AI search check" : ""}${data.website ? ` for ${data.website}` : " (no website given)"}.${interest ? ` Interested in: ${interest}.` : ""}${helpWith.length ? ` Wants help with: ${helpWith.join(", ")}.` : ""}`,
+      note: `Requested a free online audit${aiSearch ? " with an AI search check" : ""}${data.website ? ` for ${data.website}` : " (no website given)"}.${interest ? ` Interested in: ${interest}.` : ""}${helpWith.length ? ` Wants help with: ${helpWith.join(", ")}.` : ""}${referralNote(formData.get("from"))}`,
       meta: { ipHash, website: data.website },
     });
 
@@ -187,7 +188,7 @@ export async function submitQuiz(_prev: QuizState, formData: FormData): Promise<
       ...parsed.data,
       source: "geo_quiz",
       stage: "new_prospect",
-      note: summary,
+      note: `${summary}${referralNote(formData.get("from"))}`,
       meta: { ipHash, quiz: answers, score: quizScore(answers) },
     });
     await notifyOwner(lead, "quiz", `${parsed.data.trade} in ${parsed.data.city}.\n${summary}\n\nThey haven't asked for the audit yet. If they click "Send my free audit", you'll get a second email.`, duplicate);
