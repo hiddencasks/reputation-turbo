@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
 import sharp from "sharp";
-import { getSocialPost, type SocialCard } from "@/lib/social";
+import { activeKeyword, getSocialPost, type SocialCard } from "@/lib/social";
 
 // The image for one Facebook and Instagram post, drawn from its card text.
 // Served as a JPEG because Instagram only accepts JPEG photos.
@@ -76,11 +76,17 @@ export async function GET(_request: Request, { params }: { params: Promise<{ fil
 
   const [heading, bodySemi, bodyMedium, logo] = await assets;
   const card = post.card;
+  const keyword = activeKeyword(post);
   const png = new ImageResponse(
     (
       <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", background: navy, fontFamily: "Body" }}>
         <div style={{ display: "flex", height: 18, background: orange }} />
-        <div style={{ display: "flex", flexDirection: "column", flex: 1, padding: "90px 84px 0", justifyContent: "center" }}>
+        <div style={{ position: "relative", display: "flex", flexDirection: "column", flex: 1, padding: "90px 84px 0", justifyContent: "center" }}>
+          {keyword ? (
+            <div style={{ position: "absolute", top: 60, right: 60, display: "flex", padding: "12px 24px", borderRadius: 14, border: `3px solid ${orange}`, color: "white", fontSize: 30, fontWeight: 600 }}>
+              Comment&nbsp;<span style={{ color: orange }}>{keyword}</span>
+            </div>
+          ) : null}
           <div style={{ display: "flex", alignSelf: "flex-start", marginBottom: 46, padding: "12px 26px", borderRadius: 999, background: orange, color: "white", fontSize: 34, fontWeight: 600, textTransform: "uppercase", letterSpacing: 2 }}>
             {card.kicker}
           </div>

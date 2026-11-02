@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { GeoQuiz } from "@/components/forms";
 import { aiAssistantList } from "@/lib/site";
 import { Container, Eyebrow } from "@/components/ui";
+import { parseReferral } from "@/lib/referral";
 
 // Leaves time for the audit that can start from the results page.
 export const maxDuration = 300;
@@ -11,7 +12,9 @@ export const metadata: Metadata = {
   description: `7 quick questions to see whether ${aiAssistantList} recommend your business, or your competitors.`,
 };
 
-export default function GeoQuizPage() {
+export default async function GeoQuizPage({ searchParams }: { searchParams: Promise<{ from?: string | string[] }> }) {
+  // Links from the comment-to-DM automations add ?from=instagram-dm so the lead shows where it came from.
+  const from = parseReferral((await searchParams).from);
   return (
     <section className="bg-navy-50 py-12 sm:py-16">
       <Container className="max-w-3xl">
@@ -25,7 +28,7 @@ export default function GeoQuizPage() {
           </p>
         </div>
         <div className="mt-8 rounded-xl bg-white p-6 shadow-sm sm:p-8">
-          <GeoQuiz />
+          <GeoQuiz from={from} />
         </div>
       </Container>
     </section>

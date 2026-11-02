@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { posts as blogPosts } from "@/lib/blog";
-import { allSocialPosts, blogShare, captionFor, duePosts, freeAuditUrl, pacificIso, PUBLISH_WINDOW_HOURS } from "@/lib/social";
+import { activeKeyword, allSocialPosts, blogShare, captionFor, commentToDm, duePosts, freeAuditUrl, pacificIso, PUBLISH_WINDOW_HOURS } from "@/lib/social";
+import { parseReferral, referralNote } from "@/lib/referral";
 
 const assistants = ["ChatGPT", "Claude", "Gemini", "Perplexity", "Copilot"];
 
@@ -59,5 +60,34 @@ describe("social posts", () => {
     const share = blogShare({ slug: "x", title: "Hello", description: "World", publishAt: "2027-01-05T06:00:00-08:00", readMinutes: 3, topic: "Reviews" });
     expect(share.card.headline).toBe("Hello");
     expect(share.body).toContain("World");
+  });
+});
+
+describe("comment-to-DM keywords", () => {
+  const post = allSocialPosts()[0];
+
+  it("stays off until the automations are live", () => {
+    expect(commentToDm.live).toBe(false);
+    expect(activeKeyword(post)).toBeUndefined();
+    expect(captionFor(post, "facebook")).not.toMatch(/Comment [A-Z]+/);
+  });
+
+  it("adds the keyword line once live", () => {
+    const k = activeKeyword(post, true)!;
+    expect(Object.keys(commentToDm.keywords)).toContain(k);
+    expect(captionFor(post, "instagram", true)).toContain(`Comment ${k} and we'll DM you`);
+  });
+
+  it("tags every DM link with where it came from", () => {
+    for (const k of Object.values(commentToDm.keywords)) {
+      expect(k.dm.instagram).toContain("from=instagram-dm");
+      expect(k.dm.facebook).toContain("from=facebook-dm");
+    }
+  });
+
+  it("only accepts known referrals", () => {
+    expect(referralNote("instagram-dm")).toBe(" Came from: Instagram DM.");
+    expect(referralNote("evil")).toBe("");
+    expect(parseReferral(["facebook-dm"])).toBeUndefined();
   });
 });
