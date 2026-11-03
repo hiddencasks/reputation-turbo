@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useState, type FormEvent } from "react";
+import { useActionState, useEffect, useState, type FormEvent } from "react";
+import { trackPixel } from "@/lib/meta-pixel";
 import type { AuditFormState, FormState } from "@/app/(site)/actions";
 import { requestQuizAudit, submitAuditRequest, submitContact, submitQuiz, type QuizState } from "@/app/(site)/actions";
 import { QUIZ, quizBand, type QuizAnswer } from "@/lib/quiz";
@@ -274,6 +275,9 @@ function AuditSnapshotView({ snapshot }: { snapshot: AuditSnapshot }) {
 
 export function AuditForm({ focus, interest, trade }: { focus?: "ai-search"; interest?: string; trade?: string }) {
   const [state, action, pending] = useActionState(submitAuditRequest, initial as AuditFormState);
+  useEffect(() => {
+    if (state.ok) trackPixel("Lead", { content_name: focus === "ai-search" ? "ai_search_audit" : "free_audit" });
+  }, [state.ok, focus]);
   if (state.ok && state.snapshot) return <AuditSnapshotView snapshot={state.snapshot} />;
   if (state.ok) {
     return (
@@ -327,6 +331,9 @@ export function AuditForm({ focus, interest, trade }: { focus?: "ai-search"; int
 
 export function ContactForm({ message }: { message?: string }) {
   const [state, action, pending] = useActionState(submitContact, initial);
+  useEffect(() => {
+    if (state.ok) trackPixel("Contact");
+  }, [state.ok]);
   if (state.ok) {
     return <Success title="Message sent" body="Thanks for reaching out. We'll get back to you by email shortly." />;
   }
@@ -369,6 +376,9 @@ const answerLabels: { value: QuizAnswer; label: string }[] = [
 /** The GEO quiz: one question at a time, then contact details, then the score and a one-click free audit. */
 export function GeoQuiz() {
   const [state, action, pending] = useActionState(submitQuiz, initial as QuizState);
+  useEffect(() => {
+    if (state.ok) trackPixel("Lead", { content_name: "geo_quiz" });
+  }, [state.ok]);
   const [answers, setAnswers] = useState<Record<string, QuizAnswer>>({});
   const [step, setStep] = useState(0);
 

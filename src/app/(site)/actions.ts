@@ -1,13 +1,14 @@
 "use server";
 
 import { createHash } from "node:crypto";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { after } from "next/server";
 import { auditRequestSchema, contactSchema, firstErrors, type FieldErrors } from "@/lib/validation";
 import { isSuppressed, recentSubmissions, upsertLead, type Lead } from "@/lib/leads";
 import { notifyOwner, sendAuditConfirmation, sendContactConfirmation } from "@/lib/notifications";
 import { site } from "@/lib/site";
 import { sql } from "@/lib/db";
+import { AD_COOKIE, parseAdSource } from "@/lib/ad-source";
 import { QUIZ, quizScore, quizSummary } from "@/lib/quiz";
 import { aiChecksAvailable, hasRecentCheck, processCheck, queueCheck, underDailyLimit } from "@/lib/ai-visibility/run";
 import { runSiteAudit } from "@/lib/audit/run";
@@ -28,6 +29,12 @@ async function visitorHash(): Promise<string> {
   const h = await headers();
   const ip = h.get("x-forwarded-for")?.split(",")[0]?.trim() || h.get("x-real-ip") || "unknown";
   return createHash("sha256").update(`${ip}:${process.env.SESSION_SECRET ?? ""}`).digest("hex").slice(0, 32);
+}
+
+/** The ad or tagged link that brought this visitor, if any (saved by AdSourceCapture). */
+async function adSource() {
+  const ad = parseAdSource((await cookies()).get(AD_COOKIE)?.value);
+  return ad ? { ad } : {};
 }
 
 function formValues(formData: FormData, keys: string[]): Record<string, string> {
@@ -114,7 +121,7 @@ export async function submitAuditRequest(_prev: AuditFormState, formData: FormDa
       source: aiSearch ? "ai_search" : "audit_form",
       stage: "audit_in_progress",
       note: `Requested a free online audit${aiSearch ? " with an AI search check" : ""}${data.website ? ` for ${data.website}` : " (no website given)"}.${interest ? ` Interested in: ${interest}.` : ""}${helpWith.length ? ` Wants help with: ${helpWith.join(", ")}.` : ""}`,
-      meta: { ipHash, website: data.website },
+      meta: { ipHash, website: data.website, ...(await adSource()) },
     });
 
     const wants = helpWith.length ? `\nWants help with: ${helpWith.join(", ")}.` : "";
@@ -148,7 +155,7 @@ export async function submitContact(_prev: FormState, formData: FormData): Promi
       source: "contact_form",
       stage: "new_prospect",
       note: data.message,
-      meta: { ipHash },
+      meta: { ipHash, ...(await adSource()) },
     });
 
     if (!(await isSuppressed(lead.email))) await sendContactConfirmation(lead);
@@ -188,7 +195,7 @@ export async function submitQuiz(_prev: QuizState, formData: FormData): Promise<
       source: "geo_quiz",
       stage: "new_prospect",
       note: summary,
-      meta: { ipHash, quiz: answers, score: quizScore(answers) },
+      meta: { ipHash, quiz: answers, score: quizScore(answers), ...(await adSource()) },
     });
     await notifyOwner(lead, "quiz", `${parsed.data.trade} in ${parsed.data.city}.\n${summary}\n\nThey haven't asked for the audit yet. If they click "Send my free audit", you'll get a second email.`, duplicate);
     return { ok: true, errors: {}, values: {}, score: quizScore(answers), leadId: lead.id, answers };

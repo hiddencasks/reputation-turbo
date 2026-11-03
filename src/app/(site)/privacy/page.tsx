@@ -8,7 +8,7 @@ export const metadata: Metadata = { title: "Privacy Policy" };
 export default function PrivacyPage() {
   return (
     <>
-      <PageHeader title="Privacy Policy" intro="Last updated October 25, 2026" />
+      <PageHeader title="Privacy Policy" intro="Last updated November 3, 2026" />
       <section className="py-14">
         <Container>
           <Prose>
@@ -30,6 +30,18 @@ export default function PrivacyPage() {
               <li>To protect our website from spam and misuse.</li>
             </ul>
             <p>We do not sell your personal information.</p>
+            <h2>Advertising and cookies</h2>
+            <p>
+              We use the Meta Pixel, a tool from Meta (the company behind Facebook and Instagram), to measure how our ads perform
+              and to show our ads to people who may be interested. It uses cookies to record visits to this website and actions
+              such as requesting an audit, and Meta may use this information under its own privacy policy. We do not send Meta the
+              details you type into our forms. You can limit this by blocking cookies in your browser or by changing your ad
+              preferences in your Facebook or Instagram settings.
+            </p>
+            <p>
+              We also note which ad or link brought you to our site, using a small cookie that lasts 30 days, so we know which
+              of our ads are working.
+            </p>
             <h2>Service providers</h2>
             <p>
               We use trusted providers to run our business, including website hosting, database, email delivery and payment
