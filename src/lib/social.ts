@@ -68,17 +68,17 @@ export const commentToDm = {
   keywords: {
     AUDIT: {
       offer: "the link to your free online audit",
-      /** What the automation's DM should say. The links carry ?from= so the dashboard shows where the lead came from. */
+      /** What the automation's DM should say. The links carry utm tags (see lib/ad-source.ts) so the dashboard shows the lead came from an Instagram or Facebook DM. */
       dm: {
-        instagram: "Here's your free online audit: https://reputationturbo.com/free-audit?from=instagram-dm\n\nTell us about your business and we'll show you how customers (and AI) see you online.",
-        facebook: "Here's your free online audit: https://reputationturbo.com/free-audit?from=facebook-dm\n\nTell us about your business and we'll show you how customers (and AI) see you online.",
+        instagram: "Here's your free online audit: https://reputationturbo.com/free-audit?utm_source=instagram&utm_medium=dm&utm_campaign=dm-audit\n\nTell us about your business and we'll show you how customers (and AI) see you online.",
+        facebook: "Here's your free online audit: https://reputationturbo.com/free-audit?utm_source=facebook&utm_medium=dm&utm_campaign=dm-audit\n\nTell us about your business and we'll show you how customers (and AI) see you online.",
       },
     },
     QUIZ: {
       offer: "our 1-minute quiz: is AI recommending you, or your competitor?",
       dm: {
-        instagram: "Here's the 1-minute quiz: https://reputationturbo.com/geo-quiz?from=instagram-dm\n\n7 quick questions to see whether ChatGPT, Claude, Gemini, Perplexity and Copilot recommend you.",
-        facebook: "Here's the 1-minute quiz: https://reputationturbo.com/geo-quiz?from=facebook-dm\n\n7 quick questions to see whether ChatGPT, Claude, Gemini, Perplexity and Copilot recommend you.",
+        instagram: "Here's the 1-minute quiz: https://reputationturbo.com/geo-quiz?utm_source=instagram&utm_medium=dm&utm_campaign=dm-quiz\n\n7 quick questions to see whether ChatGPT, Claude, Gemini, Perplexity and Copilot recommend you.",
+        facebook: "Here's the 1-minute quiz: https://reputationturbo.com/geo-quiz?utm_source=facebook&utm_medium=dm&utm_campaign=dm-quiz\n\n7 quick questions to see whether ChatGPT, Claude, Gemini, Perplexity and Copilot recommend you.",
       },
     },
   },

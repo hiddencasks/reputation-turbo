@@ -3,7 +3,6 @@ import { AuditForm } from "@/components/forms";
 import { getOfferings } from "@/lib/offerings";
 import { checkedAssistantList, site } from "@/lib/site";
 import { Container, PageHeader } from "@/components/ui";
-import { parseReferral } from "@/lib/referral";
 
 // Leaves time for the AI visibility check that starts after an audit request.
 export const maxDuration = 300;
@@ -25,7 +24,7 @@ const checks = [
 export default async function FreeAuditPage({
   searchParams,
 }: {
-  searchParams: Promise<{ focus?: string | string[]; package?: string | string[]; trade?: string | string[]; from?: string | string[] }>;
+  searchParams: Promise<{ focus?: string | string[]; package?: string | string[]; trade?: string | string[] }>;
 }) {
   const params = await searchParams;
   // Links from the AI search page and outreach use ?focus=ai-search so those leads are tagged in the dashboard.
@@ -71,7 +70,7 @@ export default async function FreeAuditPage({
             )}
           </div>
           <div className="rounded-lg border border-line p-6 shadow-sm sm:p-8">
-            <AuditForm focus={aiSearch ? "ai-search" : undefined} interest={interest} trade={trade} from={parseReferral(params.from)} />
+            <AuditForm focus={aiSearch ? "ai-search" : undefined} interest={interest} trade={trade} />
           </div>
         </Container>
       </section>

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { posts as blogPosts } from "@/lib/blog";
 import { activeKeyword, allSocialPosts, blogShare, captionFor, commentToDm, duePosts, freeAuditUrl, pacificIso, PUBLISH_WINDOW_HOURS } from "@/lib/social";
-import { parseReferral, referralNote } from "@/lib/referral";
+import { adSourceFromUrl, describeAdSource } from "@/lib/ad-source";
 
 const assistants = ["ChatGPT", "Claude", "Gemini", "Perplexity", "Copilot"];
 
@@ -78,16 +78,15 @@ describe("comment-to-DM keywords", () => {
     expect(captionFor(post, "instagram", true)).toContain(`Comment ${k} and we'll DM you`);
   });
 
-  it("tags every DM link with where it came from", () => {
+  it("tags every DM link so the lead shows it came from a DM", () => {
     for (const k of Object.values(commentToDm.keywords)) {
-      expect(k.dm.instagram).toContain("from=instagram-dm");
-      expect(k.dm.facebook).toContain("from=facebook-dm");
+      for (const net of ["instagram", "facebook"] as const) {
+        const url = new URL(k.dm[net].match(/https:\/\/\S+/)![0]);
+        const ad = adSourceFromUrl(url.search, url.pathname)!;
+        expect(ad.source).toBe(net);
+        expect(ad.medium).toBe("dm");
+        expect(describeAdSource(ad)).toMatch(net === "instagram" ? /^Instagram · / : /^Facebook · /);
+      }
     }
-  });
-
-  it("only accepts known referrals", () => {
-    expect(referralNote("instagram-dm")).toBe(" Came from: Instagram DM.");
-    expect(referralNote("evil")).toBe("");
-    expect(parseReferral(["facebook-dm"])).toBeUndefined();
   });
 });

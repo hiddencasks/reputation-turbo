@@ -13,11 +13,12 @@ import { recommendPackages, splitPackages } from "@/lib/recommend";
 import { auditScore, fixIds } from "@/lib/audit/checks";
 import { addNote, approveReport, deleteLead, runAiCheck, setAiMonitoring, updateLead } from "../../../actions";
 import { DeleteLead } from "./DeleteLead";
+import { describeAdSource, parseAdSource } from "@/lib/ad-source";
 
 // Leaves time for AI visibility checks started from this page.
 export const maxDuration = 300;
 
-type Activity = { id: string; kind: string; body: string; created_at: Date };
+type Activity = { id: string; kind: string; body: string; created_at: Date; meta: { ad?: unknown } | null };
 type EmailRow = { id: string; subject: string; template: string; status: string; to_email: string; created_at: Date };
 
 const kindLabel: Record<string, string> = {
@@ -40,7 +41,7 @@ export default async function LeadPage({ params, searchParams }: { params: Promi
   if (!/^[0-9a-f-]{36}$/.test(id)) notFound();
   const [[lead], activities, emails, checks, offerings] = await Promise.all([
     sql<Lead[]>`select * from leads where id = ${id}`,
-    sql<Activity[]>`select id, kind, body, created_at from activities where lead_id = ${id} order by created_at desc`,
+    sql<Activity[]>`select id, kind, body, meta, created_at from activities where lead_id = ${id} order by created_at desc`,
     sql<EmailRow[]>`select id, subject, template, status, to_email, created_at from emails where lead_id = ${id} order by created_at desc`,
     getChecksForLead(id),
     getOfferings({ activeOnly: true }),
@@ -59,6 +60,10 @@ export default async function LeadPage({ params, searchParams }: { params: Promi
   const nameOf = new Map(offerings.map((o) => [o.slug, o.name]));
   const suggestions = rec.suggestions.filter((x) => nameOf.has(x.slug));
 
+  // Saved activities hold the ad cookie as an object; reuse the cookie parser to keep only known fields.
+  const adOf = (a: Activity) => (a.meta?.ad ? parseAdSource(encodeURIComponent(JSON.stringify(a.meta.ad))) : null);
+  const firstAd = activities.map(adOf).findLast(Boolean) ?? null;
+
   const input = "mt-1 w-full rounded-md border border-line bg-white px-3 py-2";
 
   return (
@@ -67,6 +72,7 @@ export default async function LeadPage({ params, searchParams }: { params: Promi
       <div>
         <h1 className="font-display text-3xl font-bold text-navy">{lead.business_name || `${lead.first_name} ${lead.last_name}`}</h1>
         <p className="text-muted">Added {fmt(lead.created_at)} from {lead.source.replace("_", " ")}</p>
+        {firstAd ? <p className="mt-1 inline-block rounded-full bg-orange/10 px-3 py-0.5 text-sm font-semibold text-orange-600">Came from: {describeAdSource(firstAd)}</p> : null}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -239,6 +245,7 @@ export default async function LeadPage({ params, searchParams }: { params: Promi
               <li key={a.id} className="border-l-2 border-orange pl-3">
                 <p className="text-xs text-muted">{kindLabel[a.kind] ?? a.kind} · {fmt(a.created_at)}</p>
                 <p className="whitespace-pre-wrap text-sm">{a.body}</p>
+                {adOf(a) ? <p className="mt-1 text-xs font-semibold text-orange-600">From: {describeAdSource(adOf(a)!)}</p> : null}
               </li>
             ))}
           </ol>

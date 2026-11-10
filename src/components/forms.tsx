@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useState, type FormEvent } from "react";
+import { useActionState, useEffect, useState, type FormEvent } from "react";
+import { trackPixel } from "@/lib/meta-pixel";
 import type { AuditFormState, FormState } from "@/app/(site)/actions";
 import { requestQuizAudit, submitAuditRequest, submitContact, submitQuiz, type QuizState } from "@/app/(site)/actions";
 import { QUIZ, quizBand, type QuizAnswer } from "@/lib/quiz";
@@ -272,8 +273,11 @@ function AuditSnapshotView({ snapshot }: { snapshot: AuditSnapshot }) {
   );
 }
 
-export function AuditForm({ focus, interest, trade, from }: { focus?: "ai-search"; interest?: string; trade?: string; from?: string }) {
+export function AuditForm({ focus, interest, trade }: { focus?: "ai-search"; interest?: string; trade?: string }) {
   const [state, action, pending] = useActionState(submitAuditRequest, initial as AuditFormState);
+  useEffect(() => {
+    if (state.ok) trackPixel("Lead", { content_name: focus === "ai-search" ? "ai_search_audit" : "free_audit" });
+  }, [state.ok, focus]);
   if (state.ok && state.snapshot) return <AuditSnapshotView snapshot={state.snapshot} />;
   if (state.ok) {
     return (
@@ -289,7 +293,6 @@ export function AuditForm({ focus, interest, trade, from }: { focus?: "ai-search
     <form action={action} noValidate className="relative space-y-4" aria-label="Free online audit request">
       <Honeypot />
       {focus && <input type="hidden" name="focus" value={focus} />}
-      {from && <input type="hidden" name="from" value={from} />}
       {interest && (
         <>
           <input type="hidden" name="interest" value={interest} />
@@ -328,6 +331,9 @@ export function AuditForm({ focus, interest, trade, from }: { focus?: "ai-search
 
 export function ContactForm({ message }: { message?: string }) {
   const [state, action, pending] = useActionState(submitContact, initial);
+  useEffect(() => {
+    if (state.ok) trackPixel("Contact");
+  }, [state.ok]);
   if (state.ok) {
     return <Success title="Message sent" body="Thanks for reaching out. We'll get back to you by email shortly." />;
   }
@@ -368,8 +374,11 @@ const answerLabels: { value: QuizAnswer; label: string }[] = [
 ];
 
 /** The GEO quiz: one question at a time, then contact details, then the score and a one-click free audit. */
-export function GeoQuiz({ from }: { from?: string } = {}) {
+export function GeoQuiz() {
   const [state, action, pending] = useActionState(submitQuiz, initial as QuizState);
+  useEffect(() => {
+    if (state.ok) trackPixel("Lead", { content_name: "geo_quiz" });
+  }, [state.ok]);
   const [answers, setAnswers] = useState<Record<string, QuizAnswer>>({});
   const [step, setStep] = useState(0);
 
@@ -419,7 +428,6 @@ export function GeoQuiz({ from }: { from?: string } = {}) {
         <form action={action} noValidate className="relative mt-6 space-y-4" aria-label="See my GEO score">
           <Honeypot />
           {QUIZ.map((x) => <input key={x.id} type="hidden" name={`q_${x.id}`} value={answers[x.id] ?? "unsure"} />)}
-          {from && <input type="hidden" name="from" value={from} />}
           <h2 className="font-display text-2xl font-bold text-navy sm:text-3xl">Last step: see your score</h2>
           <p className="text-muted">Your score shows up right away. If you want the free audit after, we&apos;ll know where to send it.</p>
           <RequiredNote />
