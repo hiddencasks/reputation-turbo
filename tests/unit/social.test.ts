@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { posts as blogPosts } from "@/lib/blog";
-import { allSocialPosts, blogShare, captionFor, duePosts, freeAuditUrl, pacificIso, PUBLISH_WINDOW_HOURS } from "@/lib/social";
+import { existsSync } from "node:fs";
+import path from "node:path";
+import { activeKeyword, allSocialPosts, cardsOf, cardText, formatOf, imagePath, parseImageFile, videoPath, blogShare, captionFor, commentToDm, duePosts, freeAuditUrl, pacificIso, PUBLISH_WINDOW_HOURS } from "@/lib/social";
+import { adSourceFromUrl, describeAdSource } from "@/lib/ad-source";
 
 const assistants = ["ChatGPT", "Claude", "Gemini", "Perplexity", "Copilot"];
 
@@ -57,7 +60,64 @@ describe("social posts", () => {
 
   it("falls back to the blog title for posts without custom wording", () => {
     const share = blogShare({ slug: "x", title: "Hello", description: "World", publishAt: "2027-01-05T06:00:00-08:00", readMinutes: 3, topic: "Reviews" });
-    expect(share.card.headline).toBe("Hello");
+    expect(cardText(share.card)).toBe("Hello");
     expect(share.body).toContain("World");
+  });
+});
+
+describe("comment-to-DM keywords", () => {
+  const post = allSocialPosts()[0];
+
+  it("stays off until the automations are live", () => {
+    expect(commentToDm.live).toBe(false);
+    expect(activeKeyword(post)).toBeUndefined();
+    expect(captionFor(post, "facebook")).not.toMatch(/Comment [A-Z]+/);
+  });
+
+  it("adds the keyword line once live", () => {
+    const k = activeKeyword(post, true)!;
+    expect(Object.keys(commentToDm.keywords)).toContain(k);
+    expect(captionFor(post, "instagram", true)).toContain(`Comment ${k} and we'll DM you`);
+  });
+
+  it("tags every DM link so the lead shows it came from a DM", () => {
+    for (const k of Object.values(commentToDm.keywords)) {
+      for (const net of ["instagram", "facebook"] as const) {
+        const url = new URL(k.dm[net].match(/https:\/\/\S+/)![0]);
+        const ad = adSourceFromUrl(url.search, url.pathname)!;
+        expect(ad.source).toBe(net);
+        expect(ad.medium).toBe("dm");
+        expect(describeAdSource(ad)).toMatch(net === "instagram" ? /^Instagram · / : /^Facebook · /);
+      }
+    }
+  });
+});
+
+describe("post formats", () => {
+  const all = allSocialPosts();
+
+  it("keeps carousels within Instagram's 2 to 10 slides", () => {
+    for (const p of all.filter((x) => formatOf(x) === "carousel")) {
+      expect(cardsOf(p).length).toBeGreaterThanOrEqual(2);
+      expect(cardsOf(p).length).toBeLessThanOrEqual(10);
+    }
+  });
+
+  it("has a video file for every Reel", () => {
+    for (const p of all.filter((x) => formatOf(x) === "reel")) {
+      expect(existsSync(path.join(process.cwd(), "public", videoPath(p))), `run npm run social:reel -- ${p.id}`).toBe(true);
+    }
+  });
+
+  it("reads image file names back", () => {
+    const p = all[0];
+    expect(parseImageFile(imagePath(p).split("/").pop()!)).toEqual({ id: p.id, slide: 1, tall: false });
+    expect(parseImageFile(imagePath(p, 3, true).split("/").pop()!)).toEqual({ id: p.id, slide: 3, tall: true });
+    expect(parseImageFile("../x.jpg")).toBeNull();
+  });
+
+  it("uses more than one look each month", () => {
+    const formats = new Set(all.map(formatOf));
+    expect(formats.size).toBeGreaterThan(1);
   });
 });
