@@ -11,7 +11,8 @@
     "hash-password": "tsx scripts/hash-password.mts",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "social:reel": "tsx scripts/social-reel.mts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.3.0",

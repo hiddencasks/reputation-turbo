@@ -1,4 +1,4 @@
-import { captionFor, postTiming, recentSocialPosts, formatPostTime, imagePath, networkLabel, networks, PUBLISH_WINDOW_HOURS, type SocialPost } from "@/lib/social";
+import { captionFor, cardsOf, formatOf, postTiming, recentSocialPosts, formatPostTime, imagePath, networkLabel, networks, PUBLISH_WINDOW_HOURS, videoPath, type SocialPost } from "@/lib/social";
 import { getStates, socialConfig, stateFor, type PublishState } from "@/lib/social-publish";
 import { postNow, testConnection } from "./actions";
 
@@ -8,6 +8,8 @@ const kindLabel: Record<SocialPost["kind"], string> = {
   "before-after": "Before and after",
   "ai-check": "AI check",
 };
+
+const formatLabel = { image: "Image", carousel: "Carousel", reel: "Reel" } as const;
 
 function StatusPill({ state, missed, connected }: { state?: PublishState; missed: boolean; connected: boolean }) {
   let text = missed ? "Missed (too late to post)" : "Scheduled";
@@ -55,14 +57,30 @@ export default async function SocialPage({ searchParams }: { searchParams: Promi
           const { missed } = postTiming(post);
           return (
             <article key={post.id} id={post.id} className="grid gap-4 rounded-lg bg-white p-4 shadow-sm md:grid-cols-[220px_1fr]">
-              <a href={imagePath(post)} target="_blank" rel="noreferrer">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={imagePath(post)} alt={post.alt ?? ""} width={220} height={275} loading="lazy" className="w-full rounded-md border border-line" />
-              </a>
+              <div className="space-y-2">
+                {formatOf(post) === "reel" ? (
+                  <video src={videoPath(post)} poster={imagePath(post)} controls muted playsInline preload="none" className="w-full rounded-md border border-line" />
+                ) : (
+                  <a href={imagePath(post)} target="_blank" rel="noreferrer">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={imagePath(post)} alt={post.alt ?? ""} width={220} height={275} loading="lazy" className="w-full rounded-md border border-line" />
+                  </a>
+                )}
+                {formatOf(post) === "carousel" ? (
+                  <div className="grid grid-cols-4 gap-1">
+                    {cardsOf(post).slice(1).map((_, i) => (
+                      <a key={i} href={imagePath(post, i + 2)} target="_blank" rel="noreferrer">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={imagePath(post, i + 2)} alt={`Slide ${i + 2}`} width={52} height={65} loading="lazy" className="w-full rounded border border-line" />
+                      </a>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
               <div className="min-w-0 space-y-3">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-semibold text-navy">{formatPostTime(post.publishAt)}</span>
-                  <span className="text-xs uppercase tracking-wide text-muted">{kindLabel[post.kind]}</span>
+                  <span className="text-xs uppercase tracking-wide text-muted">{kindLabel[post.kind]} · {formatLabel[formatOf(post)]}</span>
                 </div>
                 {networks.map((n) => {
                   const state = stateFor(states, post.id, n);

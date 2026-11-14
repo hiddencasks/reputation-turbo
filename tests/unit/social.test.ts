@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { posts as blogPosts } from "@/lib/blog";
-import { activeKeyword, allSocialPosts, blogShare, captionFor, commentToDm, duePosts, freeAuditUrl, pacificIso, PUBLISH_WINDOW_HOURS } from "@/lib/social";
+import { existsSync } from "node:fs";
+import path from "node:path";
+import { activeKeyword, allSocialPosts, cardsOf, cardText, formatOf, imagePath, parseImageFile, videoPath, blogShare, captionFor, commentToDm, duePosts, freeAuditUrl, pacificIso, PUBLISH_WINDOW_HOURS } from "@/lib/social";
 import { adSourceFromUrl, describeAdSource } from "@/lib/ad-source";
 
 const assistants = ["ChatGPT", "Claude", "Gemini", "Perplexity", "Copilot"];
@@ -58,7 +60,7 @@ describe("social posts", () => {
 
   it("falls back to the blog title for posts without custom wording", () => {
     const share = blogShare({ slug: "x", title: "Hello", description: "World", publishAt: "2027-01-05T06:00:00-08:00", readMinutes: 3, topic: "Reviews" });
-    expect(share.card.headline).toBe("Hello");
+    expect(cardText(share.card)).toBe("Hello");
     expect(share.body).toContain("World");
   });
 });
@@ -88,5 +90,34 @@ describe("comment-to-DM keywords", () => {
         expect(describeAdSource(ad)).toMatch(net === "instagram" ? /^Instagram · / : /^Facebook · /);
       }
     }
+  });
+});
+
+describe("post formats", () => {
+  const all = allSocialPosts();
+
+  it("keeps carousels within Instagram's 2 to 10 slides", () => {
+    for (const p of all.filter((x) => formatOf(x) === "carousel")) {
+      expect(cardsOf(p).length).toBeGreaterThanOrEqual(2);
+      expect(cardsOf(p).length).toBeLessThanOrEqual(10);
+    }
+  });
+
+  it("has a video file for every Reel", () => {
+    for (const p of all.filter((x) => formatOf(x) === "reel")) {
+      expect(existsSync(path.join(process.cwd(), "public", videoPath(p))), `run npm run social:reel -- ${p.id}`).toBe(true);
+    }
+  });
+
+  it("reads image file names back", () => {
+    const p = all[0];
+    expect(parseImageFile(imagePath(p).split("/").pop()!)).toEqual({ id: p.id, slide: 1, tall: false });
+    expect(parseImageFile(imagePath(p, 3, true).split("/").pop()!)).toEqual({ id: p.id, slide: 3, tall: true });
+    expect(parseImageFile("../x.jpg")).toBeNull();
+  });
+
+  it("uses more than one look each month", () => {
+    const formats = new Set(all.map(formatOf));
+    expect(formats.size).toBeGreaterThan(1);
   });
 });
