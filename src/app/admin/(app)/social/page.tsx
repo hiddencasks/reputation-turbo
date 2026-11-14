@@ -1,6 +1,7 @@
 import { captionFor, postTiming, recentSocialPosts, formatPostTime, imagePath, networkLabel, networks, PUBLISH_WINDOW_HOURS, type SocialPost } from "@/lib/social";
 import { getStates, socialConfig, stateFor, type PublishState } from "@/lib/social-publish";
 import { postNow, testConnection } from "./actions";
+import { PendingButton } from "./PendingButton";
 
 const kindLabel: Record<SocialPost["kind"], string> = {
   blog: "Blog share",
@@ -46,7 +47,7 @@ export default async function SocialPage({ searchParams }: { searchParams: Promi
           {config.paused ? <li className="font-semibold text-orange-600">Paused (SOCIAL_PAUSED=1 in Vercel). Nothing will post.</li> : null}
         </ul>
         <form action={testConnection} className="mt-3">
-          <button className="rounded-md bg-navy px-4 py-2 text-sm font-semibold text-white">Test connection (posts nothing)</button>
+          <PendingButton pendingText="Checking…" className="rounded-md bg-navy px-4 py-2 text-sm font-semibold text-white">Test connection (posts nothing)</PendingButton>
         </form>
       </section>
 
@@ -78,7 +79,7 @@ export default async function SocialPage({ searchParams }: { searchParams: Promi
                         <form action={postNow} className="mt-2">
                           <input type="hidden" name="postId" value={post.id} />
                           <input type="hidden" name="network" value={n} />
-                          <button className="rounded-md border border-navy px-3 py-1.5 text-sm font-semibold text-navy">Post to {networkLabel[n]} now</button>
+                          <PendingButton pendingText={`Posting to ${networkLabel[n]}…`} className="rounded-md border border-navy px-3 py-1.5 text-sm font-semibold text-navy">Post to {networkLabel[n]} now</PendingButton>
                         </form>
                       ) : null}
                     </details>
