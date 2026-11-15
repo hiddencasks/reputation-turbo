@@ -16,7 +16,7 @@ export type BlogPost = {
   /** When the post goes live, as an ISO time with the Pacific offset (6 AM Pacific). */
   publishAt: string;
   readMinutes: number;
-  topic: "AI search" | "Google profile" | "Reviews" | "Local SEO";
+  topic: "AI search" | "Google profile" | "Reviews" | "Local SEO" | "Websites" | "Leads";
 };
 
 export const author = { name: "Alvin Shamoun", role: "Founder, Reputation Turbo", href: "/about" };
@@ -58,6 +58,51 @@ export const posts: BlogPost[] = [
     publishAt: "2026-11-24T06:00:00-08:00",
     readMinutes: 4,
     topic: "Local SEO",
+  },
+  {
+    slug: "website-turning-customers-away",
+    title: "6 Signs Your Website Is Turning Customers Away",
+    description:
+      "A customer found you, tapped through to your website, and left without calling. Six signs your website is quietly sending customers back to your competitors.",
+    publishAt: "2026-12-01T06:00:00-08:00",
+    readMinutes: 4,
+    topic: "Websites",
+  },
+  {
+    slug: "found-in-one-town-not-the-next",
+    title: "Why You Show Up in One Town but Not the Next",
+    description:
+      "Found in your own city but invisible in the towns you drive to every week? Why it happens to so many San Diego County contractors, and the shortcuts that make it worse.",
+    publishAt: "2026-12-08T06:00:00-08:00",
+    readMinutes: 4,
+    topic: "Local SEO",
+  },
+  {
+    slug: "when-ai-gets-your-business-wrong",
+    title: "What Happens When AI Gets Your Business Wrong",
+    description:
+      "Old phone numbers, wrong hours, services you don't offer. Why ChatGPT, Claude, Gemini, Perplexity and Copilot sometimes get local businesses wrong, and the signs it's happening to you.",
+    publishAt: "2026-12-15T06:00:00-08:00",
+    readMinutes: 4,
+    topic: "AI search",
+  },
+  {
+    slug: "how-fast-do-you-answer-new-leads",
+    title: "How Fast Do You Answer New Leads?",
+    description:
+      "Customers with a problem contact two or three businesses and hire whoever answers first. Where new leads slip through the cracks, especially over the holidays.",
+    publishAt: "2026-12-22T06:00:00-08:00",
+    readMinutes: 4,
+    topic: "Leads",
+  },
+  {
+    slug: "before-you-pay-for-seo",
+    title: "Before You Pay for SEO in the New Year, Read This",
+    description:
+      "\"Page one of Google, guaranteed!\" What changed for local businesses with AI search, and six red flags to watch for in any marketing pitch.",
+    publishAt: "2026-12-29T06:00:00-08:00",
+    readMinutes: 4,
+    topic: "AI search",
   },
 ];
 
