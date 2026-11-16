@@ -189,6 +189,31 @@ const blogShareOverrides: Record<string, Partial<Pick<SocialPost, "body" | "card
       { layout: "statement", theme: "orange", kicker: "3 more signs on the blog", headline: "How many sound familiar?", subline: "Read the full list, or get a free audit and know for sure." },
     ],
   },
+  "website-turning-customers-away": {
+    body:
+      "A customer found you on Google, tapped through to your website, and left without calling. You never knew they were there.\n\nThis week on the blog: six signs your website is quietly sending customers back to your competitors.",
+    card: { layout: "statement", kicker: "New on the blog", headline: "Is your website turning customers away?", subline: "Six signs to watch for." },
+  },
+  "found-in-one-town-not-the-next": {
+    body:
+      "Show up in your own city but nowhere in the towns you drive to every week? You're not alone.\n\nThis week on the blog: why so many San Diego County contractors are invisible one town over, and the shortcuts that make it worse.",
+    card: { layout: "statement", kicker: "New on the blog", headline: "Found in one town, invisible in the next", subline: "Why it happens to so many contractors." },
+  },
+  "when-ai-gets-your-business-wrong": {
+    body:
+      "Wrong hours. An old phone number. A service you don't even offer. When ChatGPT, Claude, Gemini, Perplexity or Copilot gets your business wrong, customers don't know. They just call someone else.\n\nThis week on the blog: why it happens and the signs it's happening to you.",
+    card: { layout: "statement", kicker: "New on the blog", headline: "What happens when AI gets your business wrong", subline: "And the signs it's happening to you." },
+  },
+  "how-fast-do-you-answer-new-leads": {
+    body:
+      "Customers with a problem contact two or three businesses and hire whoever gets back to them first. Especially the week before Christmas.\n\nThis week on the blog: where new leads slip through the cracks.",
+    card: { layout: "statement", kicker: "New on the blog", headline: "How fast do you answer new leads?", subline: "The first to reply usually gets the job." },
+  },
+  "before-you-pay-for-seo": {
+    body:
+      "\"Page one of Google, guaranteed!\" You'll hear it a lot in January.\n\nThis week on the blog: what changed for local businesses with AI search, and six red flags to watch for before you pay for any marketing.",
+    card: { layout: "statement", kicker: "New on the blog", headline: "Before you pay for SEO, read this", subline: "Six red flags in a marketing pitch." },
+  },
 };
 
 // Oldest first. Fridays at 9 AM Pacific.
