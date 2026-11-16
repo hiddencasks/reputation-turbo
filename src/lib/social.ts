@@ -243,7 +243,105 @@ export const fridayPosts: SocialPost[] = [
     ],
     alt: "Short video: Thank you, San Diego County. Things slow down this time of year. Is it the season, or can new customers not find you? Get your free online audit.",
   },
+  {
+    id: "2026-12-04-what-customers-ask",
+    publishAt: "2026-12-04T09:00:00-08:00",
+    kind: "ai-check",
+    body:
+      "Customers don't type \"plumber near me\" into AI. They ask a full question, the way they'd ask a neighbor, and they get back two or three names.\n\nChatGPT, Claude, Gemini, Perplexity and Copilot all answer questions like this one every day. When a customer in your area asks it about your trade, is your business in the answer?",
+    card: {
+      layout: "quote",
+      theme: "light",
+      kicker: "What customers ask AI",
+      quote: "Who's a reliable plumber near me who can come out today?",
+      by: "Example question. Is your business in the answer?",
+    },
+    alt: "Light card with a quote. What customers ask AI: Who's a reliable plumber near me who can come out today? Example question. Is your business in the answer?",
+  },
+  {
+    id: "2026-12-11-three-names",
+    publishAt: "2026-12-11T09:00:00-08:00",
+    kind: "ai-check",
+    keyword: "QUIZ",
+    body:
+      "Ask Google and you get a page of results. Ask ChatGPT, Claude, Gemini, Perplexity or Copilot and you usually get about three names.\n\nThe customer calls one of them. The businesses that weren't named never even knew the customer was looking.",
+    format: "reel",
+    card: { layout: "photo", photo: "ai-search-landscaper", kicker: "Picture this", headline: "A customer asks AI for a landscaper in El Cajon", subline: "An example. It happens every day." },
+    slides: [
+      { layout: "stat", kicker: "What comes back", stat: "3", headline: "Names. Not a page of results." },
+      { layout: "statement", theme: "orange", kicker: "So the real question is", headline: "Is your business one of them?" },
+      { layout: "statement", theme: "light", kicker: "Find out free", headline: "Get your free online audit", subline: "reputationturbo.com/free-audit" },
+    ],
+    alt: "Short video: Picture a customer asking AI for a landscaper in El Cajon. About 3 names come back, not a page of results. Is your business one of them? Get your free online audit.",
+  },
+  {
+    id: "2026-12-18-holiday-check",
+    publishAt: "2026-12-18T09:00:00-08:00",
+    kind: "tip",
+    body:
+      "The week before the holidays, customers with a leak, a broken heater or a last-minute job don't shop around for long. They look you up, decide in seconds, and call whoever looks ready.\n\nHere's what they check before they ever pick up the phone. Swipe through and ask yourself how your business looks right now.",
+    card: { layout: "statement", theme: "light", kicker: "Before the holidays", headline: "4 things customers check before they call you" },
+    slides: [
+      { layout: "point", kicker: "They check", number: 1, headline: "Are you open?", subline: "Holiday hours that are wrong, or missing, send them to the next name." },
+      { layout: "point", kicker: "They check", number: 2, headline: "Are you still busy?", subline: "No reviews or photos in months can look like nobody's home." },
+      { layout: "point", kicker: "They check", number: 3, headline: "Do you do their job, in their town?", subline: "If they have to dig for it, they won't." },
+      { layout: "point", kicker: "They check", number: 4, headline: "Can they reach you fast?", subline: "A slow site or a broken form ends it right there." },
+      { layout: "statement", theme: "orange", kicker: "Not sure how you look?", headline: "We'll show you, free", subline: "Get your free online audit. Link in the caption." },
+    ],
+    alt: "Carousel: 4 things customers check before they call you. Are you open? Are you still busy? Do you do their job, in their town? Can they reach you fast? Get your free online audit.",
+  },
+  {
+    id: "2026-12-25-merry-christmas",
+    publishAt: "2026-12-25T09:00:00-08:00",
+    kind: "tip",
+    body:
+      "Merry Christmas from Reputation Turbo.\n\nTo every San Diego County business owner who answered a late call, finished a job in the rain or worked through the holidays this year: thank you. Enjoy the time with your family.",
+    card: { layout: "photo", photo: "trade-landscaping", kicker: "Merry Christmas", headline: "Thank you for keeping San Diego County running", subline: "Enjoy the time with your family." },
+    alt: "Photo card that reads: Merry Christmas. Thank you for keeping San Diego County running. Enjoy the time with your family.",
+  },
 ];
+
+/**
+ * Slides (and sometimes a different cover) for blog shares, by blog slug. Kept apart
+ * from `blogShareOverrides` so the monthly social drafts never clash with the
+ * monthly blog drafts, which add the wording there.
+ */
+const blogShareFormats: Record<string, Partial<Pick<SocialPost, "card" | "slides" | "format">>> = {
+  "website-turning-customers-away": {
+    slides: [
+      { layout: "point", theme: "light", kicker: "Sign", number: 1, headline: "It's slow on a phone", subline: "Most customers see your site standing in their driveway." },
+      { layout: "point", theme: "light", kicker: "Sign", number: 2, headline: "It doesn't say what you do, and where, right away" },
+      { layout: "point", theme: "light", kicker: "Sign", number: 3, headline: "The contact form quietly stopped working", subline: "Nobody notices for months." },
+      { layout: "statement", theme: "orange", kicker: "3 more signs on the blog", headline: "Is your website costing you jobs?", subline: "Read the full post, or get a free audit and know for sure." },
+    ],
+  },
+  "found-in-one-town-not-the-next": {
+    card: { layout: "photo", photo: "trade-roofing", kicker: "New on the blog", headline: "Found in one town, invisible in the next", subline: "Why it happens to so many contractors." },
+  },
+  "when-ai-gets-your-business-wrong": {
+    card: { layout: "statement", theme: "orange", kicker: "New on the blog", headline: "What happens when AI gets your business wrong" },
+    slides: [
+      { layout: "point", kicker: "What AI gets wrong", number: 1, headline: "Old phone numbers and addresses" },
+      { layout: "point", kicker: "What AI gets wrong", number: 2, headline: "Wrong hours, or saying you've closed" },
+      { layout: "point", kicker: "What AI gets wrong", number: 3, headline: "Services you don't offer", subline: "Or missing the ones you do." },
+      { layout: "point", kicker: "What AI gets wrong", number: 4, headline: "Mixing you up with a similar name" },
+      { layout: "statement", theme: "light", kicker: "Customers don't know it's wrong", headline: "They just call someone else", subline: "Read why it happens on the blog, or get a free audit to see what AI says about you." },
+    ],
+  },
+  "how-fast-do-you-answer-new-leads": {
+    card: { layout: "stat", theme: "orange", kicker: "New on the blog", stat: "1st", headline: "The first business to reply usually gets the job", subline: "How fast do you answer new leads?" },
+  },
+  "before-you-pay-for-seo": {
+    card: { layout: "statement", kicker: "New on the blog", headline: "Before you pay for SEO, read this", subline: "Red flags in a marketing pitch." },
+    slides: [
+      { layout: "point", theme: "light", kicker: "Red flag", number: 1, headline: "Guaranteed rankings", subline: "Nobody controls Google's results or AI answers." },
+      { layout: "point", theme: "light", kicker: "Red flag", number: 2, headline: "A long contract before any results" },
+      { layout: "point", theme: "light", kicker: "Red flag", number: 3, headline: "They own your accounts", subline: "Your website and Google profile should be in your name." },
+      { layout: "point", theme: "light", kicker: "Red flag", number: 4, headline: "No mention of AI search at all" },
+      { layout: "statement", theme: "orange", kicker: "Ask first", headline: "Where does my business stand today?", subline: "Our audit shows you, free, before you spend a dollar." },
+    ],
+  },
+};
 
 function blogUrl(slug: string): string {
   return `https://${siteHost}/blog/${slug}`;
@@ -251,7 +349,7 @@ function blogUrl(slug: string): string {
 
 /** The Tuesday share for a blog post. */
 export function blogShare(post: BlogPost): SocialPost {
-  const o = blogShareOverrides[post.slug] ?? {};
+  const o = { ...blogShareOverrides[post.slug], ...blogShareFormats[post.slug] };
   const at = new Date(new Date(post.publishAt).getTime() + BLOG_SHARE_DELAY_HOURS * 3600_000);
   const card: SocialCard = o.card ?? { layout: "statement", kicker: "New on the blog", headline: post.title, subline: undefined };
   return {
