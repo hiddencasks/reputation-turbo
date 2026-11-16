@@ -2,7 +2,7 @@ import "server-only";
 import { sql } from "./db";
 import { sendEmail } from "./email";
 import { site } from "./site";
-import { captionFor, duePosts, imageUrl, networkLabel, networks, type Network, type SocialPost } from "./social";
+import { captionFor, cardsOf, duePosts, formatOf, imageUrl, networkLabel, networks, videoUrl, type Network, type SocialPost } from "./social";
 
 /**
  * Publishes posts to the Facebook Page and the Instagram account through Meta's
@@ -104,24 +104,70 @@ async function graph(path: string, params: Record<string, string>, method: "GET"
 
 async function postToFacebook(post: SocialPost): Promise<string> {
   const { pageId } = socialConfig();
-  const data = await graph(`${pageId}/photos`, { url: imageUrl(post), message: captionFor(post, "facebook"), published: "true" });
+  const message = captionFor(post, "facebook");
+  const format = formatOf(post);
+  if (format === "reel") {
+    // A short vertical video. Facebook shows it in the feed and as a Reel.
+    const data = await graph(`${pageId}/videos`, { file_url: videoUrl(post), description: message, published: "true" });
+    return data.id || "";
+  }
+  if (format === "carousel") {
+    // Upload each slide unpublished, then post them together as one multi-photo post.
+    const ids: string[] = [];
+    for (let i = 1; i <= cardsOf(post).length; i++) {
+      const photo = await graph(`${pageId}/photos`, { url: imageUrl(post, i), published: "false" });
+      if (!photo.id) throw new Error(`Facebook did not accept slide ${i}.`);
+      ids.push(photo.id);
+    }
+    const data = await graph(`${pageId}/feed`, { message, attached_media: JSON.stringify(ids.map((id) => ({ media_fbid: id }))) });
+    return data.id || "";
+  }
+  const data = await graph(`${pageId}/photos`, { url: imageUrl(post), message, published: "true" });
   return data.post_id || data.id || "";
+}
+
+/** Waits until Instagram has fetched and processed a container's media. Videos take longer than photos. */
+async function waitForContainer(id: string, tries: number, delayMs: number) {
+  for (let i = 0; i < tries; i++) {
+    const s = await graph(id, { fields: "status_code" }, "GET");
+    if (s.status_code === "FINISHED") return;
+    if (s.status_code === "ERROR" || s.status_code === "EXPIRED") throw new Error(`Instagram could not process the media (${s.status_code}).`);
+    await new Promise((r) => setTimeout(r, delayMs));
+  }
+  throw new Error("Instagram is still processing the media. It will try again next hour.");
 }
 
 async function postToInstagram(post: SocialPost): Promise<string> {
   const { igUserId } = socialConfig();
-  const params: Record<string, string> = { image_url: imageUrl(post), caption: captionFor(post, "instagram") };
-  if (post.alt) params.alt_text = post.alt;
-  const container = await graph(`${igUserId}/media`, params);
-  if (!container.id) throw new Error("Instagram did not accept the image.");
-  // Instagram fetches the image first; wait until it is ready (usually a few seconds).
-  for (let i = 0; i < 10; i++) {
-    const s = await graph(container.id, { fields: "status_code" }, "GET");
-    if (s.status_code === "FINISHED") break;
-    if (s.status_code === "ERROR" || s.status_code === "EXPIRED") throw new Error(`Instagram could not process the image (${s.status_code}).`);
-    await new Promise((r) => setTimeout(r, 3000));
+  const caption = captionFor(post, "instagram");
+  const format = formatOf(post);
+  let container: string | undefined;
+  if (format === "reel") {
+    const c = await graph(`${igUserId}/media`, { media_type: "REELS", video_url: videoUrl(post), cover_url: imageUrl(post), caption, share_to_feed: "true" });
+    container = c.id;
+    if (!container) throw new Error("Instagram did not accept the video.");
+    await waitForContainer(container, 40, 5000);
+  } else if (format === "carousel") {
+    const children: string[] = [];
+    for (let i = 1; i <= cardsOf(post).length; i++) {
+      const child = await graph(`${igUserId}/media`, { image_url: imageUrl(post, i), is_carousel_item: "true" });
+      if (!child.id) throw new Error(`Instagram did not accept slide ${i}.`);
+      children.push(child.id);
+    }
+    for (const child of children) await waitForContainer(child, 10, 3000);
+    const c = await graph(`${igUserId}/media`, { media_type: "CAROUSEL", children: children.join(","), caption });
+    container = c.id;
+    if (!container) throw new Error("Instagram did not accept the carousel.");
+    await waitForContainer(container, 10, 3000);
+  } else {
+    const params: Record<string, string> = { image_url: imageUrl(post), caption };
+    if (post.alt) params.alt_text = post.alt;
+    const c = await graph(`${igUserId}/media`, params);
+    container = c.id;
+    if (!container) throw new Error("Instagram did not accept the image.");
+    await waitForContainer(container, 10, 3000);
   }
-  const published = await graph(`${igUserId}/media_publish`, { creation_id: container.id });
+  const published = await graph(`${igUserId}/media_publish`, { creation_id: container });
   return published.id || "";
 }
 

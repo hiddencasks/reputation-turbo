@@ -2,7 +2,7 @@ import { publishDue } from "@/lib/social-publish";
 
 // Runs every hour (see vercel.json): publishes any Facebook and Instagram post
 // that is due (see src/lib/social.ts). Does nothing until Meta is connected.
-export const maxDuration = 120;
+export const maxDuration = 300;
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
