@@ -68,10 +68,9 @@ describe("social posts", () => {
 describe("comment-to-DM keywords", () => {
   const post = allSocialPosts()[0];
 
-  it("stays off until the automations are live", () => {
-    expect(commentToDm.live).toBe(false);
-    expect(activeKeyword(post)).toBeUndefined();
-    expect(captionFor(post, "facebook")).not.toMatch(/Comment [A-Z]+/);
+  it("leaves keywords out when switched off", () => {
+    expect(activeKeyword(post, false)).toBeUndefined();
+    expect(captionFor(post, "facebook", false)).not.toMatch(/Comment [A-Z]+/);
   });
 
   it("adds the keyword line once live", () => {
@@ -80,15 +79,17 @@ describe("comment-to-DM keywords", () => {
     expect(captionFor(post, "instagram", true)).toContain(`Comment ${k} and we'll DM you`);
   });
 
+  it("never ends the keyword line with doubled punctuation", () => {
+    for (const p of allSocialPosts()) expect(captionFor(p, "facebook", true)).not.toMatch(/[?!.]\.\n/);
+  });
+
   it("tags every DM link so the lead shows it came from a DM", () => {
     for (const k of Object.values(commentToDm.keywords)) {
-      for (const net of ["instagram", "facebook"] as const) {
-        const url = new URL(k.dm[net].match(/https:\/\/\S+/)![0]);
-        const ad = adSourceFromUrl(url.search, url.pathname)!;
-        expect(ad.source).toBe(net);
-        expect(ad.medium).toBe("dm");
-        expect(describeAdSource(ad)).toMatch(net === "instagram" ? /^Instagram · / : /^Facebook · /);
-      }
+      const url = new URL(k.dm.match(/https:\/\/\S+/)![0]);
+      const ad = adSourceFromUrl(url.search, url.pathname)!;
+      expect(ad.source).toBe("social");
+      expect(ad.medium).toBe("dm");
+      expect(describeAdSource(ad)).toMatch(/^Instagram or Facebook · dm-/);
     }
   });
 });

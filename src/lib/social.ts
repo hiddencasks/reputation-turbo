@@ -117,27 +117,22 @@ export const freeAuditUrl = "https://reputationturbo.com/free-audit";
  * Business Suite or ManyChat, outside this site) DMs them a link. Keep the set
  * small and permanent so each automation is set up once and works on every post.
  *
- * `live` stays false until the automations are set up and tested, so no post
- * promises a DM that never arrives. While false, captions and images don't
- * mention keywords at all.
+ * Live since 2026-11-16: one Meta Business Suite "Comment to message" automation
+ * per keyword covers both Instagram and Facebook. If they're ever turned off,
+ * set `live` to false so no post promises a DM that never arrives (captions and
+ * images then don't mention keywords at all).
  */
 export const commentToDm = {
-  live: false,
+  live: true,
   keywords: {
     AUDIT: {
       offer: "the link to your free online audit",
-      /** What the automation's DM should say. The links carry utm tags (see lib/ad-source.ts) so the dashboard shows the lead came from an Instagram or Facebook DM. */
-      dm: {
-        instagram: "Here's your free online audit: https://reputationturbo.com/free-audit?utm_source=instagram&utm_medium=dm&utm_campaign=dm-audit\n\nTell us about your business and we'll show you how customers (and AI) see you online.",
-        facebook: "Here's your free online audit: https://reputationturbo.com/free-audit?utm_source=facebook&utm_medium=dm&utm_campaign=dm-audit\n\nTell us about your business and we'll show you how customers (and AI) see you online.",
-      },
+      /** What the automation's DM says (same on Instagram and Facebook). The link's utm tags (see lib/ad-source.ts) make the dashboard show the lead came from a DM. */
+      dm: "Here's your free online audit: https://reputationturbo.com/free-audit?utm_source=social&utm_medium=dm&utm_campaign=dm-audit\n\nTell us about your business and we'll show you how customers (and AI) see you online.",
     },
     QUIZ: {
       offer: "our 1-minute quiz: is AI recommending you, or your competitor?",
-      dm: {
-        instagram: "Here's the 1-minute quiz: https://reputationturbo.com/geo-quiz?utm_source=instagram&utm_medium=dm&utm_campaign=dm-quiz\n\n7 quick questions to see whether ChatGPT, Claude, Gemini, Perplexity and Copilot recommend you.",
-        facebook: "Here's the 1-minute quiz: https://reputationturbo.com/geo-quiz?utm_source=facebook&utm_medium=dm&utm_campaign=dm-quiz\n\n7 quick questions to see whether ChatGPT, Claude, Gemini, Perplexity and Copilot recommend you.",
-      },
+      dm: "Here's the 1-minute quiz: https://reputationturbo.com/geo-quiz?utm_source=social&utm_medium=dm&utm_campaign=dm-quiz\n\n7 quick questions to see whether ChatGPT, Claude, Gemini, Perplexity and Copilot recommend you.",
     },
   },
 } as const;
@@ -424,7 +419,7 @@ const instagramTags = "#SanDiegoSmallBusiness #EastCounty #SanDiegoContractors #
 export function captionFor(post: SocialPost, network: Network, live: boolean = commentToDm.live): string {
   const parts = [post.body.trim()];
   const keyword = activeKeyword(post, live);
-  if (keyword) parts.push(`Comment ${keyword} and we'll DM you ${commentToDm.keywords[keyword].offer}.`);
+  if (keyword) parts.push(`Comment ${keyword} and we'll DM you ${commentToDm.keywords[keyword].offer.replace(/[^.?!]$/, "$&.")}`);
   if (network === "facebook") {
     if (post.link) parts.push(`${post.link.label}: ${post.link.url}`);
     parts.push(`Get your free online audit: ${freeAuditUrl}`);

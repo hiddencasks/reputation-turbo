@@ -160,7 +160,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ fil
         <div style={{ display: "flex", height: 18, background: p.bg === orange ? navy : orange }} />
         <div style={{ position: "relative", display: "flex", flexDirection: "column", flex: 1, padding: parsed.tall ? "120px 84px 0" : "90px 84px 0", justifyContent: photo ? "flex-end" : "center" }}>
           {keyword ? (
-            <div style={{ position: "absolute", top: 60, right: 60, display: "flex", padding: "12px 24px", borderRadius: 14, border: `3px solid ${p.accent}`, color: p.text, fontSize: 30, fontWeight: 600 }}>
+            <div style={{ position: "absolute", top: 60, right: 60, display: "flex", padding: "12px 24px", borderRadius: 14, border: `3px solid ${p.accent}`, background: photo ? "rgba(6,27,62,0.9)" : p.bg, color: p.text, fontSize: 30, fontWeight: 600 }}>
               Comment&nbsp;<span style={{ color: p.accent }}>{keyword}</span>
             </div>
           ) : null}
