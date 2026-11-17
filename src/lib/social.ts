@@ -117,13 +117,14 @@ export const freeAuditUrl = "https://reputationturbo.com/free-audit";
  * Business Suite or ManyChat, outside this site) DMs them a link. Keep the set
  * small and permanent so each automation is set up once and works on every post.
  *
- * Live since 2026-11-16: one Meta Business Suite "Comment to message" automation
- * per keyword covers both Instagram and Facebook. If they're ever turned off,
- * set `live` to false so no post promises a DM that never arrives (captions and
- * images then don't mention keywords at all).
+ * Meta Business Suite "Comment to message" automations, set up 2026-11-16, send
+ * the DMs. `live` turns the keyword line on per network; keep a network off
+ * until a test comment there really gets the DM, so no post promises a DM that
+ * never arrives.
  */
 export const commentToDm = {
-  live: true,
+  /** Per network. Facebook's automation hasn't sent a DM in tests yet (2026-11-17), so its captions leave the keyword out. */
+  live: { instagram: true, facebook: false } as Record<Network, boolean>,
   keywords: {
     AUDIT: {
       offer: "the link to your free online audit",
@@ -140,7 +141,10 @@ export const commentToDm = {
 export type Keyword = keyof typeof commentToDm.keywords;
 
 /** The keyword a post shows, or undefined while comment-to-DM isn't live. */
-export function activeKeyword(post: SocialPost, live: boolean = commentToDm.live): Keyword | undefined {
+/** The images go to both networks, so they show the keyword only when it works on all of them. */
+const liveEverywhere = () => Object.values(commentToDm.live).every(Boolean);
+
+export function activeKeyword(post: SocialPost, live: boolean = liveEverywhere()): Keyword | undefined {
   return live ? (post.keyword ?? "AUDIT") : undefined;
 }
 const siteHost = "reputationturbo.com";
@@ -416,7 +420,7 @@ const instagramTags = "#SanDiegoSmallBusiness #EastCounty #SanDiegoContractors #
  * The caption for one network. Facebook links are clickable. Instagram captions
  * can't hold clickable links, so they point to the link in the profile bio.
  */
-export function captionFor(post: SocialPost, network: Network, live: boolean = commentToDm.live): string {
+export function captionFor(post: SocialPost, network: Network, live: boolean = commentToDm.live[network]): string {
   const parts = [post.body.trim()];
   const keyword = activeKeyword(post, live);
   if (keyword) parts.push(`Comment ${keyword} and we'll DM you ${commentToDm.keywords[keyword].offer.replace(/[^.?!]$/, "$&.")}`);

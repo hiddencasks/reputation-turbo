@@ -68,6 +68,12 @@ describe("social posts", () => {
 describe("comment-to-DM keywords", () => {
   const post = allSocialPosts()[0];
 
+  it("only promises a DM where the automation works", () => {
+    for (const net of ["instagram", "facebook"] as const) {
+      expect(/Comment [A-Z]+ and we'll DM you/.test(captionFor(post, net))).toBe(commentToDm.live[net]);
+    }
+  });
+
   it("leaves keywords out when switched off", () => {
     expect(activeKeyword(post, false)).toBeUndefined();
     expect(captionFor(post, "facebook", false)).not.toMatch(/Comment [A-Z]+/);
