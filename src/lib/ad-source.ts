@@ -74,6 +74,7 @@ const SOURCE_NAMES: Record<string, string> = {
   fb: "Facebook",
   instagram: "Instagram",
   ig: "Instagram",
+  social: "Instagram or Facebook",
   google: "Google",
 };
 
