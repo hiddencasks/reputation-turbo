@@ -4,6 +4,9 @@ export const site = {
   tagline: "Get Found. Build Trust. Grow Your Business.",
   url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
   email: "info@reputationturbo.com",
+  /** Signs the personal follow-up notes sent after an audit. */
+  founderName: "Alvin Shamoun",
+  founderFirstName: "Alvin",
   phoneDisplay: "(619) 663-9215",
   phoneHref: "tel:+16196639215",
   /** Off for now so calls don't interrupt the owner's other job. Turn on to show the phone number everywhere again. */

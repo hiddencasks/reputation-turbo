@@ -14,6 +14,8 @@ import { auditScore, fixIds } from "@/lib/audit/checks";
 import { addNote, approveReport, deleteLead, markVendor, runAiCheck, setAiMonitoring, updateLead } from "../../../actions";
 import { summarizeLead } from "@/lib/lead-summary";
 import { DeleteLead } from "./DeleteLead";
+import { FollowupNote } from "./FollowupNote";
+import { getFollowupsForLead, followupsReady } from "@/lib/followup";
 import { describeAdSource, parseAdSource } from "@/lib/ad-source";
 
 // Leaves time for AI visibility checks started from this page.
@@ -33,6 +35,7 @@ const kindLabel: Record<string, string> = {
   note: "Note",
   stage_change: "Stage",
   vendor_flag: "Sales pitch",
+  followup: "Personal follow-up",
 };
 
 const fmt = (d: Date) => d.toLocaleString("en-US", { timeZone: "America/Los_Angeles", dateStyle: "medium", timeStyle: "short" });
@@ -41,16 +44,18 @@ export default async function LeadPage({ params, searchParams }: { params: Promi
   const { id } = await params;
   const { ai: aiMessage } = await searchParams;
   if (!/^[0-9a-f-]{36}$/.test(id)) notFound();
-  const [[lead], activities, emails, checks, offerings] = await Promise.all([
+  const [[lead], activities, emails, checks, offerings, followups, followupTable] = await Promise.all([
     sql<Lead[]>`select * from leads where id = ${id}`,
     sql<Activity[]>`select id, kind, body, meta, created_at from activities where lead_id = ${id} order by created_at desc`,
     sql<EmailRow[]>`select id, subject, template, status, to_email, created_at from emails where lead_id = ${id} order by created_at desc`,
     getChecksForLead(id),
     getOfferings({ activeOnly: true }),
+    getFollowupsForLead(id),
+    followupsReady(),
   ]);
   if (!lead) notFound();
   const providerErrors = await getProviderErrors(checks.filter((c) => c.status === "done").map((c) => c.id));
-  const checkRunning = checks.some((c) => c.status === "queued" || c.status === "running");
+  const checkRunning = checks.some((c) => c.status === "queued" || c.status === "running") || followups.some((f) => f.status === "writing" || f.status === "sending");
   const canCheck = aiChecksAvailable() && Boolean(lead.business_name && lead.trade && lead.city);
 
   const lastCheck = checks.find((c) => c.status === "done");
@@ -236,6 +241,9 @@ export default async function LeadPage({ params, searchParams }: { params: Promi
                         <span className="text-muted">{c.sent_at ? `Emailed ${fmt(c.sent_at)}. ` : "Approved. "}Link to share:</span>
                         <input readOnly value={reportUrl(c)} className="mt-1 w-full rounded-md border border-line bg-navy-50 px-3 py-2 text-sm" />
                       </label>
+                    )}
+                    {c.sent_at && lead.email && (
+                      <FollowupNote followup={followups.find((f) => f.check_id === c.id)} checkId={c.id} to={lead.email} tableReady={followupTable} />
                     )}
                   </>
                 )}

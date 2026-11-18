@@ -133,6 +133,25 @@ create table if not exists ai_check_answers (
 
 create index if not exists ai_check_answers_check_idx on ai_check_answers (check_id);
 
+-- Personal follow-up note sent about an hour after an audit report is emailed.
+create table if not exists followup_notes (
+  id uuid primary key default gen_random_uuid(),
+  lead_id uuid not null references leads (id) on delete cascade,
+  check_id uuid not null unique references ai_checks (id) on delete cascade,
+  subject text not null default '',
+  body text not null default '',
+  status text not null default 'writing'
+    check (status in ('writing', 'scheduled', 'sending', 'sent', 'skipped', 'failed', 'draft_failed')),
+  send_at timestamptz not null,
+  sent_at timestamptz,
+  note text not null default '',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists followup_notes_due_idx on followup_notes (status, send_at);
+create index if not exists followup_notes_lead_idx on followup_notes (lead_id);
+
 -- Supabase publishes every table in "public" through its web API. Row level
 -- security with no policies keeps that API from reading them; the site
 -- connects as the table owner, which bypasses it.

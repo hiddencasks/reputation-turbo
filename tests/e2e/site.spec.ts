@@ -334,6 +334,25 @@ test("audit requests run an AI check that the owner approves and emails", async 
   expect(lead.stage).toBe("audit_delivered");
   expect(lead.next_follow_up).not.toBeNull();
 
+  // A personal note from the owner is written from the audit and waits about an hour.
+  const note = ai.getByTestId("followup-note");
+  await expect(note.getByText(/Goes out automatically .* to maria@example.com/)).toBeVisible({ timeout: 20_000 });
+  await expect(note.getByLabel("Note")).toHaveValue(/^Maria,\n\n[\s\S]*Canyon Crew[\s\S]*15 minutes this week\?$/);
+  await expect(note.getByLabel("Subject")).toHaveValue("Quick thought on Lopez Concrete");
+  await note.getByLabel("Subject").fill("One thing from your audit");
+  await note.getByRole("button", { name: "Save changes" }).click();
+  await expect.poll(async () => (await db`select subject from followup_notes`)[0].subject).toBe("One thing from your audit");
+  expect((await db`select count(*)::int as n from emails where template = 'followup_note'`)[0].n).toBe(0);
+
+  // The scheduled job sends it once its time comes.
+  await db`update followup_notes set send_at = now() - interval '1 minute'`;
+  const cron = await page.request.get("/api/cron/followups", { headers: { authorization: "Bearer test-cron-secret" } });
+  expect((await cron.json()).outcomes).toEqual([expect.objectContaining({ status: "sent" })]);
+  const [personal] = await db`select to_email, subject from emails where template = 'followup_note'`;
+  expect(personal).toEqual({ to_email: "maria@example.com", subject: "One thing from your audit" });
+  await page.reload();
+  await expect(ai.getByTestId("followup-note").getByText(/^Sent .* to maria@example.com/)).toBeVisible();
+
   // After approval anyone with the link can see it.
   await page.context().clearCookies();
   await page.goto(`/report/${check.report_token}`);
@@ -421,6 +440,7 @@ test("prospect finder scores businesses and adds one as a lead", async ({ page }
 
 test("the scheduled job requires its secret", async ({ request }) => {
   expect((await request.get("/api/cron/ai-checks")).status()).toBe(401);
+  expect((await request.get("/api/cron/followups")).status()).toBe(401);
   const res = await request.get("/api/cron/ai-checks", { headers: { authorization: "Bearer test-cron-secret" } });
   expect(res.status()).toBe(200);
   expect(await res.json()).toEqual({ queued: 0, processed: 0 });
