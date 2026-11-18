@@ -125,6 +125,20 @@ export async function addNote(leadId: string, formData: FormData) {
   revalidatePath(`/admin/leads/${leadId}`);
 }
 
+/** Marks a lead as a vendor selling to us (or not), overriding the automatic guess. */
+export async function markVendor(leadId: string, formData: FormData) {
+  await requireOwner();
+  if (!/^[0-9a-f-]{36}$/.test(leadId)) return;
+  const vendor = formData.get("vendor") === "true";
+  await sql`
+    insert into activities (lead_id, kind, body, meta)
+    values (${leadId}, 'vendor_flag', ${vendor ? "Marked as a sales pitch (vendor selling to us)." : "Marked as a real lead, not a sales pitch."},
+            ${sql.json({ vendor })})`;
+  revalidatePath("/admin/leads");
+  revalidatePath(`/admin/leads/${leadId}`);
+  revalidatePath("/admin");
+}
+
 /**
  * Permanently deletes a lead. Its notes, history, audits and AI reports go
  * with it (the database cascades those), and its email log rows are removed
