@@ -11,6 +11,10 @@ type SendInput = {
   template: string;
   leadId?: string;
   replyTo?: string;
+  /** Overrides the sender, e.g. "Alvin at Reputation Turbo <info@...>". */
+  from?: string;
+  /** Sends exactly this plain text and no HTML version (for personal notes). Paragraphs are ignored. */
+  plainText?: string;
 };
 
 export type SendResult = { status: "sent" | "logged" | "failed"; error?: string };
@@ -20,8 +24,8 @@ export type SendResult = { status: "sent" | "logged" | "failed"; error?: string 
  * (local development) the email is only recorded, with status "logged".
  */
 export async function sendEmail(input: SendInput): Promise<SendResult> {
-  const text = [...input.paragraphs, "", footerText()].join("\n\n");
-  const html = renderHtml(input.paragraphs);
+  const text = input.plainText ?? [...input.paragraphs, "", footerText()].join("\n\n");
+  const html = input.plainText === undefined ? renderHtml(input.paragraphs) : undefined;
   const apiKey = process.env.RESEND_API_KEY;
 
   let result: SendResult;
@@ -33,11 +37,11 @@ export async function sendEmail(input: SendInput): Promise<SendResult> {
     try {
       const resend = new Resend(apiKey);
       const { data, error } = await resend.emails.send({
-        from: process.env.EMAIL_FROM ?? `${site.name} <${site.email}>`,
+        from: input.from ?? process.env.EMAIL_FROM ?? `${site.name} <${site.email}>`,
         to: input.to,
         subject: input.subject,
         text,
-        html,
+        ...(html ? { html } : {}),
         replyTo: input.replyTo ?? site.email,
       });
       if (error) throw new Error(error.message);

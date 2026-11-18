@@ -18,6 +18,8 @@ import { verifyPassword } from "@/lib/password";
 import { STAGE_IDS, stageLabel } from "@/lib/stages";
 import { joinPackages } from "@/lib/recommend";
 import { auditScore, type SiteAudit } from "@/lib/audit/checks";
+import { queueFollowup, sendOne, writeFollowup } from "@/lib/followup";
+import type { Followup } from "@/lib/followup-text";
 
 // ---------- Login ----------
 
@@ -209,6 +211,9 @@ export async function approveReport(checkId: string, formData: FormData) {
     if (result.status !== "failed") {
       await sql`update ai_checks set sent_at = now() where id = ${check.id}`;
       await sql`insert into activities (lead_id, kind, body) values (${lead.id}, 'ai_check', ${`AI report approved and emailed to ${lead.email}.`})`;
+      // The personal note: written now in the background, sent about an hour later by the cron.
+      const followupId = await queueFollowup(check.id);
+      if (followupId) after(() => writeFollowup(followupId));
       if (EARLY_STAGES.includes(lead.stage)) {
         await sql`
           update leads set stage = 'audit_delivered', next_follow_up = coalesce(next_follow_up, current_date + 3), updated_at = now()
@@ -221,6 +226,73 @@ export async function approveReport(checkId: string, formData: FormData) {
   }
   revalidatePath(`/admin/leads/${lead.id}`);
   revalidatePath("/admin");
+}
+
+// ---------- Personal follow-up note ----------
+
+const followupEdit = z.object({ subject: z.string().trim().min(1).max(120), body: z.string().trim().min(10).max(3000) });
+
+async function followupRow(id: string): Promise<Followup> {
+  if (!/^[0-9a-f-]{36}$/.test(id)) throw new Error("Follow-up not found.");
+  const [row] = await sql<Followup[]>`select * from followup_notes where id = ${id}`;
+  if (!row) throw new Error("Follow-up not found.");
+  return row;
+}
+
+/** Saves the owner's edits to a note that hasn't gone out yet. */
+export async function saveFollowup(id: string, formData: FormData) {
+  await requireOwner();
+  const row = await followupRow(id);
+  const d = followupEdit.parse({ subject: formData.get("subject"), body: formData.get("body") });
+  await sql`
+    update followup_notes set subject = ${d.subject}, body = ${d.body}, status = 'scheduled', note = 'Edited by you.',
+      send_at = greatest(send_at, now()), updated_at = now()
+    where id = ${id} and status in ('scheduled', 'draft_failed', 'skipped', 'failed')`;
+  revalidatePath(`/admin/leads/${row.lead_id}`);
+}
+
+/** Stops a note from going out. */
+export async function skipFollowup(id: string) {
+  await requireOwner();
+  const row = await followupRow(id);
+  await sql`update followup_notes set status = 'skipped', note = 'You chose not to send it.', updated_at = now() where id = ${id} and status in ('writing', 'scheduled', 'draft_failed', 'failed')`;
+  await sql`insert into activities (lead_id, kind, body) values (${row.lead_id}, 'followup', 'Personal follow-up skipped.')`;
+  revalidatePath(`/admin/leads/${row.lead_id}`);
+}
+
+/** Saves any edits and sends the note right away instead of waiting. */
+export async function sendFollowupNow(id: string, formData: FormData) {
+  await requireOwner();
+  const row = await followupRow(id);
+  const d = followupEdit.parse({ subject: formData.get("subject"), body: formData.get("body") });
+  const [claimed] = await sql<Followup[]>`
+    update followup_notes set subject = ${d.subject}, body = ${d.body}, status = 'sending', updated_at = now()
+    where id = ${id} and status in ('scheduled', 'skipped', 'failed', 'draft_failed')
+    returning *`;
+  if (claimed) {
+    const result = await sendOne(claimed);
+    if (result.status !== "sent") redirect(`/admin/leads/${row.lead_id}?ai=${encodeURIComponent(`Follow-up not sent: ${result.note ?? result.status}`)}`);
+  }
+  revalidatePath(`/admin/leads/${row.lead_id}`);
+}
+
+/** Asks the AI for a fresh version of the note (a few cents). */
+export async function rewriteFollowup(id: string) {
+  await requireOwner();
+  const row = await followupRow(id);
+  await sql`update followup_notes set status = 'writing', updated_at = now() where id = ${id} and status in ('scheduled', 'draft_failed', 'skipped', 'failed')`;
+  after(() => writeFollowup(id));
+  revalidatePath(`/admin/leads/${row.lead_id}`);
+}
+
+/** Writes a note for a report that was emailed before this feature existed (or had none). */
+export async function createFollowup(checkId: string) {
+  await requireOwner();
+  const [check] = await sql<AiCheck[]>`select * from ai_checks where id = ${checkId} and sent_at is not null`;
+  if (!check) throw new Error("Email the report first.");
+  const id = await queueFollowup(check.id);
+  if (id) after(() => writeFollowup(id));
+  revalidatePath(`/admin/leads/${check.lead_id}`);
 }
 
 export async function setAiMonitoring(leadId: string, formData: FormData) {
