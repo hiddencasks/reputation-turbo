@@ -2,9 +2,10 @@ import Link from "next/link";
 import { sql } from "@/lib/db";
 import { stageLabel } from "@/lib/stages";
 import type { Lead } from "@/lib/leads";
+import { loadSummaries } from "@/lib/lead-summaries";
 
 export default async function DashboardPage() {
-  const [[counts], recent, due, aiReview] = await Promise.all([
+  const [[counts], recent, due, aiReview, weekLeads] = await Promise.all([
     sql<{ total: number; week: number; audits_waiting: number; warm: number; won: number; emails_week: number }[]>`
       select
         (select count(*)::int from leads) as total,
@@ -23,16 +24,25 @@ export default async function DashboardPage() {
       select distinct on (lead_id) lead_id, business_name, mentioned_count, answer_count from ai_checks
       where status = 'done' and approved_at is null
       order by lead_id, finished_at desc limit 10`,
+    sql<{ id: string; source: string }[]>`select id, source from leads where created_at > now() - interval '7 days'`,
   ]);
+  // Vendors pitching their own services don't count as leads this week.
+  const weekSummaries = await loadSummaries(weekLeads);
+  const weekPitches = weekLeads.filter((l) => weekSummaries.get(l.id)?.vendor).length;
 
-  const tiles = [
-    { label: "Leads this week", value: counts.week },
-    { label: "Audit requests to complete", value: counts.audits_waiting },
-    { label: "AI reports to review", value: aiReview.length },
-    { label: "Follow-ups due", value: due.length },
-    { label: "Warm leads", value: counts.warm },
-    { label: "Customers won", value: counts.won },
-    { label: "Emails sent this week", value: counts.emails_week },
+  const tiles: { label: string; value: number; href: string; note?: string }[] = [
+    {
+      label: "Leads this week",
+      value: counts.week - weekPitches,
+      href: "/admin/leads?view=list&filter=week&pitches=hide",
+      note: weekPitches ? `+${weekPitches} sales pitch${weekPitches === 1 ? "" : "es"} not counted` : undefined,
+    },
+    { label: "Audit requests to complete", value: counts.audits_waiting, href: "/admin/leads?view=list&stage=audit_in_progress" },
+    { label: "AI reports to review", value: aiReview.length, href: "/admin/leads?view=list&filter=review" },
+    { label: "Follow-ups due", value: due.length, href: "/admin/leads?view=list&filter=due" },
+    { label: "Warm leads", value: counts.warm, href: "/admin/leads?view=list&filter=warm" },
+    { label: "Customers won", value: counts.won, href: "/admin/leads?view=list&stage=won" },
+    { label: "Emails sent this week", value: counts.emails_week, href: "/admin/emails" },
   ];
 
   return (
@@ -47,10 +57,18 @@ export default async function DashboardPage() {
 
       <section aria-label="Key numbers" className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {tiles.map((t) => (
-          <div key={t.label} className="rounded-lg bg-white p-5 shadow-sm">
-            <p className="text-sm text-muted">{t.label}</p>
+          <Link
+            key={t.label}
+            href={t.href}
+            className="group rounded-lg bg-white p-5 shadow-sm ring-1 ring-transparent transition hover:shadow-md hover:ring-orange"
+          >
+            <p className="flex items-start justify-between gap-2 text-sm text-muted">
+              {t.label}
+              <span aria-hidden="true" className="text-orange transition group-hover:translate-x-0.5">→</span>
+            </p>
             <p className="mt-1 font-display text-4xl font-bold text-navy">{t.value}</p>
-          </div>
+            {t.note && <p className="mt-1 text-xs font-medium text-amber-800">{t.note}</p>}
+          </Link>
         ))}
       </section>
 

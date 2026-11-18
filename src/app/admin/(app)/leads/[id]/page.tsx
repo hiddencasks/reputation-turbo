@@ -11,7 +11,8 @@ import { PackagePicker } from "@/components/PackagePicker";
 import { getOfferings } from "@/lib/offerings";
 import { recommendPackages, splitPackages } from "@/lib/recommend";
 import { auditScore, fixIds } from "@/lib/audit/checks";
-import { addNote, approveReport, deleteLead, runAiCheck, setAiMonitoring, updateLead } from "../../../actions";
+import { addNote, approveReport, deleteLead, markVendor, runAiCheck, setAiMonitoring, updateLead } from "../../../actions";
+import { summarizeLead } from "@/lib/lead-summary";
 import { DeleteLead } from "./DeleteLead";
 import { describeAdSource, parseAdSource } from "@/lib/ad-source";
 
@@ -31,6 +32,7 @@ const kindLabel: Record<string, string> = {
   contact_form: "Contact form",
   note: "Note",
   stage_change: "Stage",
+  vendor_flag: "Sales pitch",
 };
 
 const fmt = (d: Date) => d.toLocaleString("en-US", { timeZone: "America/Los_Angeles", dateStyle: "medium", timeStyle: "short" });
@@ -64,6 +66,8 @@ export default async function LeadPage({ params, searchParams }: { params: Promi
   const adOf = (a: Activity) => (a.meta?.ad ? parseAdSource(encodeURIComponent(JSON.stringify(a.meta.ad))) : null);
   const firstAd = activities.map(adOf).findLast(Boolean) ?? null;
 
+  const summary = summarizeLead(lead, activities.map((a) => ({ ...a, lead_id: lead.id, meta: a.meta as Record<string, unknown> | null })));
+
   const input = "mt-1 w-full rounded-md border border-line bg-white px-3 py-2";
 
   return (
@@ -71,7 +75,20 @@ export default async function LeadPage({ params, searchParams }: { params: Promi
       <Link href="/admin/leads" className="text-sm font-semibold text-orange">← All leads</Link>
       <div>
         <h1 className="font-display text-3xl font-bold text-navy">{lead.business_name || `${lead.first_name} ${lead.last_name}`}</h1>
-        <p className="text-muted">Added {fmt(lead.created_at)} from {lead.source.replace("_", " ")}</p>
+        <p className="text-muted">Became a lead {fmt(lead.created_at)} from {summary.source}</p>
+        {(summary.vendor || summary.message) && (
+          <form action={markVendor.bind(null, lead.id)} className="mt-2 flex flex-wrap items-center gap-2 text-sm">
+            {summary.vendor && (
+              <span className="rounded-full bg-amber-100 px-3 py-0.5 font-semibold text-amber-900">
+                {summary.vendorReason === "marked" ? "Sales pitch (vendor selling to you)" : "Looks like a sales pitch from a vendor"}
+              </span>
+            )}
+            <input type="hidden" name="vendor" value={summary.vendor ? "false" : "true"} />
+            <button className="font-semibold text-muted underline hover:text-navy">
+              {summary.vendor ? "Not a pitch, it's a real lead" : "Mark as sales pitch"}
+            </button>
+          </form>
+        )}
         {firstAd ? <p className="mt-1 inline-block rounded-full bg-orange/10 px-3 py-0.5 text-sm font-semibold text-orange-600">Came from: {describeAdSource(firstAd)}</p> : null}
       </div>
 
