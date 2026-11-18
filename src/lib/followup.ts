@@ -35,15 +35,21 @@ export async function getFollowupsForLead(leadId: string): Promise<Followup[]> {
   try {
     return await sql<Followup[]>`select * from followup_notes where lead_id = ${leadId} order by created_at desc`;
   } catch (err) {
-    if (isMissingTable(err)) return [];
-    throw err;
+    // Never let the follow-up box break the whole lead page.
+    if (!isMissingTable(err)) console.error("[followup] could not load notes:", err);
+    return [];
   }
 }
 
 /** False until the one-time SQL (db/updates/2026-11-followup-notes.sql) has been run. */
 export async function followupsReady(): Promise<boolean> {
-  const [row] = await sql<{ ok: boolean }[]>`select to_regclass('public.followup_notes') is not null as ok`;
-  return Boolean(row?.ok);
+  try {
+    const [row] = await sql<{ ok: boolean }[]>`select to_regclass('public.followup_notes') is not null as ok`;
+    return Boolean(row?.ok);
+  } catch (err) {
+    console.error("[followup] could not check for the table:", err);
+    return false;
+  }
 }
 
 export function isMissingTable(err: unknown): boolean {
