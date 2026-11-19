@@ -91,7 +91,7 @@ export async function findProspects(trade: string, city: string): Promise<Finder
         "x-goog-fieldmask":
           "places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.websiteUri,places.nationalPhoneNumber,places.regularOpeningHours,places.photos,places.googleMapsUri,places.businessStatus",
       },
-      body: JSON.stringify({ textQuery: `${tradePhrase(trade)} in ${placeName(city)}`, pageSize: 20 }),
+      body: JSON.stringify({ textQuery: `${tradePhrase(trade)} in ${placeName(city)}`, pageSize: 20, includePureServiceAreaBusinesses: true }),
     });
     if (!res.ok) {
       console.error("[finder] Google search failed:", res.status, await res.text().catch(() => ""));
