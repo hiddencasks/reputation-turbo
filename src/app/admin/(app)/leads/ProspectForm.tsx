@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { createProspect, type ProspectState } from "../../actions";
+import { SubmitButton } from "@/components/admin/SubmitButton";
 
 type Field = { name: string; label: string; required?: boolean; type?: string; list?: string; placeholder?: string };
 
@@ -29,7 +30,7 @@ const kinds = [
  * for an audit, and can start the full audit right away.
  */
 export function ProspectForm({ industries, cities, canCheck }: { industries: readonly string[]; cities: readonly string[]; canCheck: boolean }) {
-  const [state, action, pending] = useActionState(createProspect, initial);
+  const [state, action] = useActionState(createProspect, initial);
   const [kind, setKind] = useState(state.values.kind || "prospect");
 
   const input = (f: Field) => (
@@ -94,9 +95,9 @@ export function ProspectForm({ industries, cities, canCheck }: { industries: rea
       <datalist id="prospect-cities">{cities.map((c) => <option key={c} value={c} />)}</datalist>
 
       <div className="flex flex-wrap items-center gap-4">
-        <button disabled={pending} className="rounded-md bg-orange px-5 py-2.5 font-semibold text-white disabled:opacity-60">
-          {pending ? "Adding..." : "Add lead"}
-        </button>
+        <SubmitButton pendingText="Adding lead…" className="rounded-md bg-orange px-5 py-2.5 font-semibold text-white">
+          Add lead
+        </SubmitButton>
         {canCheck && (
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" name="runCheck" defaultChecked /> Run the full audit now

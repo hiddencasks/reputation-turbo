@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useActionState, useState } from "react";
 import { addFoundBusiness, searchProspects, type AddFoundState, type FinderState } from "../../actions";
 import { verdictLabel, type ScoredBusiness, type Verdict } from "@/lib/finder";
+import { SubmitButton } from "@/components/admin/SubmitButton";
 
 const verdictStyle: Record<Verdict, string> = {
   strong: "bg-orange text-white",
@@ -14,7 +15,7 @@ const verdictStyle: Record<Verdict, string> = {
 type Props = { industries: readonly string[]; cities: readonly string[]; canAudit: boolean; cost: string; used: number; limit: number };
 
 export function Finder({ industries, cities, canAudit, cost, used, limit }: Props) {
-  const [state, action, pending] = useActionState(searchProspects, { trade: "", city: "" } as FinderState);
+  const [state, action] = useActionState(searchProspects, { trade: "", city: "" } as FinderState);
   const [showSolid, setShowSolid] = useState(false);
   const results = state.results ?? [];
   const shown = showSolid ? results : results.filter((r) => r.verdict !== "solid");
@@ -32,9 +33,9 @@ export function Finder({ industries, cities, canAudit, cost, used, limit }: Prop
             City
             <input name="city" list="finder-cities" required defaultValue={state.city} placeholder="El Cajon" className="mt-1 w-full rounded-md border border-line bg-white px-3 py-2 font-normal" />
           </label>
-          <button disabled={pending || used >= limit} className="self-end rounded-md bg-navy px-5 py-2 font-semibold text-white disabled:opacity-60">
-            {pending ? "Searching..." : "Search Google Maps"}
-          </button>
+          <SubmitButton disabled={used >= limit} pendingText="Searching…" className="self-end rounded-md bg-navy px-5 py-2 font-semibold text-white">
+            Search Google Maps
+          </SubmitButton>
         </div>
         <datalist id="finder-trades">{industries.map((i) => <option key={i} value={i} />)}</datalist>
         <datalist id="finder-cities">{cities.map((c) => <option key={c} value={c} />)}</datalist>
@@ -69,7 +70,7 @@ export function Finder({ industries, cities, canAudit, cost, used, limit }: Prop
 }
 
 function Result({ b, trade, city, canAudit }: { b: ScoredBusiness; trade: string; city: string; canAudit: boolean }) {
-  const [state, action, pending] = useActionState(addFoundBusiness, {} as AddFoundState);
+  const [state, action] = useActionState(addFoundBusiness, {} as AddFoundState);
   const leadId = state.leadId ?? b.existingLeadId;
   const summary = [
     b.reviews ? `Google: ${b.rating?.toFixed(1)} stars from ${b.reviews} reviews.` : "No Google reviews.",
@@ -116,13 +117,13 @@ function Result({ b, trade, city, canAudit }: { b: ScoredBusiness; trade: string
               <input type="hidden" name="phone" value={b.phone} />
               <input type="hidden" name="mapsUrl" value={b.mapsUrl} />
               <input type="hidden" name="summary" value={summary} />
-              <button name="audit" value="0" disabled={pending} className="rounded-md px-3 py-1.5 text-sm font-semibold text-navy ring-1 ring-line disabled:opacity-60">
+              <SubmitButton name="audit" value="0" pendingText="Adding…" className="rounded-md px-3 py-1.5 text-sm font-semibold text-navy ring-1 ring-line">
                 Add to leads
-              </button>
+              </SubmitButton>
               {canAudit && (
-                <button name="audit" value="1" disabled={pending} className="rounded-md bg-orange px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-60">
-                  {pending ? "Adding..." : "Add + run audit"}
-                </button>
+                <SubmitButton name="audit" value="1" pendingText="Adding + starting audit…" className="rounded-md bg-orange px-3 py-1.5 text-sm font-semibold text-white">
+                  Add + run audit
+                </SubmitButton>
               )}
             </form>
           )}
