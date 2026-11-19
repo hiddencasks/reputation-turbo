@@ -3,6 +3,7 @@ import Link from "next/link";
 import { requireOwner } from "@/lib/auth";
 import { Logo } from "@/components/Logo";
 import { logout } from "../actions";
+import { SubmitButton } from "@/components/admin/SubmitButton";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Dashboard", robots: { index: false } };
@@ -33,7 +34,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           ))}
           <Link href="/" className="whitespace-nowrap rounded px-3 py-2 text-sm text-white/70 hover:bg-white/10">View website</Link>
           <form action={logout}>
-            <button className="w-full whitespace-nowrap rounded px-3 py-2 text-left text-sm text-white/70 hover:bg-white/10">Sign out</button>
+            <SubmitButton pendingText="Signing out…" className="w-full whitespace-nowrap rounded px-3 py-2 text-left text-sm text-white/70 hover:bg-white/10">Sign out</SubmitButton>
           </form>
         </nav>
       </aside>

@@ -1,5 +1,6 @@
 import type { LeadSummary } from "@/lib/lead-summary";
 import { markVendor } from "../../actions";
+import { SubmitButton } from "@/components/admin/SubmitButton";
 
 const when = (d: Date) =>
   d.toLocaleString("en-US", { timeZone: "America/Los_Angeles", month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
@@ -34,9 +35,9 @@ export function LeadInfo({ leadId, createdAt, info }: { leadId: string; createdA
       {(info.vendor || info.message) && (
         <form action={markVendor.bind(null, leadId)}>
           <input type="hidden" name="vendor" value={info.vendor ? "false" : "true"} />
-          <button className="font-semibold text-muted underline hover:text-navy">
+          <SubmitButton pendingText="Saving…" className="font-semibold text-muted underline hover:text-navy">
             {info.vendor ? "Not a pitch, it's a real lead" : "Mark as sales pitch"}
-          </button>
+          </SubmitButton>
         </form>
       )}
     </div>

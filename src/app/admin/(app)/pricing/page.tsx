@@ -1,6 +1,7 @@
 import { getOfferings, getShowPrices, type Offering } from "@/lib/offerings";
 import { formatPrice } from "@/components/ui";
 import { createOffering, saveOffering, setShowPrices } from "../../actions";
+import { SubmitButton } from "@/components/admin/SubmitButton";
 
 const kinds = [
   { id: "package", label: "Packages" },
@@ -57,7 +58,7 @@ export default async function PricingPage() {
         </p>
         <form action={setShowPrices} className="mt-3">
           <input type="hidden" name="show" value={showPrices ? "false" : "true"} />
-          <button className="rounded-md bg-navy px-4 py-2 font-semibold text-white">{showPrices ? "Hide prices" : "Show prices on website"}</button>
+          <SubmitButton pendingText="Saving…" className="rounded-md bg-navy px-4 py-2 font-semibold text-white">{showPrices ? "Hide prices" : "Show prices on website"}</SubmitButton>
         </form>
       </section>
 
@@ -77,7 +78,7 @@ export default async function PricingPage() {
               </summary>
               <form action={saveOffering.bind(null, o.id)} className="space-y-3 border-t border-line p-4">
                 <OfferingFields o={o} />
-                <button className="rounded-md bg-orange px-4 py-2 font-semibold text-white">Save changes</button>
+                <SubmitButton pendingText="Saving…" doneText="Saved" className="rounded-md bg-orange px-4 py-2 font-semibold text-white">Save changes</SubmitButton>
               </form>
             </details>
           ))}
@@ -88,7 +89,7 @@ export default async function PricingPage() {
         <h2 className="font-display text-xl font-bold text-navy">Add a new service</h2>
         <form action={createOffering} className="mt-3 space-y-3">
           <OfferingFields />
-          <button className="rounded-md bg-navy px-4 py-2 font-semibold text-white">Add</button>
+          <SubmitButton pendingText="Adding…" doneText="Added" className="rounded-md bg-navy px-4 py-2 font-semibold text-white">Add</SubmitButton>
         </form>
       </section>
     </div>

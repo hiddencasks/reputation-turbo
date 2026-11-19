@@ -1,10 +1,12 @@
 import Link from "next/link";
+import Form from "next/form";
 import { sql } from "@/lib/db";
 import { STAGES, stageLabel } from "@/lib/stages";
 import type { Lead } from "@/lib/leads";
 import { moveLeadStage } from "../../actions";
 import { loadSummaries } from "@/lib/lead-summaries";
 import { LeadInfo } from "./LeadInfo";
+import { SubmitButton } from "@/components/admin/SubmitButton";
 
 type Search = { q?: string; stage?: string; view?: string; sort?: string; filter?: string; pitches?: string; deleted?: string };
 
@@ -97,7 +99,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
         </p>
       )}
 
-      <form className="flex flex-wrap gap-2" role="search">
+      <Form action="/admin/leads" className="flex flex-wrap gap-2" role="search">
         <input type="hidden" name="view" value={view} />
         {validFilter && <input type="hidden" name="filter" value={validFilter} />}
         {hidePitches && <input type="hidden" name="pitches" value="hide" />}
@@ -114,8 +116,8 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
           <option value="oldest">Oldest first</option>
           <option value="name">Business name</option>
         </select>
-        <button className="rounded-md bg-navy px-4 py-2 font-semibold text-white">Apply</button>
-      </form>
+        <SubmitButton navigates pendingText="Loading…" className="rounded-md bg-navy px-4 py-2 font-semibold text-white">Apply</SubmitButton>
+      </Form>
 
       {leads.length === 0 && <p className="rounded-lg bg-white p-6 text-muted">No leads match.</p>}
 
@@ -170,7 +172,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
                         <select id={`stage-${l.id}`} name="stage" defaultValue={l.stage} className="min-w-0 flex-1 rounded border border-line px-1 py-1 text-xs">
                           {STAGES.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
                         </select>
-                        <button className="rounded bg-navy px-2 text-xs font-semibold text-white">Move</button>
+                        <SubmitButton pendingText="Moving…" doneText="Moved" className="rounded bg-navy px-2 text-xs font-semibold text-white">Move</SubmitButton>
                       </form>
                     </li>
                   ))}

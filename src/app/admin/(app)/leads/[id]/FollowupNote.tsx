@@ -1,6 +1,7 @@
 import type { Followup } from "@/lib/followup-text";
 import { followupSignature } from "@/lib/followup-text";
 import { createFollowup, rewriteFollowup, saveFollowup, sendFollowupNow, skipFollowup } from "../../../actions";
+import { SubmitButton } from "@/components/admin/SubmitButton";
 
 const time = (d: Date) => d.toLocaleString("en-US", { timeZone: "America/Los_Angeles", weekday: "short", hour: "numeric", minute: "2-digit" });
 const when = (d: Date) => d.toLocaleString("en-US", { timeZone: "America/Los_Angeles", dateStyle: "medium", timeStyle: "short" });
@@ -25,7 +26,7 @@ export function FollowupNote({ followup, checkId, to, tableReady }: { followup: 
       <div className="mt-3 flex flex-wrap items-center gap-3 rounded-md bg-navy-50 p-3 text-sm">
         <span className="text-muted">No personal follow-up for this report yet.</span>
         <form action={createFollowup.bind(null, checkId)}>
-          <button className={`${btn} bg-white text-navy ring-1 ring-line`}>Write a personal follow-up</button>
+          <SubmitButton pendingText="Writing…" className={`${btn} bg-white text-navy ring-1 ring-line`}>Write a personal follow-up</SubmitButton>
         </form>
       </div>
     );
@@ -74,13 +75,13 @@ export function FollowupNote({ followup, checkId, to, tableReady }: { followup: 
           <p className="whitespace-pre-wrap text-xs text-muted">Signed automatically:{"\n"}{followupSignature()}</p>
           {editable && (
             <div className="flex flex-wrap gap-2">
-              <button formAction={saveFollowup.bind(null, f.id)} className={`${btn} bg-navy text-white`}>
+              <SubmitButton formAction={saveFollowup.bind(null, f.id)} pendingText="Saving…" doneText="Saved" className={`${btn} bg-navy text-white`}>
                 {f.status === "scheduled" ? "Save changes" : "Save and send automatically"}
-              </button>
-              <button formAction={sendFollowupNow.bind(null, f.id)} className={`${btn} bg-orange text-white`}>Send now</button>
-              <button formAction={rewriteFollowup.bind(null, f.id)} formNoValidate className={`${btn} text-navy ring-1 ring-line`}>Write it again</button>
+              </SubmitButton>
+              <SubmitButton formAction={sendFollowupNow.bind(null, f.id)} pendingText="Sending…" className={`${btn} bg-orange text-white`}>Send now</SubmitButton>
+              <SubmitButton formAction={rewriteFollowup.bind(null, f.id)} formNoValidate pendingText="Rewriting…" className={`${btn} text-navy ring-1 ring-line`}>Write it again</SubmitButton>
               {f.status !== "skipped" && (
-                <button formAction={skipFollowup.bind(null, f.id)} formNoValidate className={`${btn} text-muted underline`}>Don&apos;t send</button>
+                <SubmitButton formAction={skipFollowup.bind(null, f.id)} formNoValidate pendingText="Saving…" className={`${btn} text-muted underline`}>Don&apos;t send</SubmitButton>
               )}
             </div>
           )}

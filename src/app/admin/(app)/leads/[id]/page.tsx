@@ -17,6 +17,7 @@ import { DeleteLead } from "./DeleteLead";
 import { FollowupNote } from "./FollowupNote";
 import { getFollowupsForLead, followupsReady } from "@/lib/followup";
 import { describeAdSource, parseAdSource } from "@/lib/ad-source";
+import { SubmitButton } from "@/components/admin/SubmitButton";
 
 // Leaves time for AI visibility checks started from this page.
 export const maxDuration = 300;
@@ -89,9 +90,9 @@ export default async function LeadPage({ params, searchParams }: { params: Promi
               </span>
             )}
             <input type="hidden" name="vendor" value={summary.vendor ? "false" : "true"} />
-            <button className="font-semibold text-muted underline hover:text-navy">
+            <SubmitButton pendingText="Saving…" className="font-semibold text-muted underline hover:text-navy">
               {summary.vendor ? "Not a pitch, it's a real lead" : "Mark as sales pitch"}
-            </button>
+            </SubmitButton>
           </form>
         )}
         {firstAd ? <p className="mt-1 inline-block rounded-full bg-orange/10 px-3 py-0.5 text-sm font-semibold text-orange-600">Came from: {describeAdSource(firstAd)}</p> : null}
@@ -149,7 +150,7 @@ export default async function LeadPage({ params, searchParams }: { params: Promi
               <input name="quoteAmount" inputMode="decimal" defaultValue={lead.quote_amount_cents != null ? String(lead.quote_amount_cents / 100) : ""} className={input} />
             </label>
             <div className="sm:col-span-2">
-              <button className="rounded-md bg-navy px-4 py-2 font-semibold text-white">Save</button>
+              <SubmitButton pendingText="Saving…" doneText="Saved" className="rounded-md bg-navy px-4 py-2 font-semibold text-white">Save</SubmitButton>
             </div>
           </form>
         </section>
@@ -162,14 +163,14 @@ export default async function LeadPage({ params, searchParams }: { params: Promi
           <div className="flex flex-wrap gap-2">
             <form action={setAiMonitoring.bind(null, lead.id)}>
               <input type="hidden" name="on" value={lead.ai_monitoring ? "false" : "true"} />
-              <button className="rounded-md px-3 py-2 text-sm font-semibold text-navy ring-1 ring-line">
+              <SubmitButton pendingText="Saving…" className="rounded-md px-3 py-2 text-sm font-semibold text-navy ring-1 ring-line">
                 {lead.ai_monitoring ? "Turn off monthly tracking" : "Turn on monthly tracking"}
-              </button>
+              </SubmitButton>
             </form>
             <form action={runAiCheck.bind(null, lead.id)}>
-              <button disabled={!canCheck || checkRunning} className="rounded-md bg-orange px-3 py-2 text-sm font-semibold text-white disabled:opacity-50">
+              <SubmitButton disabled={!canCheck || checkRunning} pendingText="Starting audit…" className="rounded-md bg-orange px-3 py-2 text-sm font-semibold text-white">
                 {checkRunning ? "Audit running..." : "Run audit"}
-              </button>
+              </SubmitButton>
             </form>
           </div>
         </div>
@@ -226,13 +227,13 @@ export default async function LeadPage({ params, searchParams }: { params: Promi
                       {!c.sent_at && lead.email && (
                         <form action={approveReport.bind(null, c.id)}>
                           <input type="hidden" name="send" value="email" />
-                          <button className="rounded-md bg-navy px-3 py-2 text-sm font-semibold text-white">Approve &amp; email to {lead.first_name || lead.email}</button>
+                          <SubmitButton pendingText="Sending email…" className="rounded-md bg-navy px-3 py-2 text-sm font-semibold text-white">Approve &amp; email to {lead.first_name || lead.email}</SubmitButton>
                         </form>
                       )}
                       {!c.approved_at && (
                         <form action={approveReport.bind(null, c.id)}>
                           <input type="hidden" name="send" value="link" />
-                          <button className="rounded-md px-3 py-2 text-sm font-semibold text-navy ring-1 ring-line">Approve link only</button>
+                          <SubmitButton pendingText="Approving…" className="rounded-md px-3 py-2 text-sm font-semibold text-navy ring-1 ring-line">Approve link only</SubmitButton>
                         </form>
                       )}
                     </div>
@@ -258,7 +259,7 @@ export default async function LeadPage({ params, searchParams }: { params: Promi
         <form action={addNote.bind(null, lead.id)} className="mt-3 space-y-2">
           <label className="sr-only" htmlFor="note">Note</label>
           <textarea id="note" name="note" rows={3} required className="w-full rounded-md border border-line px-3 py-2" />
-          <button className="rounded-md bg-orange px-4 py-2 font-semibold text-white">Add note</button>
+          <SubmitButton pendingText="Adding…" doneText="Note added" className="rounded-md bg-orange px-4 py-2 font-semibold text-white">Add note</SubmitButton>
         </form>
       </section>
 

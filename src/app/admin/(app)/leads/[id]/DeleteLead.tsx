@@ -1,16 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useFormStatus } from "react-dom";
-
-function ConfirmButton() {
-  const { pending } = useFormStatus();
-  return (
-    <button disabled={pending} className="rounded-md bg-red-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
-      {pending ? "Deleting..." : "Yes, delete forever"}
-    </button>
-  );
-}
+import { SubmitButton } from "@/components/admin/SubmitButton";
 
 /** Two-step delete: the first click only opens a warning, the second one deletes. */
 export function DeleteLead({ name, action }: { name: string; action: (formData: FormData) => void | Promise<void> }) {
@@ -18,7 +9,7 @@ export function DeleteLead({ name, action }: { name: string; action: (formData: 
 
   if (!open) {
     return (
-      <button type="button" onClick={() => setOpen(true)} className="rounded-md px-4 py-2 text-sm font-semibold text-red-700 ring-1 ring-red-200 hover:bg-red-50">
+      <button type="button" onClick={() => setOpen(true)} className="rounded-md px-4 py-2 text-sm font-semibold text-red-700 ring-1 ring-red-200 transition hover:bg-red-50 active:scale-95">
         Delete lead
       </button>
     );
@@ -32,7 +23,7 @@ export function DeleteLead({ name, action }: { name: string; action: (formData: 
       </p>
       <input type="hidden" name="confirm" value="delete" />
       <div className="mt-3 flex flex-wrap gap-2">
-        <ConfirmButton />
+        <SubmitButton pendingText="Deleting…" className="rounded-md bg-red-700 px-4 py-2 text-sm font-semibold text-white">Yes, delete forever</SubmitButton>
         <button type="button" onClick={() => setOpen(false)} className="rounded-md bg-white px-4 py-2 text-sm font-semibold text-navy ring-1 ring-line">
           Cancel
         </button>
