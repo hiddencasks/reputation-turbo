@@ -68,8 +68,9 @@ async function fetchHome(website: string): Promise<{ html: string; finalUrl: str
 
 /**
  * Looks the business up on Google (Places API). Undefined when no key is set, null when nothing matching is found.
- * If "<name> <city> CA" finds nothing, it tries "<name> CA": a service-area business with a hidden address,
- * or one based in a different town from the city entered, often only turns up without the city.
+ * If "<name> <city> CA" finds nothing, it tries "<name> CA": a business based in a different town from the
+ * city entered often only turns up without the city. Every search asks for service-area businesses too
+ * (no public address, like most contractors): Google leaves those out of Text Search unless asked.
  */
 async function findPlace(ctx: AuditContext): Promise<PlaceResult | null | undefined> {
   const key = process.env.GOOGLE_PLACES_API_KEY;
@@ -109,7 +110,7 @@ async function searchPlaces(key: string, textQuery: string, ctx: AuditContext): 
       "x-goog-api-key": key,
       "x-goog-fieldmask": "places.displayName,places.rating,places.userRatingCount,places.regularOpeningHours,places.nationalPhoneNumber,places.websiteUri,places.photos,places.googleMapsUri",
     },
-    body: JSON.stringify({ textQuery, pageSize: 5 }),
+    body: JSON.stringify({ textQuery, pageSize: 5, includePureServiceAreaBusinesses: true }),
   });
   if (!res.ok) throw new Error(`Google lookup failed (${res.status}).`);
   const { places = [] } = (await res.json()) as { places?: Place[] };
@@ -139,7 +140,7 @@ async function findCompetitors(ctx: AuditContext): Promise<MapsCompetitor[] | un
       "x-goog-api-key": key,
       "x-goog-fieldmask": "places.displayName,places.rating,places.userRatingCount,places.websiteUri,places.googleMapsUri",
     },
-    body: JSON.stringify({ textQuery: `${tradePhrase(ctx.trade)} in ${placeName(ctx.city)}`, pageSize: 6 }),
+    body: JSON.stringify({ textQuery: `${tradePhrase(ctx.trade)} in ${placeName(ctx.city)}`, pageSize: 6, includePureServiceAreaBusinesses: true }),
   });
   if (!res.ok) throw new Error(`Google competitor lookup failed (${res.status}).`);
   type Place = { displayName?: { text: string }; rating?: number; userRatingCount?: number; websiteUri?: string; googleMapsUri?: string };
