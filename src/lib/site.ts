@@ -80,6 +80,7 @@ export const checkedAssistantList = "ChatGPT, Gemini, Perplexity and Claude";
 export const socialLinks: { label: string; href: string }[] = [
   { label: "Facebook", href: "https://www.facebook.com/profile.php?id=61595725937548" },
   { label: "Instagram", href: "https://www.instagram.com/reputationturbo" },
+  { label: "LinkedIn", href: "https://www.linkedin.com/company/reputation-turbo/" },
 ];
 
 /**
