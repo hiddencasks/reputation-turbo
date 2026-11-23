@@ -68,7 +68,7 @@ function faqsFor(showPrices: boolean): Faq[] {
     },
     {
       q: "Do I own my website and accounts?",
-      a: "Yes. Your domain, hosting, business email, Google profile and social accounts are in your name, so you stay in control even if you stop working with us.",
+      a: "Yes. Your domain, hosting, business email, Google profile and social accounts are in your name, so you stay in control even if you stop working with us. Your website stays up and stays yours, with or without a monthly plan.",
     },
     {
       q: "Who does web design for small businesses in Spring Valley and East County?",

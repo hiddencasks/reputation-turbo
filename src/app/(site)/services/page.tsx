@@ -71,7 +71,7 @@ function faqsFor(showPrices: boolean): Faq[] {
     },
     {
       q: "Who owns the website and accounts?",
-      a: "You do. Your domain, hosting, email, Google profile and social accounts are in your name, so you stay in control even if you stop working with us.",
+      a: "You do. Your domain, hosting, email, Google profile and social accounts are in your name, so you stay in control even if you stop working with us. Your website is never taken down because you stop a monthly plan, and we hand over everything you need to keep it running.",
     },
     {
       q: "Do you do AEO (answer engine optimization)?",
