@@ -135,7 +135,7 @@ export function AfterLaunch({ plans, showPrices, className = "bg-navy" }: { plan
         <p className="font-display text-sm font-bold uppercase tracking-[0.18em] text-orange">Step 2 · After launch</p>
         <h2 className="mt-2 font-display text-4xl font-bold">After launch, keep it working</h2>
         <p className="mt-2 max-w-2xl text-white/85">
-          Monthly plans are optional and never required. Add one after launch if you want us to keep things updated for you.
+          Monthly plans are optional and never required. Add one after launch if you want us to keep things updated for you. If you ever stop a plan, your website stays up and stays yours.
         </p>
         <div className={`mt-8 grid gap-6 ${plans.length >= 3 ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
           {plans.map((o) => (
