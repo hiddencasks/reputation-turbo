@@ -123,7 +123,7 @@ export default async function HomePage() {
             </div>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <ButtonLink href="/free-audit" className="flex-col !gap-0 sm:whitespace-nowrap text-lg leading-tight">
-                <span>Get Your Free Online Audit</span>
+                <span>Get Your Free <strong className="font-display text-[1.35em] font-extrabold italic uppercase tracking-wide text-navy">Turbo Score</strong></span>
                 <span className="mt-0.5 text-sm font-normal text-white/85">See where your business stands <strong className="font-extrabold italic uppercase text-navy">right now &rarr;</strong></span>
               </ButtonLink>
               {site.showPhone ? (
@@ -135,6 +135,10 @@ export default async function HomePage() {
               )}
             </div>
             <p className="mt-3 text-sm text-white/60">Takes about 60 seconds</p>
+            <p className="mt-4 max-w-xl text-white/85">
+              Your <strong className="text-white">Turbo Score</strong> is one number, 0 to 100, that shows how easy it is for customers, Google and AI
+              to find and recommend you.
+            </p>
           </div>
           <HeroScorecard />
         </Container>

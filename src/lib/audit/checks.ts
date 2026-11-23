@@ -240,3 +240,86 @@ export function auditSnapshot(audit: SiteAudit, ctx: Pick<AuditContext, "website
   const scored = sections.flatMap((s) => s.items).filter((i) => i.status !== "info");
   return { good: scored.filter((i) => i.status === "good").length, total: scored.length, sections, competitors: audit.competitors };
 }
+
+/** One part of the Turbo Score, e.g. "Google profile 20 / 30". */
+export type ScorePart = { id: "google" | "website" | "reviews" | "ai"; label: string; points: number; max: number; note: string };
+/** The Turbo Score: one 0-100 number that sums up the audit, plus the parts it's made of. */
+export type TurboScore = { score: number; parts: ScorePart[]; weakest: ScorePart | null };
+
+/** How much each part counts toward 100. */
+export const SCORE_WEIGHTS = { google: 30, website: 25, reviews: 20, ai: 25 } as const;
+
+const share = (items: AuditItem[]) => {
+  const scored = items.filter((i) => i.status !== "info");
+  return scored.length ? { good: scored.filter((i) => i.status === "good").length, total: scored.length } : null;
+};
+
+/**
+ * Combines the audit checks and the AI answers into one 0-100 Turbo Score.
+ * Parts we couldn't check (for example a Google lookup that isn't set up) are left out and the rest scaled to 100,
+ * so a business is never marked down for something we didn't look at.
+ */
+export function turboScore(audit: SiteAudit, ai?: { named: number; total: number }): TurboScore {
+  const parts: ScorePart[] = [];
+  const google = audit.sections.find((s) => s.id === "google");
+  const gbp = google?.items.find((i) => i.id === "gbp");
+
+  if (gbp && gbp.status !== "info") {
+    const profile = share(google!.items.filter((i) => i.id !== "reviews"));
+    const max = SCORE_WEIGHTS.google;
+    const points = gbp.status === "fix" || !profile ? 0 : (profile.good / profile.total) * max;
+    const missing = google!.items.filter((i) => i.id !== "reviews" && i.status === "fix").map((i) => i.label.toLowerCase());
+    parts.push({
+      id: "google",
+      label: "Google profile",
+      points,
+      max,
+      note: gbp.status === "fix" ? "No Google profile found." : missing.length ? `To fix: ${missing.join(", ")}.` : "Complete.",
+    });
+
+    // Reviews: up to 12 points for count (20+ reviews is full) and 8 for rating (3.5 stars or less is none, 4.8+ is full).
+    const reviews = google!.items.find((i) => i.id === "reviews");
+    const m = reviews?.detail.match(/([\d.]+) stars from (\d+) reviews/);
+    const rating = m ? Number(m[1]) : 0;
+    const count = m ? Number(m[2]) : 0;
+    const rPoints = gbp.status === "fix" ? 0 : Math.min(count / 20, 1) * 12 + Math.min(Math.max((rating - 3.5) / 1.3, 0), 1) * 8;
+    parts.push({
+      id: "reviews",
+      label: "Reviews",
+      points: rPoints,
+      max: SCORE_WEIGHTS.reviews,
+      note: count ? `${rating.toFixed(1)} stars from ${count} review${count === 1 ? "" : "s"}.` : "No Google reviews yet.",
+    });
+  }
+
+  const web = share(audit.sections.filter((s) => s.id !== "google").flatMap((s) => s.items));
+  if (web) {
+    const toFix = web.total - web.good;
+    parts.push({
+      id: "website",
+      label: "Website",
+      points: (web.good / web.total) * SCORE_WEIGHTS.website,
+      max: SCORE_WEIGHTS.website,
+      note: toFix ? `${web.good} of ${web.total} checks look good.` : "All checks look good.",
+    });
+  }
+
+  if (ai && ai.total > 0) {
+    // Being named in half the answers or more earns full points.
+    parts.push({
+      id: "ai",
+      label: "AI search",
+      points: Math.min(ai.named / ai.total / 0.5, 1) * SCORE_WEIGHTS.ai,
+      max: SCORE_WEIGHTS.ai,
+      note: `Named in ${ai.named} of ${ai.total} AI answers.`,
+    });
+  }
+
+  const order: ScorePart["id"][] = ["google", "website", "reviews", "ai"];
+  parts.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
+  const max = parts.reduce((n, p) => n + p.max, 0);
+  const earned = parts.reduce((n, p) => n + p.points, 0);
+  const rounded = parts.map((p) => ({ ...p, points: Math.round(p.points) }));
+  const weakest = rounded.length ? rounded.reduce((a, b) => (b.points / b.max < a.points / a.max ? b : a)) : null;
+  return { score: max ? Math.round((earned / max) * 100) : 0, parts: rounded, weakest: weakest && weakest.points < weakest.max ? weakest : null };
+}

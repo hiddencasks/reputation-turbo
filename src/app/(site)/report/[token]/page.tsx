@@ -7,7 +7,8 @@ import { getAnswers, getPreviousCheck, type AiCheck } from "@/lib/ai-visibility/
 import { providerLabel } from "@/lib/ai-visibility/providers";
 import { plainText } from "@/lib/ai-visibility/match";
 import { placeName, tradePhrase, withArticle } from "@/lib/ai-visibility/questions";
-import { auditScore, type AuditItem } from "@/lib/audit/checks";
+import { auditScore, turboScore, type AuditItem } from "@/lib/audit/checks";
+import { TurboScoreCard } from "@/components/TurboScore";
 import { Icon } from "@/components/Icon";
 import { MapsCompetitors } from "@/components/MapsCompetitors";
 import { ButtonLink, Container, Eyebrow } from "@/components/ui";
@@ -68,6 +69,7 @@ export default async function ReportPage({ params }: { params: Promise<{ token: 
   const maxCompetitor = Math.max(1, ...check.competitors.map((c) => c.count));
   const audit = check.site_audit;
   const score = audit ? auditScore(audit) : null;
+  const turbo = audit ? turboScore(audit, { named: check.mentioned_count, total: check.answer_count }) : null;
 
   return (
     <>
@@ -91,7 +93,12 @@ export default async function ReportPage({ params }: { params: Promise<{ token: 
       {audit && score && (
         <section className="py-12">
           <Container>
-            <Eyebrow>At a glance</Eyebrow>
+            {turbo && turbo.parts.length > 0 && (
+              <div className="mb-12">
+                <TurboScoreCard result={turbo} businessName={check.business_name} />
+              </div>
+            )}
+            <Eyebrow>The details</Eyebrow>
             <h2 className="mt-2 font-display text-3xl font-bold text-navy">
               {score.good} of {score.total} checks look good
             </h2>
