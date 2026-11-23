@@ -155,6 +155,12 @@ test("owner runs a client project with timers, and the client fills in the porta
   await expect(page.getByText("Sunday: Closed")).toBeVisible();
   await expect(page.getByText("How customers visit: Walk-ins welcome")).toBeVisible();
 
+  // Build brief download.
+  const brief = await (await page.request.get(page.url() + "/brief")).text();
+  expect(brief).toContain("# Build brief: Smoggy Test Shop");
+  expect(brief).toContain("- Monday: 8:00 AM to 6:00 PM");
+  expect(brief).toContain("- storefront.jpg");
+
   // Time log download.
   const csv = await (await page.request.get(page.url() + "/time-log")).text();
   expect(csv).toContain("Kickoff call");

@@ -236,7 +236,10 @@ export default async function ClientProjectPage({ params }: { params: Promise<{ 
       </section>
 
       <section aria-labelledby="intake-heading" className="space-y-4">
-        <h2 id="intake-heading" className="font-display text-2xl font-bold text-navy">Client checklist</h2>
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 id="intake-heading" className="font-display text-2xl font-bold text-navy">Client checklist</h2>
+          <a href={`/admin/clients/${project.id}/brief`} download className="text-sm font-semibold text-orange underline">Download build brief</a>
+        </div>
         <p className="text-sm text-muted">What the client sees in their portal. You can fill in answers or mark items received for them, for example after a call.</p>
         {!hasForms && (
           <p className="rounded-md bg-amber-50 p-3 text-sm text-amber-900">One-time setup needed: run <code>db/updates/2026-11-intake-forms.sql</code> in the Supabase SQL editor to switch on the checklist boxes and dropdowns, then reload this page.</p>
