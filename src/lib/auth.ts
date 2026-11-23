@@ -37,7 +37,8 @@ export async function getSession(): Promise<{ email: string } | null> {
   if (!token) return null;
   try {
     const { payload } = await jwtVerify(token, secretKey(), { algorithms: ["HS256"] });
-    return payload.sub ? { email: payload.sub } : null;
+    // Only owner sessions open the dashboard (client portal sessions use their own cookie and key).
+    return payload.sub && payload.role === "owner" ? { email: payload.sub } : null;
   } catch {
     return null;
   }

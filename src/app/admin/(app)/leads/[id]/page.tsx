@@ -18,6 +18,8 @@ import { FollowupNote } from "./FollowupNote";
 import { getFollowupsForLead, followupsReady } from "@/lib/followup";
 import { describeAdSource, parseAdSource } from "@/lib/ad-source";
 import { SubmitButton } from "@/components/admin/SubmitButton";
+import { getProjectForLead, projectsReady } from "@/lib/projects";
+import { startClientProject } from "../../clients/actions";
 
 // Leaves time for AI visibility checks started from this page.
 export const maxDuration = 300;
@@ -37,6 +39,7 @@ const kindLabel: Record<string, string> = {
   stage_change: "Stage",
   vendor_flag: "Sales pitch",
   followup: "Personal follow-up",
+  project: "Client project",
 };
 
 const fmt = (d: Date) => d.toLocaleString("en-US", { timeZone: "America/Los_Angeles", dateStyle: "medium", timeStyle: "short" });
@@ -55,6 +58,8 @@ export default async function LeadPage({ params, searchParams }: { params: Promi
     followupsReady(),
   ]);
   if (!lead) notFound();
+  const projectTable = await projectsReady();
+  const project = projectTable ? await getProjectForLead(lead.id) : null;
   const providerErrors = await getProviderErrors(checks.filter((c) => c.status === "done").map((c) => c.id));
   const checkRunning = checks.some((c) => c.status === "queued" || c.status === "running") || followups.some((f) => f.status === "writing" || f.status === "sending");
   const canCheck = aiChecksAvailable() && Boolean(lead.business_name && lead.trade && lead.city);
@@ -155,6 +160,32 @@ export default async function LeadPage({ params, searchParams }: { params: Promi
           </form>
         </section>
       </div>
+
+      <section className="rounded-lg bg-white p-5 shadow-sm">
+        <h2 className="font-display text-xl font-bold text-navy">Client project</h2>
+        {project ? (
+          <p className="mt-2 text-sm">
+            {project.package || "No package set"} · started {fmt(project.created_at)}.{" "}
+            <Link href={`/admin/clients/${project.id}`} className="font-semibold text-orange underline">Open the project, time log and client checklist</Link>
+          </p>
+        ) : !projectTable ? (
+          <p className="mt-2 text-sm text-muted">One-time setup needed: run <code>db/updates/2026-11-client-portal.sql</code> in the Supabase SQL editor.</p>
+        ) : (
+          <form action={startClientProject.bind(null, lead.id)} className="mt-3 grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+            <label className="text-sm font-semibold">Package
+              <select name="package" required defaultValue={offerings.find((o) => o.kind === "package" && splitPackages(lead.recommended_package).includes(o.name))?.name ?? ""} className={input}>
+                <option value="">Choose a package</option>
+                {offerings.filter((o) => o.kind === "package").map((o) => <option key={o.slug} value={o.name}>{o.name}</option>)}
+              </select>
+            </label>
+            <label className="text-sm font-semibold">Client email for their portal
+              <input type="email" name="email" defaultValue={lead.email} className={input} />
+            </label>
+            <SubmitButton pendingText="Starting…" className="rounded-md bg-orange px-4 py-2 font-semibold text-white">Start client project</SubmitButton>
+            <p className="text-xs text-muted sm:col-span-3">Creates the delivery steps with a timer for each, and the client&apos;s checklist. Also moves this lead to Won. Nothing is emailed until you send the invite.</p>
+          </form>
+        )}
+      </section>
 
       <section aria-labelledby="ai-heading" className="rounded-lg bg-white p-5 shadow-sm">
         {checkRunning && <AutoRefresh />}
