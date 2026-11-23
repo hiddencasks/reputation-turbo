@@ -111,7 +111,8 @@ export async function startUpload(itemId: string, file: { name: string; size: nu
   try {
     return { ok: true, path, target: await createUploadTarget(path, String(file.type).slice(0, 100)) };
   } catch (err) {
-    console.error("[portal] upload link failed:", err);
+    // Only the message: a fetch error's details can include the full request address.
+    console.error("[portal] upload link failed:", err instanceof Error ? err.message.slice(0, 300) : "unknown error");
     return { ok: false, error: "We couldn't start that upload. Please try again." };
   }
 }

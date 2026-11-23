@@ -6,7 +6,7 @@ import { entryMinutes, formatMinutes, formatWaitDays, PHASES, STEP_STATUSES, ste
 import { agreementBase, portalLink } from "@/lib/portal-emails";
 import { site } from "@/lib/site";
 import { WelcomeForm } from "../WelcomeForm";
-import { storageMode } from "@/lib/storage";
+import { storageProblem } from "@/lib/storage";
 import { SubmitButton } from "@/components/admin/SubmitButton";
 import { IntakeForm } from "@/app/portal/IntakeForm";
 import { initialFields, intakeDef, summarize, withCities } from "@/lib/projects/intake";
@@ -146,8 +146,8 @@ export default async function ClientProjectPage({ params }: { params: Promise<{ 
         <h2 className="font-display text-xl font-bold text-navy">Client portal</h2>
         <p className="mt-1 text-sm text-muted">
           The client&apos;s private page with their checklist and uploads. {project.invited_at ? `Invite sent ${fmt(project.invited_at)}.` : "Not invited yet."}
-          {storageMode() === "off" && " File uploads need the Supabase keys in Vercel (see the setup steps)."}
         </p>
+        {storageProblem() && <p className="mt-2 rounded-md bg-amber-50 p-3 text-sm text-amber-900">Uploads are off: {storageProblem()}</p>}
         <form action={inviteToPortal.bind(null, project.id)} className="mt-3 flex flex-wrap items-end gap-2">
           <label className="min-w-56 flex-1 text-sm font-semibold">Client email
             <input type="email" name="email" required defaultValue={project.portal_email || project.email} className={input} />

@@ -11,13 +11,23 @@ import path from "node:path";
 export const BUCKET = "client-files";
 export const MAX_FILE_BYTES = 25 * 1024 * 1024;
 
-const supabaseUrl = () => (process.env.SUPABASE_URL ?? "").replace(/\/+$/, "");
-const serviceKey = () => process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
+const rawUrl = () => (process.env.SUPABASE_URL ?? "").trim().replace(/\/+$/, "");
+/** The project address, only when it really is one (a key pasted into the wrong box must never end up in a request or a log). */
+const supabaseUrl = () => (/^https:\/\/[a-z0-9.-]+$/i.test(rawUrl()) ? rawUrl() : "");
+const serviceKey = () => (process.env.SUPABASE_SERVICE_ROLE_KEY ?? "").trim();
 
 export function storageMode(): "supabase" | "local" | "off" {
   if (supabaseUrl() && serviceKey()) return "supabase";
-  if (!process.env.VERCEL) return "local";
+  if (!process.env.VERCEL && !rawUrl()) return "local";
   return "off";
+}
+
+/** Plain-language setup problem for the dashboard, or "" when uploads are ready. Never includes the values. */
+export function storageProblem(): string {
+  if (storageMode() !== "off") return "";
+  if (rawUrl() && !supabaseUrl()) return "SUPABASE_URL in Vercel isn't a web address. It should be your Supabase Project URL, like https://abcdefgh.supabase.co (not a key).";
+  if (!serviceKey()) return "SUPABASE_SERVICE_ROLE_KEY is missing in Vercel. Add your Supabase secret key.";
+  return "File uploads need SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in Vercel.";
 }
 
 function authHeaders(): Record<string, string> {
