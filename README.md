@@ -39,6 +39,15 @@ Website forms start at most `AI_CHECK_DAILY_LIMIT` checks per 24 hours (default 
 
 `AI_CHECK_FAKE=1` uses built-in sample answers for local development and the tests, so no AI service is called.
 
+## Client projects and the client portal
+
+When a lead becomes a client, press **Start client project** on the lead's page. That creates:
+
+- **Dashboard > Clients**: the delivery steps (19 for website packages, 12 without a website), each with a start/stop timer, time you can type in by hand ("45", "1:30"), notes, and a "Waiting on client" status that counts wait days. Totals compare with the package's estimated hours, and **Download time log** gives a spreadsheet.
+- **The client portal** (reputationturbo.com/portal): the client opens a private link (emailed with **Email the invite**, or copied and texted) and works through a checklist: short answers, logo and photo uploads, and account steps where they add info@ as a manager. We never ask for passwords. You get an email when they update it (at most every 30 minutes), and they get a friendly reminder after 3 quiet days (at most 3, from the daily `/api/cron/portal-reminders` job). **Reset link** stops an old link working.
+
+Setup: run `db/updates/2026-11-client-portal.sql` once in the Supabase SQL editor (it also creates the private `client-files` storage bucket), and add `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in Vercel for uploads. Files go straight from the client's browser to Supabase Storage (25 MB per file; the free plan holds 1 GB).
+
 ## Tests
 
 - `npm test` runs the unit tests (form validation, password hashing).
