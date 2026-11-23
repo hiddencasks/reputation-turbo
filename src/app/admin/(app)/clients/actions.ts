@@ -13,6 +13,7 @@ import {
   getProject,
   removeFileRow,
   rotatePortalToken,
+  saveAgreement,
   saveAnswer,
   setItemDone,
   setStepNotes,
@@ -21,7 +22,8 @@ import {
   stopTimer,
 } from "@/lib/projects";
 import { parseMinutes, STEP_STATUSES } from "@/lib/projects/template";
-import { sendPortalInvite } from "@/lib/portal-emails";
+import { agreementBase, sendPortalInvite, sendWelcome } from "@/lib/portal-emails";
+import { agreementText } from "@/lib/projects/agreement";
 import { removeStored } from "@/lib/storage";
 import { stageLabel } from "@/lib/stages";
 
@@ -148,4 +150,31 @@ export async function setDelivered(projectId: string, formData: FormData) {
   await sql`update client_projects set delivered_at = ${delivered ? new Date() : null}, updated_at = now() where id = ${uuid.parse(projectId)}`;
   if (delivered) await sql`update time_entries set ended_at = now() where project_id = ${projectId} and ended_at is null`;
   refresh(projectId);
+}
+
+const dollars = z.string().trim().regex(/^\d*(\.\d{0,2})?$/, "Enter a dollar amount like 1497 or 0");
+const toCents = (v: string) => (v === "" ? null : Math.round(Number(v) * 100));
+
+export type WelcomeState = { error: string };
+
+/** Saves the agreement (filled in from the lead and package) and emails the welcome with the portal link. */
+export async function sendWelcomeEmail(projectId: string, _prev: WelcomeState, formData: FormData): Promise<WelcomeState> {
+  await requireOwner();
+  const email = z.string().trim().email().max(200).safeParse(formData.get("email"));
+  if (!email.success) return { error: "Enter the client's email address." };
+  const price = dollars.safeParse(formData.get("price") ?? "");
+  const charged = dollars.safeParse(formData.get("charged") ?? "");
+  if (!price.success || !charged.success) return { error: "Enter dollar amounts like 1497 or 0." };
+  const includeAgreement = formData.get("agreement") === "on";
+
+  await sql`update client_projects set portal_email = ${email.data}, updated_at = now() where id = ${uuid.parse(projectId)}`;
+  const project = await getProject(projectId);
+  if (!project) return { error: "Project not found." };
+  if (includeAgreement) {
+    const { input } = await agreementBase(project);
+    await saveAgreement(project.id, agreementText({ ...input, priceCents: toCents(price.data), chargedCents: toCents(charged.data), date: new Date() }));
+  }
+  const result = await sendWelcome(project, includeAgreement);
+  refresh(projectId);
+  return result.status === "failed" ? { error: `The email didn't send: ${result.error ?? "unknown error"}` } : { error: "" };
 }

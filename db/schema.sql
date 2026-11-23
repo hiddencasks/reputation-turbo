@@ -170,6 +170,12 @@ create table if not exists client_projects (
   updated_at timestamptz not null default now()
 );
 
+-- Project agreement the client agrees to in the portal.
+alter table client_projects add column if not exists agreement_text text not null default '';
+alter table client_projects add column if not exists agreement_sent_at timestamptz;
+alter table client_projects add column if not exists agreed_at timestamptz;
+alter table client_projects add column if not exists agreed_name text not null default '';
+
 create table if not exists project_steps (
   id uuid primary key default gen_random_uuid(),
   project_id uuid not null references client_projects (id) on delete cascade,

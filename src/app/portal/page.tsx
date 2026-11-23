@@ -4,7 +4,7 @@ import { phaseProgress } from "@/lib/projects/template";
 import { SubmitButton } from "@/components/admin/SubmitButton";
 import { site } from "@/lib/site";
 import { clientRemoveFile, clientSaveAnswer, clientSetDone, signOutOfPortal } from "./actions";
-import { LinkRequestForm, Uploader } from "./Uploader";
+import { AgreeForm, LinkRequestForm, Uploader } from "./Uploader";
 
 export const dynamic = "force-dynamic";
 
@@ -51,6 +51,25 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
         </div>
         {done === items.length && items.length > 0 && <p className="mt-3 rounded-md bg-green-50 p-3 text-green-900">That&apos;s everything, thank you! We&apos;ll take it from here and keep you posted.</p>}
       </section>
+
+      {project.agreement_text ? (
+        project.agreed_at ? (
+          <section aria-label="Your agreement" className="rounded-lg bg-white p-6 shadow-sm">
+            <p className="font-semibold text-green-900">You agreed to the project agreement on {project.agreed_at.toLocaleDateString("en-US", { timeZone: "America/Los_Angeles", dateStyle: "long" })}. Thank you!</p>
+            <details className="mt-2 text-sm">
+              <summary className="cursor-pointer font-semibold text-orange">Read it again</summary>
+              <pre className="mt-2 whitespace-pre-wrap font-sans">{project.agreement_text}</pre>
+            </details>
+          </section>
+        ) : (
+          <section aria-labelledby="agreement-heading" className="rounded-lg bg-white p-6 shadow-sm ring-2 ring-orange">
+            <h2 id="agreement-heading" className="font-display text-xl font-bold text-navy">First: your project agreement</h2>
+            <p className="mt-1 text-sm text-muted">Short and plain. Have a question about anything in it? Just reply to our email before agreeing.</p>
+            <pre className="mt-3 max-h-96 overflow-y-auto whitespace-pre-wrap rounded-md bg-navy-50 p-4 font-sans text-sm">{project.agreement_text}</pre>
+            <AgreeForm defaultName={`${project.first_name} ${project.last_name}`.trim()} />
+          </section>
+        )
+      ) : null}
 
       {steps.length > 0 && (
         <section aria-labelledby="progress-heading" className="rounded-lg bg-white p-6 shadow-sm">

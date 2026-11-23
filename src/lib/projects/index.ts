@@ -14,6 +14,10 @@ export type ClientProject = {
   reminder_count: number;
   reminded_at: Date | null;
   delivered_at: Date | null;
+  agreement_text: string;
+  agreement_sent_at: Date | null;
+  agreed_at: Date | null;
+  agreed_name: string;
   created_at: Date;
   updated_at: Date;
 };
@@ -23,6 +27,7 @@ export type ProjectWithLead = ClientProject & {
   first_name: string;
   last_name: string;
   email: string;
+  quote_amount_cents: number | null;
 };
 
 export type ProjectStep = {
@@ -89,7 +94,7 @@ export async function projectsReady(): Promise<boolean> {
 }
 
 const withLead = sql`
-  select p.*, l.business_name, l.first_name, l.last_name, l.email
+  select p.*, l.business_name, l.first_name, l.last_name, l.email, l.quote_amount_cents
   from client_projects p join leads l on l.id = p.lead_id`;
 
 export async function getProject(id: string): Promise<ProjectWithLead | null> {
@@ -276,4 +281,43 @@ export async function markClientSeen(projectId: string): Promise<void> {
 
 export async function rotatePortalToken(projectId: string): Promise<void> {
   await sql`update client_projects set portal_token = encode(gen_random_bytes(24), 'hex'), updated_at = now() where id = ${projectId}`;
+}
+
+// ---------- Agreement ----------
+
+/** False until db/updates/2026-11-client-agreement.sql has been run. */
+export async function agreementReady(): Promise<boolean> {
+  try {
+    const [row] = await sql<{ ok: boolean }[]>`
+      select exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'client_projects' and column_name = 'agreement_text') as ok`;
+    return Boolean(row?.ok);
+  } catch {
+    return false;
+  }
+}
+
+/** Saves the agreement as sent. A new version clears an earlier "I agree". */
+export async function saveAgreement(projectId: string, text: string): Promise<void> {
+  await sql`
+    update client_projects set
+      agreed_at = case when agreement_text = ${text} then agreed_at else null end,
+      agreed_name = case when agreement_text = ${text} then agreed_name else '' end,
+      agreement_text = ${text},
+      agreement_sent_at = now(),
+      updated_at = now()
+    where id = ${projectId}`;
+}
+
+/** Records the client's "I agree" and completes the agreement step. False if already agreed. */
+export async function recordAgreement(projectId: string, name: string): Promise<boolean> {
+  const [row] = await sql<{ lead_id: string }[]>`
+    update client_projects set agreed_at = now(), agreed_name = ${name}, updated_at = now()
+    where id = ${projectId} and agreed_at is null and agreement_text <> ''
+    returning lead_id`;
+  if (!row) return false;
+  await sql`insert into activities (lead_id, kind, body) values (${row.lead_id}, 'project', ${`Agreed to the project agreement as "${name}".`})`;
+  const [step] = await sql<{ id: string }[]>`
+    select id from project_steps where project_id = ${projectId} and title = 'Welcome email and agreement' and status <> 'done'`;
+  if (step) await setStepStatus(step.id, "done");
+  return true;
 }

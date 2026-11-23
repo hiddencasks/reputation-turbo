@@ -60,3 +60,37 @@ describe("time math", () => {
     ]);
   });
 });
+
+import { agreementText, priceLine } from "@/lib/projects/agreement";
+
+describe("project agreement", () => {
+  const base = {
+    businessName: "Smoggy Joe's",
+    clientName: "Joe Test",
+    packageName: "Business Website Launch",
+    deliverables: ["Up to 5-page website"],
+    revisionRounds: 2,
+    extraRevisionCents: 9500,
+    ownerName: "Alvin Shamoun",
+    ourName: "Reputation Turbo",
+    ourAddress: "3911 N. Cordoba Ave. Ste. K, Spring Valley, CA 91977",
+    date: new Date("2026-11-23T21:00:00Z"),
+  };
+
+  it("shows the price plainly", () => {
+    expect(priceLine(149700, 0)).toBe("No charge (a $1,497 value)");
+    expect(priceLine(149700, null)).toBe("$1,497");
+    expect(priceLine(149700, 99700)).toBe("$997 (a $1,497 value)");
+    expect(priceLine(null, null)).toBe("As agreed in writing");
+  });
+
+  it("fills in the lead and package, and keeps the promises from the site", () => {
+    const text = agreementText({ ...base, priceCents: 149700, chargedCents: 0 });
+    expect(text).toContain("Between Reputation Turbo (Alvin Shamoun, 3911 N. Cordoba Ave. Ste. K, Spring Valley, CA 91977) and Smoggy Joe's (Joe Test). November 23, 2026.");
+    expect(text).toContain("1. What we'll do: Business Website Launch\n   - Up to 5-page website");
+    expect(text).toContain("We won't bill you for this package.");
+    expect(text).toContain("2 rounds of changes are included. More rounds are $95 each");
+    expect(text).toContain("your website stays up and stays yours");
+    expect(text).not.toMatch(/\bAI\b/);
+  });
+});

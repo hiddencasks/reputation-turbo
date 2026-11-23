@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { sql } from "@/lib/db";
-import { getIntake, getProject, getSteps, getTimeEntries, projectsReady, type IntakeFile, type IntakeItem } from "@/lib/projects";
+import { agreementReady, getIntake, getProject, getSteps, getTimeEntries, projectsReady, type IntakeFile, type IntakeItem } from "@/lib/projects";
 import { entryMinutes, formatMinutes, formatWaitDays, PHASES, STEP_STATUSES, stepWaitMinutes, totalMinutes } from "@/lib/projects/template";
-import { portalLink } from "@/lib/portal-emails";
+import { agreementBase, portalLink } from "@/lib/portal-emails";
+import { site } from "@/lib/site";
+import { WelcomeForm } from "../WelcomeForm";
 import { storageMode } from "@/lib/storage";
 import { SubmitButton } from "@/components/admin/SubmitButton";
 import { AddTimeForm, CopyLink, Elapsed, TimerButtons } from "../StepTimer";
@@ -18,6 +20,7 @@ import {
   resetPortalLink,
   saveStepNotes,
   setDelivered,
+  sendWelcomeEmail,
   startStepTimer,
   stopStepTimer,
 } from "../actions";
@@ -47,6 +50,9 @@ export default async function ClientProjectPage({ params }: { params: Promise<{ 
     getIntake(id),
     sql<{ name: string; est_hours_low: string | null; est_hours_high: string | null }[]>`select name, est_hours_low, est_hours_high from offerings where kind = 'package'`,
   ]);
+  const hasAgreement = await agreementReady();
+  const welcome = hasAgreement ? await agreementBase(project) : null;
+  const dollarsOf = (c: number | null | undefined) => (c == null ? "" : String(c / 100));
   const now = new Date();
   const ourMinutes = totalMinutes(entries, now);
   const waitMinutes = steps.reduce((sum, s) => sum + stepWaitMinutes(s, now), 0);
@@ -95,6 +101,43 @@ export default async function ClientProjectPage({ params }: { params: Promise<{ 
         </p>
       )}
 
+      <section aria-labelledby="welcome-heading" className="rounded-lg bg-white p-5 shadow-sm">
+        <h2 id="welcome-heading" className="font-display text-xl font-bold text-navy">Welcome email and agreement</h2>
+        {!welcome ? (
+          <p className="mt-2 rounded-md bg-amber-50 p-3 text-sm text-amber-900">One-time setup needed: run <code>db/updates/2026-11-client-agreement.sql</code> in the Supabase SQL editor, then reload this page.</p>
+        ) : (
+          <>
+            <p className="mt-1 text-sm text-muted">
+              Filled in from the lead and the package. Sending it also invites the client to their portal.{" "}
+              {project.agreement_sent_at ? `Agreement sent ${fmt(project.agreement_sent_at)}.` : ""}
+            </p>
+            {project.agreed_at ? (
+              <p className="mt-2 rounded-md bg-green-50 p-3 text-sm font-semibold text-green-900">Agreed by {project.agreed_name} on {fmt(project.agreed_at)}.</p>
+            ) : project.agreement_sent_at ? (
+              <p className="mt-2 rounded-md bg-amber-50 p-3 text-sm text-amber-900">Waiting for the client to tap &quot;I agree&quot; in their portal.</p>
+            ) : null}
+            {project.agreement_text && (
+              <details className="mt-2 text-sm">
+                <summary className="cursor-pointer font-semibold text-orange">The agreement as sent</summary>
+                <pre className="mt-2 whitespace-pre-wrap rounded-md bg-navy-50 p-3 font-sans">{project.agreement_text}</pre>
+              </details>
+            )}
+            <WelcomeForm
+              action={sendWelcomeEmail.bind(null, project.id)}
+              base={welcome.input}
+              email={project.portal_email || project.email}
+              firstName={project.first_name}
+              ownerFirstName={site.founderFirstName}
+              link={portalLink(project)}
+              bookingUrl={site.bookingUrl}
+              defaultPrice={dollarsOf(welcome.packagePriceCents)}
+              defaultCharged={dollarsOf(project.quote_amount_cents ?? welcome.packagePriceCents)}
+              sent={Boolean(project.agreement_sent_at)}
+            />
+          </>
+        )}
+      </section>
+
       <section className="rounded-lg bg-white p-5 shadow-sm">
         <h2 className="font-display text-xl font-bold text-navy">Client portal</h2>
         <p className="mt-1 text-sm text-muted">
@@ -106,7 +149,7 @@ export default async function ClientProjectPage({ params }: { params: Promise<{ 
             <input type="email" name="email" required defaultValue={project.portal_email || project.email} className={input} />
           </label>
           <SubmitButton pendingText="Sending…" className="rounded-md bg-orange px-4 py-2 font-semibold text-white">
-            {project.invited_at ? "Send the link again" : "Email the invite"}
+            {project.invited_at ? "Send just the link again" : "Email just the link"}
           </SubmitButton>
         </form>
         <div className="mt-3 text-sm">
