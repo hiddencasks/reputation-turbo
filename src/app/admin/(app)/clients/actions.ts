@@ -14,8 +14,11 @@ import {
   removeFileRow,
   rotatePortalToken,
   saveAgreement,
+  getItem,
   saveAnswer,
+  saveFields,
   setItemDone,
+  updateLeadFromIntake,
   setStepNotes,
   setStepStatus,
   startTimer,
@@ -25,6 +28,9 @@ import { parseMinutes, STEP_STATUSES } from "@/lib/projects/template";
 import { agreementBase, sendPortalInvite, sendWelcome } from "@/lib/portal-emails";
 import { agreementText } from "@/lib/projects/agreement";
 import { removeStored } from "@/lib/storage";
+import { intakeDef, isComplete, leadChanges, parseFields, summarize, withCities } from "@/lib/projects/intake";
+import { site } from "@/lib/site";
+import type { SaveResult } from "@/app/portal/IntakeForm";
 import { stageLabel } from "@/lib/stages";
 
 const uuid = z.string().regex(/^[0-9a-f-]{36}$/);
@@ -127,6 +133,21 @@ export async function ownerSaveAnswer(projectId: string, itemId: string, formDat
   const answer = z.string().max(5000).parse(formData.get("answer") ?? "");
   await saveAnswer(uuid.parse(projectId), uuid.parse(itemId), answer, "owner");
   refresh(projectId);
+}
+
+export async function ownerSaveFields(projectId: string, itemId: string, formData: FormData): Promise<SaveResult> {
+  await requireOwner();
+  const project = await getProject(uuid.parse(projectId));
+  const item = project ? await getItem(project.id, uuid.parse(itemId)) : null;
+  const base = item?.key ? intakeDef(item.key) : undefined;
+  if (!project || !item || !base) return { ok: false, done: false };
+  const def = withCities(base, site.cities);
+  const fields = parseFields(def, formData);
+  const done = isComplete(def, fields);
+  await saveFields(project.id, item.id, fields, summarize(def, fields).join("\n"), done, "owner");
+  await updateLeadFromIntake(project.lead_id, leadChanges(def.key, fields));
+  refresh(project.id);
+  return { ok: true, done };
 }
 
 export async function ownerSetItemDone(projectId: string, itemId: string, formData: FormData) {

@@ -5,7 +5,10 @@ import { redirect } from "next/navigation";
 import { after } from "next/server";
 import { z } from "zod";
 import { sql } from "@/lib/db";
-import { addFile, getFile, getItem, getProject, recordAgreement, removeFileRow, saveAnswer, setItemDone } from "@/lib/projects";
+import { addFile, getFile, getItem, getProject, recordAgreement, removeFileRow, saveAnswer, saveFields, setItemDone, updateLeadFromIntake } from "@/lib/projects";
+import { intakeDef, isComplete, leadChanges, parseFields, summarize, withCities } from "@/lib/projects/intake";
+import { site } from "@/lib/site";
+import type { SaveResult } from "./IntakeForm";
 import { destroyPortalSession, getPortalProject } from "@/lib/portal-auth";
 import { notifyOwnerOfClientUpdate, sendPortalLink } from "@/lib/portal-emails";
 import { createUploadTarget, MAX_FILE_BYTES, removeStored, storageMode, storagePath, storedSize, type UploadTarget } from "@/lib/storage";
@@ -60,6 +63,25 @@ export async function clientSaveAnswer(itemId: string, formData: FormData) {
   await saveAnswer(project.id, item.id, answer, "client");
   tellOwner(project.id, `answered "${item.label}"`);
   revalidatePath("/portal");
+}
+
+export async function clientSaveFields(itemId: string, formData: FormData): Promise<SaveResult> {
+  const project = await getPortalProject();
+  if (!project) return { ok: false, done: false, error: "Your session ended. Open your link again, then save." };
+  const item = await getItem(project.id, uuid.parse(itemId));
+  const base = item?.key ? intakeDef(item.key) : undefined;
+  if (!item || !base) return { ok: false, done: false };
+  const def = withCities(base, site.cities);
+  const fields = parseFields(def, formData);
+  const done = isComplete(def, fields);
+  await saveFields(project.id, item.id, fields, summarize(def, fields).join("\n"), done, "client");
+  const changed = await updateLeadFromIntake(project.lead_id, leadChanges(def.key, fields)).catch((err) => {
+    console.error("[portal] lead update failed:", err);
+    return [];
+  });
+  tellOwner(project.id, `updated "${def.label}"${changed.length ? ` (lead ${changed.join(", ")})` : ""}`);
+  revalidatePath("/portal");
+  return { ok: true, done };
 }
 
 export async function clientSetDone(itemId: string, formData: FormData) {

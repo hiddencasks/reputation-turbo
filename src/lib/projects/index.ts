@@ -1,5 +1,7 @@
 import "server-only";
 import { sql } from "../db";
+import { phoneDigits } from "../phone";
+import { INTAKE, intakeDef, type Fields } from "./intake";
 import { intakeFor, stepsFor, type IntakeKind, type StepStatus } from "./template";
 
 export type ClientProject = {
@@ -28,6 +30,8 @@ export type ProjectWithLead = ClientProject & {
   last_name: string;
   email: string;
   quote_amount_cents: number | null;
+  phone: string;
+  city: string;
 };
 
 export type ProjectStep = {
@@ -69,6 +73,9 @@ export type IntakeItem = {
   done_at: Date | null;
   done_by: string;
   updated_at: Date;
+  /** Missing until db/updates/2026-11-intake-forms.sql has been run. */
+  key?: string;
+  fields?: Fields;
 };
 
 export type IntakeFile = {
@@ -93,8 +100,19 @@ export async function projectsReady(): Promise<boolean> {
   }
 }
 
+/** False until db/updates/2026-11-intake-forms.sql has been run (the checklist then falls back to plain text boxes). */
+export async function intakeFormsReady(): Promise<boolean> {
+  try {
+    const [row] = await sql<{ ok: boolean }[]>`
+      select exists (select 1 from information_schema.columns where table_name = 'intake_items' and column_name = 'fields') as ok`;
+    return Boolean(row?.ok);
+  } catch {
+    return false;
+  }
+}
+
 const withLead = sql`
-  select p.*, l.business_name, l.first_name, l.last_name, l.email, l.quote_amount_cents
+  select p.*, l.business_name, l.first_name, l.last_name, l.email, l.quote_amount_cents, l.phone, l.city
   from client_projects p join leads l on l.id = p.lead_id`;
 
 export async function getProject(id: string): Promise<ProjectWithLead | null> {
@@ -138,7 +156,15 @@ export async function getIntake(projectId: string): Promise<{ items: IntakeItem[
     sql<IntakeItem[]>`select * from intake_items where project_id = ${projectId} order by position`,
     sql<IntakeFile[]>`select * from intake_files where project_id = ${projectId} order by created_at`,
   ]);
-  return { items, files: files.map((f) => ({ ...f, size_bytes: Number(f.size_bytes) })) };
+  // Items with a key take their wording and order from the code (src/lib/projects/intake.ts).
+  const order = (i: IntakeItem) => (i.key ? INTAKE.findIndex((d) => d.key === i.key) : -1);
+  const shaped = items
+    .map((i) => {
+      const def = i.key ? intakeDef(i.key) : undefined;
+      return def ? { ...i, label: def.label, help: def.help, section: def.section } : i;
+    })
+    .sort((a, b) => (order(a) < 0 || order(b) < 0 ? a.position - b.position : order(a) - order(b)));
+  return { items: shaped, files: files.map((f) => ({ ...f, size_bytes: Number(f.size_bytes) })) };
 }
 
 /** Creates the project with the standard steps and intake checklist for its package. */
@@ -154,10 +180,17 @@ export async function createProject(leadId: string, packageName: string, email: 
         insert into project_steps (project_id, position, phase, title, who, detail)
         values (${project.id}, ${i + 1}, ${s.phase}, ${s.title}, ${s.who}, ${s.detail})`;
     }
+    const withKeys = await intakeFormsReady();
     for (const [i, item] of intakeFor(packageName).entries()) {
-      await tx`
-        insert into intake_items (project_id, position, section, kind, label, help)
-        values (${project.id}, ${i + 1}, ${item.section}, ${item.kind}, ${item.label}, ${item.help})`;
+      if (withKeys) {
+        await tx`
+          insert into intake_items (project_id, position, section, kind, label, help, key)
+          values (${project.id}, ${i + 1}, ${item.section}, ${item.kind}, ${item.label}, ${item.help}, ${item.key})`;
+      } else {
+        await tx`
+          insert into intake_items (project_id, position, section, kind, label, help)
+          values (${project.id}, ${i + 1}, ${item.section}, ${item.kind}, ${item.label}, ${item.help})`;
+      }
     }
     await tx`
       insert into activities (lead_id, kind, body)
@@ -247,6 +280,41 @@ export async function saveAnswer(projectId: string, itemId: string, answer: stri
       done_by = case when kind <> 'answer' then done_by when ${done} then ${by} else '' end,
       updated_at = now()
     where id = ${itemId} and project_id = ${projectId}`;
+}
+
+/** Saves a checklist form. The plain-text summary goes in `answer` so emails and exports can read it. */
+export async function saveFields(projectId: string, itemId: string, fields: Fields, summary: string, done: boolean, by: "client" | "owner"): Promise<void> {
+  await sql`
+    update intake_items set
+      fields = ${sql.json(fields as never)},
+      answer = ${summary},
+      done_at = ${done ? sql`coalesce(done_at, now())` : null},
+      done_by = ${done ? sql`case when done_at is null then ${by} else done_by end` : ""},
+      updated_at = now()
+    where id = ${itemId} and project_id = ${projectId}`;
+}
+
+/** Copies a changed business name, city or phone from the client checklist onto the lead. Returns what changed. */
+export async function updateLeadFromIntake(leadId: string, changes: { business_name?: string; city?: string; phone?: string }): Promise<string[]> {
+  const [lead] = await sql<{ business_name: string; city: string; phone: string }[]>`select business_name, city, phone from leads where id = ${leadId}`;
+  if (!lead) return [];
+  const changed: string[] = [];
+  if (changes.business_name && changes.business_name !== lead.business_name) {
+    await sql`update leads set business_name = ${changes.business_name}, updated_at = now() where id = ${leadId}`;
+    changed.push(`business name to "${changes.business_name}"`);
+  }
+  if (changes.city && changes.city !== lead.city) {
+    await sql`update leads set city = ${changes.city}, updated_at = now() where id = ${leadId}`;
+    changed.push(`city to "${changes.city}"`);
+  }
+  if (changes.phone && phoneDigits(changes.phone) !== phoneDigits(lead.phone)) {
+    await sql`update leads set phone = ${changes.phone}, phone_digits = ${phoneDigits(changes.phone)}, updated_at = now() where id = ${leadId}`;
+    changed.push(`phone to ${changes.phone}`);
+  }
+  if (changed.length) {
+    await sql`insert into activities (lead_id, kind, body) values (${leadId}, 'project', ${`Client checklist updated the ${changed.join(", ")}.`})`;
+  }
+  return changed;
 }
 
 export async function setItemDone(projectId: string, itemId: string, done: boolean, by: "client" | "owner"): Promise<void> {

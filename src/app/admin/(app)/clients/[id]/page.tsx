@@ -1,13 +1,15 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { sql } from "@/lib/db";
-import { agreementReady, getIntake, getProject, getSteps, getTimeEntries, projectsReady, type IntakeFile, type IntakeItem } from "@/lib/projects";
+import { agreementReady, intakeFormsReady, getIntake, getProject, getSteps, getTimeEntries, projectsReady, type IntakeFile, type IntakeItem } from "@/lib/projects";
 import { entryMinutes, formatMinutes, formatWaitDays, PHASES, STEP_STATUSES, stepWaitMinutes, totalMinutes } from "@/lib/projects/template";
 import { agreementBase, portalLink } from "@/lib/portal-emails";
 import { site } from "@/lib/site";
 import { WelcomeForm } from "../WelcomeForm";
 import { storageMode } from "@/lib/storage";
 import { SubmitButton } from "@/components/admin/SubmitButton";
+import { IntakeForm } from "@/app/portal/IntakeForm";
+import { initialFields, intakeDef, summarize, withCities } from "@/lib/projects/intake";
 import { AddTimeForm, CopyLink, Elapsed, TimerButtons } from "../StepTimer";
 import {
   addStepTime,
@@ -15,6 +17,7 @@ import {
   inviteToPortal,
   ownerRemoveFile,
   ownerSaveAnswer,
+  ownerSaveFields,
   ownerSetItemDone,
   removeTimeEntry,
   resetPortalLink,
@@ -50,7 +53,7 @@ export default async function ClientProjectPage({ params }: { params: Promise<{ 
     getIntake(id),
     sql<{ name: string; est_hours_low: string | null; est_hours_high: string | null }[]>`select name, est_hours_low, est_hours_high from offerings where kind = 'package'`,
   ]);
-  const hasAgreement = await agreementReady();
+  const [hasAgreement, hasForms] = await Promise.all([agreementReady(), intakeFormsReady()]);
   const welcome = hasAgreement ? await agreementBase(project) : null;
   const dollarsOf = (c: number | null | undefined) => (c == null ? "" : String(c / 100));
   const now = new Date();
@@ -66,6 +69,7 @@ export default async function ClientProjectPage({ params }: { params: Promise<{ 
   for (const f of intake.files) filesByItem.set(f.item_id, [...(filesByItem.get(f.item_id) ?? []), f]);
   const sections = [...new Set(intake.items.map((i) => i.section))];
   const input = "mt-1 w-full rounded-md border border-line bg-white px-3 py-2 text-sm";
+  const lead = { business_name: project.business_name, city: project.city, phone: project.phone, email: project.email };
 
   return (
     <div className="space-y-6">
@@ -234,6 +238,9 @@ export default async function ClientProjectPage({ params }: { params: Promise<{ 
       <section aria-labelledby="intake-heading" className="space-y-4">
         <h2 id="intake-heading" className="font-display text-2xl font-bold text-navy">Client checklist</h2>
         <p className="text-sm text-muted">What the client sees in their portal. You can fill in answers or mark items received for them, for example after a call.</p>
+        {!hasForms && (
+          <p className="rounded-md bg-amber-50 p-3 text-sm text-amber-900">One-time setup needed: run <code>db/updates/2026-11-intake-forms.sql</code> in the Supabase SQL editor to switch on the checklist boxes and dropdowns, then reload this page.</p>
+        )}
         {sections.map((section) => (
           <div key={section} className="rounded-lg bg-white p-5 shadow-sm">
             <h3 className="font-display text-lg font-bold uppercase tracking-wide text-navy">{section}</h3>
@@ -258,6 +265,9 @@ export default async function ClientProjectPage({ params }: { params: Promise<{ 
   );
 
   function IntakeRow({ projectId, item, files }: { projectId: string; item: IntakeItem; files: IntakeFile[] }) {
+    const base = item.key ? intakeDef(item.key) : undefined;
+    const def = base ? withCities(base, site.cities) : undefined;
+    const lines = def && item.fields && Object.keys(item.fields).length ? summarize(def, item.fields) : [];
     return (
       <li className="py-4 first:pt-0 last:pb-0">
         <div className="flex flex-wrap items-start justify-between gap-2">
@@ -288,7 +298,30 @@ export default async function ClientProjectPage({ params }: { params: Promise<{ 
             ))}
           </ul>
         )}
-        {(item.kind === "answer" || item.answer) && (
+        {def?.fields ? (
+          <>
+            {lines.length > 0 ? (
+              <ul className="mt-2 space-y-0.5 rounded-md bg-navy-50 p-3 text-sm">
+                {lines.map((l, i) => <li key={i}>{l}</li>)}
+              </ul>
+            ) : item.answer ? (
+              <p className="mt-2 whitespace-pre-wrap rounded-md bg-navy-50 p-3 text-sm">{item.answer}</p>
+            ) : (
+              <p className="mt-2 text-sm text-muted">No answers yet.</p>
+            )}
+            <details className="mt-2">
+              <summary className="cursor-pointer text-sm font-semibold text-orange">Edit answers</summary>
+              <IntakeForm
+                itemKey={def.key}
+                itemId={item.id}
+                cities={[...site.cities]}
+                initial={initialFields(def.key, item.fields, item.answer, lead)}
+                action={ownerSaveFields.bind(null, projectId, item.id)}
+                compact
+              />
+            </details>
+          </>
+        ) : (item.kind === "answer" || item.answer) && (
           <form action={ownerSaveAnswer.bind(null, projectId, item.id)} className="mt-2 space-y-1">
             <label className="sr-only" htmlFor={`answer-${item.id}`}>{item.label}</label>
             <textarea id={`answer-${item.id}`} name="answer" rows={2} defaultValue={item.answer} maxLength={5000} className={input} />
