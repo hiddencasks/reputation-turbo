@@ -68,11 +68,19 @@ test("owner runs a client project with timers, and the client fills in the porta
   await step4.getByRole("button", { name: "Set" }).click();
   await expect(step4.getByText("Waiting on client", { exact: true }).first()).toBeVisible();
 
-  // Invite the client.
-  await page.getByRole("button", { name: "Email the invite" }).click();
+  // Welcome email and agreement, filled in from the lead and package.
+  const welcome = page.getByRole("region", { name: "Welcome email and agreement" });
+  await expect(welcome.getByLabel("Client email")).toHaveValue(email);
+  await expect(welcome.getByLabel("Package value ($)")).toHaveValue("1497");
+  await welcome.getByLabel("You're charging ($)").fill("0");
+  await welcome.getByText("Preview the email and agreement").click();
+  await expect(welcome.getByText("Hi Joe,")).toBeVisible();
+  await expect(welcome.getByText(/2\. Price: No charge \(a \$1,497 value\)/)).toBeVisible();
+  await expect(welcome.getByText(/Up to 5-page website/).first()).toBeVisible();
+  await welcome.getByRole("button", { name: "Send welcome email" }).click();
+  await expect(welcome.getByText(/Waiting for the client to tap/)).toBeVisible();
   await expect(page.getByText(/Invite sent/)).toBeVisible();
-  await expect(page.getByRole("button", { name: "Send the link again" })).toBeVisible({ timeout: 10_000 });
-  expect((await db`select count(*)::int as n from emails where template = 'portal_invite' and to_email = ${email}`)[0].n).toBe(1);
+  expect((await db`select count(*)::int as n from emails where template = 'portal_welcome' and to_email = ${email}`)[0].n).toBe(1);
   const link = await page.getByLabel("Portal link").inputValue();
   expect(link).toMatch(/\/portal\/open\/[0-9a-f]{48}$/);
 
@@ -81,6 +89,15 @@ test("owner runs a client project with timers, and the client fills in the porta
   await client.goto(new URL(link).pathname);
   await expect(client.getByRole("heading", { name: "Hi Joe!" })).toBeVisible();
   await expect(client.getByText(/^0 of \d+ done$/)).toBeVisible();
+
+  // The client reads the agreement and agrees with their typed name.
+  const agreement = client.getByRole("region", { name: "First: your project agreement" });
+  await expect(agreement.getByText(/No charge \(a \$1,497 value\)/)).toBeVisible();
+  await expect(agreement.getByLabel("Your full name")).toHaveValue("Joe Test");
+  await agreement.getByLabel(/I've read this agreement/).check();
+  await agreement.getByRole("button", { name: "I agree" }).click();
+  await expect(client.getByText(/You agreed to the project agreement on/)).toBeVisible();
+  await expect.poll(async () => (await db`select status from project_steps where title = 'Welcome email and agreement'`)[0].status).toBe("done");
   await expect(client.getByText("Intake").first()).toBeVisible();
 
   await client.getByLabel("Business hours").fill("Mon to Sat, 8 to 6. Walk-ins welcome.");

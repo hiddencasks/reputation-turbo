@@ -46,6 +46,8 @@ When a lead becomes a client, press **Start client project** on the lead's page.
 - **Dashboard > Clients**: the delivery steps (19 for website packages, 12 without a website), each with a start/stop timer, time you can type in by hand ("45", "1:30"), notes, and a "Waiting on client" status that counts wait days. Totals compare with the package's estimated hours, and **Download time log** gives a spreadsheet.
 - **The client portal** (reputationturbo.com/portal): the client opens a private link (emailed with **Email the invite**, or copied and texted) and works through a checklist: short answers, logo and photo uploads, and account steps where they add info@ as a manager. We never ask for passwords. You get an email when they update it (at most every 30 minutes), and they get a friendly reminder after 3 quiet days (at most 3, from the daily `/api/cron/portal-reminders` job). **Reset link** stops an old link working.
 
+**Welcome email and agreement** on the client page is filled in from the lead and package (set the package value and what you're charging, preview, send). It invites the client, who reads a plain-language agreement in the portal and taps "I agree" with their typed name; step 2 then completes itself. Run `db/updates/2026-11-client-agreement.sql` once for it.
+
 Setup: run `db/updates/2026-11-client-portal.sql` once in the Supabase SQL editor (it also creates the private `client-files` storage bucket), and add `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in Vercel for uploads. Files go straight from the client's browser to Supabase Storage (25 MB per file; the free plan holds 1 GB).
 
 ## Tests

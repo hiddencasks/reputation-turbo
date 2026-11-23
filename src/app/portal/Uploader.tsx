@@ -2,7 +2,7 @@
 
 import { useActionState, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { finishUpload, requestPortalLink, startUpload, type LinkState } from "./actions";
+import { clientAgree, finishUpload, requestPortalLink, startUpload, type AgreeState, type LinkState } from "./actions";
 
 type Row = { name: string; progress: number; state: "uploading" | "done" | "failed"; error?: string };
 
@@ -101,6 +101,23 @@ export function LinkRequestForm() {
       </label>
       {state.error && <p role="alert" className="text-sm text-red-700">{state.error}</p>}
       <button disabled={pending} className="rounded-md bg-orange px-5 py-2.5 font-semibold text-white transition active:scale-95 disabled:opacity-60">{pending ? "Sending…" : "Email me my link"}</button>
+    </form>
+  );
+}
+
+export function AgreeForm({ defaultName }: { defaultName: string }) {
+  const [state, action, pending] = useActionState<AgreeState, FormData>(clientAgree, { error: "" });
+  return (
+    <form action={action} className="mt-4 space-y-3">
+      <label className="block font-semibold">Your full name
+        <input name="name" required maxLength={100} defaultValue={defaultName} autoComplete="name" className="mt-1 w-full rounded-md border border-line bg-white px-3 py-2.5 font-normal" />
+      </label>
+      <label className="flex items-start gap-2">
+        <input type="checkbox" name="confirm" required className="mt-1" />
+        <span>I&apos;ve read this agreement and I agree to it.</span>
+      </label>
+      {state.error && <p role="alert" className="text-sm text-red-700">{state.error}</p>}
+      <button disabled={pending} className="rounded-md bg-green-700 px-5 py-2.5 font-semibold text-white transition active:scale-95 disabled:opacity-60">{pending ? "Saving…" : "I agree"}</button>
     </form>
   );
 }

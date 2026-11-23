@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { after } from "next/server";
 import { z } from "zod";
 import { sql } from "@/lib/db";
-import { addFile, getFile, getItem, getProject, removeFileRow, saveAnswer, setItemDone } from "@/lib/projects";
+import { addFile, getFile, getItem, getProject, recordAgreement, removeFileRow, saveAnswer, setItemDone } from "@/lib/projects";
 import { destroyPortalSession, getPortalProject } from "@/lib/portal-auth";
 import { notifyOwnerOfClientUpdate, sendPortalLink } from "@/lib/portal-emails";
 import { createUploadTarget, MAX_FILE_BYTES, removeStored, storageMode, storagePath, storedSize, type UploadTarget } from "@/lib/storage";
@@ -114,4 +114,18 @@ export async function clientRemoveFile(fileId: string) {
   await removeStored(file.storage_path);
   await removeFileRow(file.id);
   revalidatePath("/portal");
+}
+
+// ---------- Agreement ----------
+
+export type AgreeState = { error: string };
+
+export async function clientAgree(_prev: AgreeState, formData: FormData): Promise<AgreeState> {
+  const project = await requireClient();
+  const name = z.string().trim().min(2).max(100).safeParse(formData.get("name"));
+  if (!name.success) return { error: "Type your full name to agree." };
+  if (formData.get("confirm") !== "on") return { error: "Tick the box to confirm you've read it." };
+  if (await recordAgreement(project.id, name.data)) tellOwner(project.id, `agreed to the project agreement as "${name.data}"`);
+  revalidatePath("/portal");
+  return { error: "" };
 }

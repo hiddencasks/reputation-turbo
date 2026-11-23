@@ -1,8 +1,9 @@
 import "server-only";
 import { sql } from "./db";
 import { sendEmail } from "./email";
-import { site } from "./site";
+import { addressOneLine, site } from "./site";
 import { getProject, type ProjectWithLead } from "./projects";
+import { welcomeParagraphs, type AgreementInput } from "./projects/agreement";
 
 export const portalLink = (p: { portal_token: string }) => `${site.url}/portal/open/${p.portal_token}`;
 
@@ -107,4 +108,49 @@ export async function sendDueReminders(): Promise<{ project: string; status: str
     out.push({ project: row.id, status: result.status });
   }
   return out;
+}
+
+/** Agreement details for a project: the lead, its package's deliverables and the extra-round price. */
+export async function agreementBase(p: ProjectWithLead): Promise<{ input: Omit<AgreementInput, "priceCents" | "chargedCents" | "date">; packagePriceCents: number | null }> {
+  const [offering] = await sql<{ price_cents: number; deliverables: string[]; revision_rounds: number | null }[]>`
+    select price_cents, deliverables, revision_rounds from offerings where kind = 'package' and lower(name) = lower(${p.package}) limit 1`;
+  const [extra] = await sql<{ price_cents: number }[]>`select price_cents from offerings where slug = 'extra-revision'`;
+  return {
+    input: {
+      businessName: p.business_name,
+      clientName: `${p.first_name} ${p.last_name}`.trim(),
+      packageName: p.package,
+      deliverables: offering?.deliverables ?? [],
+      revisionRounds: offering?.revision_rounds ?? 2,
+      extraRevisionCents: extra?.price_cents ?? null,
+      ownerName: site.founderName,
+      ourName: site.name,
+      ourAddress: addressOneLine,
+    },
+    packagePriceCents: offering?.price_cents ?? null,
+  };
+}
+
+/** The welcome email with the portal link (and the agreement, when there is one). Counts as the invite. */
+export async function sendWelcome(p: ProjectWithLead, hasAgreement: boolean) {
+  const result = await sendEmail({
+    to: p.portal_email,
+    leadId: p.lead_id,
+    template: "portal_welcome",
+    from: `${site.founderFirstName} at ${site.name} <${site.email}>`,
+    subject: `Welcome to ${site.name}, ${p.first_name || p.business_name || "and thank you"}!`,
+    paragraphs: welcomeParagraphs({
+      firstName: p.first_name,
+      businessName: p.business_name,
+      ownerFirstName: site.founderFirstName,
+      ourName: site.name,
+      link: portalLink(p),
+      bookingUrl: site.bookingUrl,
+      hasAgreement,
+    }),
+  });
+  if (result.status !== "failed") {
+    await sql`update client_projects set invited_at = now(), reminder_count = 0, reminded_at = null where id = ${p.id}`;
+  }
+  return result;
 }
