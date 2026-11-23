@@ -1,9 +1,11 @@
 import { getPortalProject } from "@/lib/portal-auth";
 import { getIntake, getSteps, markClientSeen, type IntakeFile, type IntakeItem } from "@/lib/projects";
 import { phaseProgress } from "@/lib/projects/template";
+import { initialFields, intakeDef } from "@/lib/projects/intake";
 import { SubmitButton } from "@/components/admin/SubmitButton";
 import { site } from "@/lib/site";
-import { clientRemoveFile, clientSaveAnswer, clientSetDone, signOutOfPortal } from "./actions";
+import { clientRemoveFile, clientSaveAnswer, clientSaveFields, clientSetDone, signOutOfPortal } from "./actions";
+import { IntakeForm } from "./IntakeForm";
 import { AgreeForm, LinkRequestForm, Uploader } from "./Uploader";
 
 export const dynamic = "force-dynamic";
@@ -31,6 +33,7 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
 
   await markClientSeen(project.id);
   const [{ items, files }, steps] = await Promise.all([getIntake(project.id), getSteps(project.id)]);
+  const lead = { business_name: project.business_name, city: project.city, phone: project.phone, email: project.email };
   const done = items.filter((i) => i.done_at).length;
   const pct = items.length ? Math.round((done / items.length) * 100) : 0;
   const sections = [...new Set(items.map((i) => i.section))];
@@ -42,9 +45,12 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
         <p className="font-display text-sm font-bold uppercase tracking-[0.18em] text-orange">{project.business_name}</p>
         <h1 className="mt-1 font-display text-3xl font-bold text-navy">{project.first_name ? `Hi ${project.first_name}!` : "Welcome!"}</h1>
         <p className="mt-2">
-          Here&apos;s what we need from you to get started. Do what you can, whenever it suits you; everything saves as you go.
-          We never ask for your passwords. For accounts, you add us as a manager and you stay the owner.
+          Here&apos;s what we need from you to get started. We never ask for your passwords. For accounts, you add us as a manager and you stay the owner.
         </p>
+        <div className="mt-4 rounded-md border-l-4 border-orange bg-orange/5 p-4">
+          <p className="font-semibold text-navy">No need to do it all at once.</p>
+          <p className="mt-1">Each time you tap <strong>Save</strong>, that item is stored. You can close this page, come back later with the same link, and change any answer whenever you like.</p>
+        </div>
         <p className="mt-4 font-semibold text-navy">{done} of {items.length} done</p>
         <div className="mt-1 h-3 overflow-hidden rounded-full bg-navy-50" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="Checklist progress">
           <div className="h-full bg-orange transition-all" style={{ width: `${pct}%` }} />
@@ -88,7 +94,7 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
       {sections.map((section) => (
         <section key={section} aria-label={section} className="space-y-3">
           <h2 className="font-display text-2xl font-bold text-navy">{section}</h2>
-          {items.filter((i) => i.section === section).map((item) => <ItemCard key={item.id} item={item} files={filesOf(item.id)} />)}
+          {items.filter((i) => i.section === section).map((item) => <ItemCard key={item.id} item={item} files={filesOf(item.id)} lead={lead} />)}
         </section>
       ))}
 
@@ -102,8 +108,9 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
   );
 }
 
-function ItemCard({ item, files }: { item: IntakeItem; files: IntakeFile[] }) {
+function ItemCard({ item, files, lead }: { item: IntakeItem; files: IntakeFile[]; lead: Parameters<typeof initialFields>[3] }) {
   const isDone = Boolean(item.done_at);
+  const def = item.key ? intakeDef(item.key) : undefined;
   const box = "mt-2 w-full rounded-md border border-line bg-white px-3 py-2";
   return (
     <article className={`rounded-lg bg-white p-5 shadow-sm ring-1 ${isDone ? "ring-green-300" : "ring-transparent"}`}>
@@ -113,7 +120,15 @@ function ItemCard({ item, files }: { item: IntakeItem; files: IntakeFile[] }) {
       </div>
       {item.help && <p className="mt-1 text-sm text-muted">{item.help}</p>}
 
-      {item.kind === "answer" ? (
+      {def?.fields ? (
+        <IntakeForm
+          itemKey={def.key}
+          itemId={item.id}
+          cities={[...site.cities]}
+          initial={initialFields(def.key, item.fields, item.answer, lead)}
+          action={clientSaveFields.bind(null, item.id)}
+        />
+      ) : item.kind === "answer" ? (
         <form action={clientSaveAnswer.bind(null, item.id)}>
           <label className="sr-only" htmlFor={`a-${item.id}`}>{item.label}</label>
           <textarea id={`a-${item.id}`} name="answer" rows={3} maxLength={5000} defaultValue={item.answer} className={box} />

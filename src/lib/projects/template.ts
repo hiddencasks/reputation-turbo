@@ -1,3 +1,4 @@
+import { INTAKE, type IntakeDef } from "./intake";
 // The standard client delivery steps and intake checklist, plus the time math
 // used by the dashboard and the portal. Pure functions only, so they can be tested.
 
@@ -53,37 +54,13 @@ export function stepsFor(packageName: string): StepTemplate[] {
   return STEP_TEMPLATE.filter((s) => website || !s.website);
 }
 
-export type IntakeKind = "answer" | "upload" | "access";
+export type { IntakeKind } from "./intake";
+export { OUR_EMAIL } from "./intake";
 
-type IntakeTemplate = { section: string; kind: IntakeKind; label: string; help: string; website?: boolean };
-
-export const OUR_EMAIL = "info@reputationturbo.com";
-
-export const INTAKE_TEMPLATE: IntakeTemplate[] = [
-  { section: "Your business", kind: "answer", label: "Business name", help: "Exactly as it should appear everywhere, including on Google." },
-  { section: "Your business", kind: "answer", label: "Address, and whether customers come to you or you go to them", help: "If you work out of your home, we can hide the address and show the areas you serve instead." },
-  { section: "Your business", kind: "answer", label: "Phone number and email to show customers", help: "" },
-  { section: "Your business", kind: "answer", label: "Business hours", help: "Include holidays, and whether customers can walk in or need an appointment." },
-  { section: "Your business", kind: "answer", label: "Services and prices to show", help: "List what you offer, prices if you want them shown, anything you don't do, and any coupons or specials." },
-  { section: "Your business", kind: "answer", label: "Cities and neighborhoods you want customers from", help: "" },
-  { section: "Your business", kind: "answer", label: "Licenses, certifications or awards", help: "For example a state license number. We'll only show what you're OK with." },
-  { section: "Your business", kind: "answer", label: "Payment types, languages spoken, parking and anything else customers ask", help: "" },
-  { section: "Your business", kind: "answer", label: "Two or three competitors you respect or want to beat", help: "" },
-  { section: "Look and feel", kind: "upload", label: "Your logo", help: "The best version you have. If you don't have a logo, mark this done and tell us in the box below." },
-  { section: "Look and feel", kind: "upload", label: "Photos", help: "10 or more if you can: storefront, sign, work area, equipment, your team, you at work. Phone photos are fine; send the originals." },
-  { section: "Look and feel", kind: "answer", label: "Colors you like, and one or two websites you like the look of", help: "", website: true },
-  { section: "Look and feel", kind: "answer", label: "Three to five customer reviews or quotes you're OK sharing", help: "Copy them in, with the customer's first name if they agreed." },
-  { section: "Accounts you own", kind: "access", label: "Domain name", help: "This is your website's address. You buy it in your own name; we'll help you pick one and walk you through it on a short call. Mark done once it's bought.", website: true },
-  { section: "Accounts you own", kind: "access", label: "Website hosting account", help: "A free account in your name where your website will live. We'll send you the sign-up link, then you add us as a member. Mark done once that's set.", website: true },
-  { section: "Accounts you own", kind: "access", label: "Google Business Profile", help: `If you have one, open it on Google, go to Business Profile settings, then Managers, and add ${OUR_EMAIL} as a Manager. If you don't have one, mark this done and say so in the notes; we'll set it up together.` },
-  { section: "Accounts you own", kind: "access", label: "Facebook and Instagram", help: `If you have a Facebook Page, add ${OUR_EMAIL} under Page access in its settings. No Page yet? Mark this done and we'll create it with you.` },
-  { section: "Accounts you own", kind: "answer", label: "Other listings you already have", help: "Yelp, Bing, Apple Maps, Nextdoor, BBB and so on. Links are perfect, no passwords." },
-  { section: "Accounts you own", kind: "answer", label: "Do you want a business email at your own domain?", help: "Optional, about $7 to $8.40 a month per person, paid to Google directly. Yes, no, or not sure.", website: true },
-];
-
-export function intakeFor(packageName: string): IntakeTemplate[] {
+/** The client checklist for a package (website items only when a website is included). */
+export function intakeFor(packageName: string): IntakeDef[] {
   const website = includesWebsite(packageName);
-  return INTAKE_TEMPLATE.filter((i) => website || !i.website);
+  return INTAKE.filter((i) => website || !i.website);
 }
 
 // ---------- Time math ----------

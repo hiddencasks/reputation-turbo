@@ -223,6 +223,9 @@ create table if not exists intake_items (
   done_at timestamptz,
   done_by text not null default '',
   updated_at timestamptz not null default now(),
+  -- Which checklist question this is (see src/lib/projects/intake.ts) and its form answers.
+  key text not null default '',
+  fields jsonb not null default '{}'::jsonb,
   unique (project_id, position)
 );
 

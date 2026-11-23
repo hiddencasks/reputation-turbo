@@ -8,12 +8,15 @@ describe("client project templates", () => {
     expect(stepsFor("Premium Digital Presence")).toHaveLength(19);
     expect(stepsFor("GEO Setup")).toHaveLength(12);
     expect(includesWebsite("Starter Online Presence")).toBe(false);
-    expect(intakeFor("GEO Setup").some((i) => i.label === "Domain name")).toBe(false);
-    expect(intakeFor("Business Website Launch").some((i) => i.label === "Domain name")).toBe(true);
+    expect(intakeFor("GEO Setup").some((i) => i.key === "domain")).toBe(false);
+    expect(intakeFor("Business Website Launch").some((i) => i.key === "domain")).toBe(true);
   });
 
   it("never asks for passwords", () => {
-    for (const i of intakeFor("Business Website Launch")) expect(`${i.label} ${i.help}`).not.toMatch(/(send|share|give|enter)( us)? (your )?passwords?/i);
+    for (const i of intakeFor("Business Website Launch")) {
+      const text = [i.label, i.help, ...(i.steps ?? []).map((s) => s.text), ...(i.fields ?? []).map((f) => f.label)].join(" ");
+      expect(text).not.toMatch(/(send|share|give|enter)( us)? (your )?passwords?/i);
+    }
   });
 });
 

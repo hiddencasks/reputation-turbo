@@ -100,16 +100,45 @@ test("owner runs a client project with timers, and the client fills in the porta
   await expect.poll(async () => (await db`select status from project_steps where title = 'Welcome email and agreement'`)[0].status).toBe("done");
   await expect(client.getByText("Intake").first()).toBeVisible();
 
-  await client.getByLabel("Business hours").fill("Mon to Sat, 8 to 6. Walk-ins welcome.");
-  await client.getByRole("article").filter({ hasText: "Business hours" }).getByRole("button", { name: "Save" }).click();
+  await expect(client.getByText("No need to do it all at once.")).toBeVisible();
+  const hours = client.getByRole("article").filter({ hasText: "Business hours" });
+  await hours.getByLabel("Monday opens").selectOption("8:00 AM");
+  await hours.getByLabel("Monday closes").selectOption("6:00 PM");
+  await expect(hours.getByText("Not saved yet")).toBeVisible();
+  await hours.getByRole("button", { name: "Copy Monday to Tuesday through Friday" }).click();
+  await expect(hours.getByLabel("Friday closes")).toHaveValue("6:00 PM");
+  await hours.getByRole("checkbox", { name: "Closed" }).last().check();
+  await hours.getByLabel("Walk-ins welcome").check();
+  await hours.getByRole("button", { name: "Save" }).click();
+  await expect(hours.getByText(/Saved\. This item is done\. You can still change it any time\./)).toBeVisible();
   await expect(client.getByText(/^1 of \d+ done$/)).toBeVisible();
+
+  // Address in separate boxes, and the lead picks up the new city.
+  const address = client.getByRole("article").filter({ hasText: "Business address" });
+  await address.getByLabel("Street address").fill("4702 Market St");
+  await address.getByLabel("City").fill("Lemon Grove");
+  await expect(address.getByLabel("State")).toHaveValue("CA");
+  await address.getByLabel("ZIP code").fill("92102");
+  await address.getByLabel("No, keep it private and show the areas I serve").check();
+  await address.getByRole("button", { name: "Save" }).click();
+  await expect(address.getByText(/Saved\./)).toBeVisible();
+  await expect.poll(async () => (await db`select l.city from leads l join client_projects p on p.lead_id = l.id order by p.created_at desc limit 1`)[0].city).toBe("Lemon Grove");
+
+  // Account steps show links, and Facebook can be skipped.
+  const social = client.getByRole("article").filter({ hasText: "Facebook and Instagram" });
+  await expect(social.getByText(/personal Facebook account/).first()).toBeVisible();
+  await expect(social.getByLabel("I have a Facebook business Page")).toBeVisible();
+  await social.getByLabel(/I don't use Facebook or Instagram/).check();
+  await expect(social.getByLabel("I have a Facebook business Page")).toHaveCount(0);
+  await expect(client.getByRole("link", { name: /Open Google Business Profile/ })).toHaveAttribute("href", "https://business.google.com/");
+  await expect(client.getByRole("article").filter({ hasText: "Business email at your domain" }).getByLabel("Yes, set it up (recommended)")).toBeVisible();
 
   const photos = client.getByRole("article").filter({ hasText: "Photos" });
   await photos.getByLabel("Add files for Photos").setInputFiles({ name: "storefront.jpg", mimeType: "image/jpeg", buffer: Buffer.from("fake image bytes") });
   await expect(photos.getByRole("button", { name: "Remove" })).toHaveCount(1);
   await expect(photos.getByText("storefront.jpg")).toHaveCount(1);
   await photos.getByRole("button", { name: "I've sent everything for this" }).click();
-  await expect(client.getByText(/^2 of \d+ done$/)).toBeVisible();
+  await expect(client.getByText(/^3 of \d+ done$/)).toBeVisible();
   await expect.poll(async () => (await db`select count(*)::int as n from emails where template = 'owner_portal_update'`)[0].n).toBe(1);
 
   // A portal session never opens the dashboard.
@@ -118,11 +147,13 @@ test("owner runs a client project with timers, and the client fills in the porta
 
   // Back in the dashboard: the answer, the file and the checklist count.
   await page.reload();
-  await expect(page.getByText("2 of", { exact: false }).first()).toBeVisible();
+  await expect(page.getByText("3 of", { exact: false }).first()).toBeVisible();
   await expect(page.getByRole("link", { name: "storefront.jpg" })).toBeVisible();
   const file = await page.request.get(await page.getByRole("link", { name: "storefront.jpg" }).getAttribute("href") as string);
   expect(await file.text()).toBe("fake image bytes");
-  await expect(page.locator("textarea").filter({ hasText: "Walk-ins welcome" })).toHaveCount(1);
+  await expect(page.getByText("Monday: 8:00 AM to 6:00 PM")).toBeVisible();
+  await expect(page.getByText("Sunday: Closed")).toBeVisible();
+  await expect(page.getByText("How customers visit: Walk-ins welcome")).toBeVisible();
 
   // Time log download.
   const csv = await (await page.request.get(page.url() + "/time-log")).text();
