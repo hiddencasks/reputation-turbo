@@ -3,8 +3,8 @@
 // Pure and browser-safe: the portal form, the server and the tests all use it.
 
 export const OUR_EMAIL = "info@reputationturbo.com";
-/** The Facebook profile clients add to their Page (Meta adds people by their Facebook profile). */
-export const OUR_FACEBOOK_NAME = "Alvin Shamoun";
+/** Our Meta business portfolio ID. Clients add it as a Partner so we can help with their Page without a personal profile. */
+export const OUR_META_BUSINESS_ID = "1606662894546027";
 
 export type IntakeKind = "answer" | "upload" | "access";
 
@@ -269,16 +269,17 @@ export const INTAKE: IntakeDef[] = [
       { type: "checkbox", name: "personal", label: "I have a personal Facebook account", showIf: { field: "skip", is: [""] } },
       { type: "checkbox", name: "has_page", label: "I have a Facebook business Page", showIf: { field: "skip", is: [""] } },
       { type: "url", name: "page", label: "Link to your Facebook Page", placeholder: "https://facebook.com/...", showIf: { field: "has_page", is: ["on"] } },
-      { type: "checkbox", name: "added", label: `I added ${OUR_FACEBOOK_NAME} (Reputation Turbo) to my Page`, showIf: { field: "has_page", is: ["on"] } },
+      { type: "checkbox", name: "added", label: "I added Reputation Turbo as a partner", showIf: { field: "has_page", is: ["on"] } },
       { type: "checkbox", name: "has_ig", label: "I have an Instagram account for the business", showIf: { field: "skip", is: [""] } },
       { type: "text", name: "ig", label: "Instagram username", placeholder: "@yourbusiness", showIf: { field: "has_ig", is: ["on"] } },
       { type: "checkbox", name: "create", label: "I don't have a business Page yet. Please help me set one up", showIf: [{ field: "skip", is: [""] }, { field: "has_page", is: [""] }] },
     ],
     steps: [
-      { text: "On Facebook, switch to your business Page.", link: { href: "https://www.facebook.com/pages/?category=your_pages", label: "Open your Pages" } },
-      { text: "Open Settings, then Page setup, then Page access." },
-      { text: `Choose Add New, search for ${OUR_FACEBOOK_NAME}, and give Facebook access (task access is enough).` },
-      { text: "Instagram linked to your Page comes along automatically; just type your username above." },
+      { text: "Open Meta Business Suite settings, signed in with the Facebook account that manages your Page.", link: { href: "https://business.facebook.com/settings", label: "Open Business Suite settings" } },
+      { text: "Choose Users, then Partners, then Add, then \"Give a partner access to your assets\"." },
+      { text: `Type our Business ID, ${OUR_META_BUSINESS_ID} (it shows up as Reputation Turbo), and choose Next.` },
+      { text: "Pick your Facebook Page (and your Instagram account if it's listed), turn on access to manage content, messages and insights, and save." },
+      { text: "Type your Instagram username above so we can find it." },
       { text: "No business Page yet? If you have a personal Facebook, you can create one in a few minutes, or tick the box above and we'll do it with you.", link: { href: "https://www.facebook.com/pages/create", label: "Create a Facebook Page" } },
     ],
     isDone: (f) => yes(f, "skip") || yes(f, "create") || (yes(f, "has_page") && yes(f, "added")),
