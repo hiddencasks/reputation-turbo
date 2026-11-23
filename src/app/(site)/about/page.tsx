@@ -101,7 +101,7 @@ export default function AboutPage() {
             <h2 className="font-display text-3xl font-extrabold italic uppercase">See how your business looks online</h2>
             <p className="mt-2 text-white/90">Start with a free audit. It&apos;s reviewed by a real person before it reaches you.</p>
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-              <ButtonLink href="/free-audit" variant="dark">Get Your Free Online Audit</ButtonLink>
+              <ButtonLink href="/free-audit" variant="dark">Get Your Free Turbo Score</ButtonLink>
               {!site.showPhone && (
                 <ButtonLink href={site.bookingUrl} target="_blank" rel="noopener" variant="ghostLight">{site.bookingLabel}</ButtonLink>
               )}

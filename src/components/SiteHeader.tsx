@@ -26,7 +26,8 @@ export function SiteHeader() {
             </a>
           )}
           <ButtonLink href="/free-audit" className="whitespace-nowrap px-3 py-2 text-sm sm:px-4 sm:text-base">
-            Free Audit
+            <span className="sm:hidden">Turbo Score</span>
+            <span className="hidden sm:inline">Free Turbo Score</span>
           </ButtonLink>
           <MobileMenu />
         </div>

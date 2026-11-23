@@ -78,9 +78,9 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
             {body}
           </Prose>
           <div className="mt-10 max-w-3xl rounded-lg bg-orange p-8 text-white">
-            <h2 className="font-display text-3xl font-extrabold italic uppercase">Get your free online audit</h2>
+            <h2 className="font-display text-3xl font-extrabold italic uppercase">Get your free Turbo Score</h2>
             <p className="mt-2 text-white/90">See what Google and AI assistants show about your business, and what to fix first. Free, and reviewed by a real person.</p>
-            <ButtonLink href="/free-audit" variant="dark" className="mt-6">Get Your Free Audit</ButtonLink>
+            <ButtonLink href="/free-audit" variant="dark" className="mt-6">Get Your Free Turbo Score</ButtonLink>
           </div>
         </Container>
       </article>

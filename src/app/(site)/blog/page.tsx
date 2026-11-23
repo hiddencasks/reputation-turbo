@@ -46,7 +46,7 @@ export default function BlogPage() {
           <div className="mt-12 rounded-lg bg-orange p-8 text-white">
             <h2 className="font-display text-3xl font-extrabold italic uppercase">See where your business stands</h2>
             <p className="mt-2 text-white/90">Free, personalized, and reviewed by a real person before it reaches you.</p>
-            <ButtonLink href="/free-audit" variant="dark" className="mt-6">Get Your Free Audit</ButtonLink>
+            <ButtonLink href="/free-audit" variant="dark" className="mt-6">Get Your Free Turbo Score</ButtonLink>
           </div>
         </Container>
       </section>

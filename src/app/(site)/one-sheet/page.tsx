@@ -90,7 +90,7 @@ export default async function OneSheetPage() {
 
         <footer className="flex flex-col gap-2 bg-orange px-8 py-5 text-white sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="font-display text-2xl font-extrabold italic uppercase">Get your free online audit</p>
+            <p className="font-display text-2xl font-extrabold italic uppercase">Get your free Turbo Score</p>
             <p className="text-sm">reputationturbo.com/free-audit</p>
           </div>
           <div className="text-sm sm:text-right">
@@ -102,7 +102,7 @@ export default async function OneSheetPage() {
       </article>
 
       <div className="no-print mx-auto mt-6 flex w-full max-w-[8.5in] justify-center px-4">
-        <ButtonLink href="/free-audit">Get Your Free Audit</ButtonLink>
+        <ButtonLink href="/free-audit">Get Your Free Turbo Score</ButtonLink>
       </div>
     </div>
   );

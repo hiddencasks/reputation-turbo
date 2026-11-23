@@ -91,7 +91,7 @@ export function OfferingCard({
       {cta && (
         <div className="mt-auto pt-6">
           <ButtonLink href={ctaHref(o)} variant={featured ? "primary" : "dark"} className="w-full">
-            {o.kind !== "plan" ? "Get My Free Audit" : o.slug === "ai-visibility-plan" ? "Add Monitoring" : "Ask About This Plan"}
+            {o.kind !== "plan" ? "Get My Free Turbo Score" : o.slug === "ai-visibility-plan" ? "Add Monitoring" : "Ask About This Plan"}
           </ButtonLink>
         </div>
       )}

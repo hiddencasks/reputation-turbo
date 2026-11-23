@@ -216,7 +216,7 @@ export default async function HomePage() {
             ]}
           />
           <div className="mt-10">
-            <ButtonLink href="/free-audit" className="text-lg">Start With a Free Audit</ButtonLink>
+            <ButtonLink href="/free-audit" className="text-lg">Start With a Free Turbo Score</ButtonLink>
           </div>
         </Container>
       </section>
@@ -307,7 +307,7 @@ export default async function HomePage() {
             <h2 className="font-display text-4xl font-extrabold italic uppercase">See how your business looks online</h2>
             <p className="mt-2 text-lg text-white/90">Free, personalized, and reviewed by a real person before it reaches you.</p>
           </div>
-          <ButtonLink href="/free-audit" variant="dark" className="text-lg">Get Your Free Audit</ButtonLink>
+          <ButtonLink href="/free-audit" variant="dark" className="text-lg">Get Your Free Turbo Score</ButtonLink>
         </Container>
       </section>
     </>

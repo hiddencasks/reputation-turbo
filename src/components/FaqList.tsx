@@ -46,7 +46,7 @@ export function StillHaveQuestions() {
             <Icon name="video" className="h-5 w-5" /> {site.bookingLabel}
           </ButtonLink>
         )}
-        <ButtonLink href="/free-audit" variant="ghostLight">Get a Free Audit</ButtonLink>
+        <ButtonLink href="/free-audit" variant="ghostLight">Get a Free Turbo Score</ButtonLink>
       </div>
       <p className="mt-4 text-sm text-white/60">
         Or email <a href={`mailto:${site.email}`} className="underline hover:text-white">{site.email}</a>
