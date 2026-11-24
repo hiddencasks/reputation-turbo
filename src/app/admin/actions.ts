@@ -132,6 +132,14 @@ export async function updateLeadDetails(leadId: string, formData: FormData) {
   revalidatePath(`/admin/leads/${leadId}`);
 }
 
+/** "Copy from client checklist" on the lead page: fills Business details from the answers the client already gave. */
+export async function copyDetailsFromChecklist(leadId: string) {
+  await requireOwner();
+  const { syncLeadDetailsFromChecklist } = await import("@/lib/projects");
+  await syncLeadDetailsFromChecklist(leadId);
+  revalidatePath(`/admin/leads/${leadId}`);
+}
+
 export async function moveLeadStage(leadId: string, formData: FormData) {
   await requireOwner();
   const stage = z.enum(STAGE_IDS).parse(formData.get("stage"));

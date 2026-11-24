@@ -1,3 +1,4 @@
+import type { LeadDetails } from "@/lib/leads";
 // The client checklist, as simple forms: boxes, dropdowns and checkboxes instead of
 // free-text questions, plus step-by-step links for the account steps.
 // Pure and browser-safe: the portal form, the server and the tests all use it.
@@ -421,11 +422,40 @@ export function prefillFromText(key: string, text: string): Fields {
 }
 
 /** What the lead should pick up from this answer, if anything. */
-export function leadChanges(key: string, f: Fields): { business_name?: string; city?: string; phone?: string } {
+/** Lead fields a checklist answer fills in. `details` goes into the lead page's internal Business details box. */
+export type LeadChanges = { business_name?: string; city?: string; phone?: string; details?: LeadDetails };
+
+export function leadChanges(key: string, f: Fields): LeadChanges {
   const s = (n: string) => (typeof f[n] === "string" ? (f[n] as string).trim() : "");
+  const on = (n: string) => f[n] === true;
+  const def = intakeDef(key);
   if (key === "business_name" && s("name")) return { business_name: s("name") };
-  if (key === "address" && s("city")) return { city: s("city") };
+  if (key === "address") {
+    const street = [s("street"), s("unit")].filter(Boolean).join(", ");
+    const place = [s("city"), [s("state"), s("zip")].filter(Boolean).join(" ")].filter(Boolean).join(", ");
+    const address = [street, place].filter(Boolean).join("\n");
+    return { ...(s("city") ? { city: s("city") } : {}), ...(address ? { details: { address } } : {}) };
+  }
   if (key === "contact" && s("phone")) return { phone: s("phone") };
+  if (key === "hours" && def) {
+    const hours = summarize(def, f).join("\n");
+    return hours ? { details: { hours } } : {};
+  }
+  if (key === "google" && s("link")) return { details: { googleProfile: s("link") } };
+  if (key === "social") {
+    const details: LeadDetails = {};
+    if (on("has_page") && s("page")) details.facebook = s("page");
+    if (on("has_ig") && s("ig")) details.instagram = s("ig");
+    return Object.keys(details).length ? { details } : {};
+  }
+  if (key === "listings" && def) {
+    const lines = summarize(def, f).map((l) => l.replace(/^Links \(optional\): /, ""));
+    const yelp = s("links").split(/\s+/).find((w) => /yelp\.com\//i.test(w));
+    const details: LeadDetails = {};
+    if (lines.length) details.otherLinks = lines.join("\n");
+    if (yelp) details.yelp = yelp;
+    return Object.keys(details).length ? { details } : {};
+  }
   return {};
 }
 
