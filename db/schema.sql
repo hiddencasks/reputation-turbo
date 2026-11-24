@@ -87,6 +87,8 @@ alter table leads add column if not exists trade text not null default '';
 alter table leads add column if not exists city text not null default '';
 -- Monthly re-checks for clients on the AI Visibility plan.
 alter table leads add column if not exists ai_monitoring boolean not null default false;
+-- Internal business details we add by hand (address, profile links, notes). Never shown to the lead.
+alter table leads add column if not exists details jsonb not null default '{}';
 
 create table if not exists ai_checks (
   id uuid primary key default gen_random_uuid(),

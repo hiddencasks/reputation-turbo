@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { sql } from "@/lib/db";
 import { STAGES } from "@/lib/stages";
-import type { Lead } from "@/lib/leads";
+import { LEAD_DETAIL_FIELDS, type Lead } from "@/lib/leads";
 import { site } from "@/lib/site";
 import { aiChecksAvailable, getChecksForLead, getProviderErrors, reportUrl } from "@/lib/ai-visibility/run";
 import { providerLabel } from "@/lib/ai-visibility/providers";
@@ -11,7 +11,7 @@ import { PackagePicker } from "@/components/PackagePicker";
 import { getOfferings } from "@/lib/offerings";
 import { recommendPackages, splitPackages } from "@/lib/recommend";
 import { auditScore, fixIds } from "@/lib/audit/checks";
-import { addNote, approveReport, deleteLead, markVendor, runAiCheck, setAiMonitoring, updateLead } from "../../../actions";
+import { addNote, approveReport, deleteLead, markVendor, runAiCheck, setAiMonitoring, updateLead, updateLeadDetails } from "../../../actions";
 import { summarizeLead } from "@/lib/lead-summary";
 import { DeleteLead } from "./DeleteLead";
 import { FollowupNote } from "./FollowupNote";
@@ -163,6 +163,28 @@ export default async function LeadPage({ params, searchParams }: { params: Promi
           </form>
         </section>
       </div>
+
+      <section className="rounded-lg bg-white p-5 shadow-sm">
+        <h2 className="font-display text-xl font-bold text-navy">Business details</h2>
+        <p className="mt-1 text-sm text-muted">For our own records only. The lead never sees this. Add things as you learn them.</p>
+        <form action={updateLeadDetails.bind(null, lead.id)} className="mt-3 grid gap-3 sm:grid-cols-2">
+          <label className="text-sm font-semibold">Phone
+            <input name="phone" type="tel" defaultValue={lead.phone} className={input} />
+          </label>
+          {LEAD_DETAIL_FIELDS.map((f) => (
+            <label key={f.key} className={`text-sm font-semibold ${f.multiline ? "sm:col-span-2" : ""}`}>{f.label}
+              {f.multiline ? (
+                <textarea name={f.key} rows={f.key === "notes" ? 4 : 2} defaultValue={lead.details?.[f.key] ?? ""} placeholder={f.placeholder} className={`${input} font-normal`} />
+              ) : (
+                <input name={f.key} defaultValue={lead.details?.[f.key] ?? ""} placeholder={f.placeholder} className={`${input} font-normal`} />
+              )}
+            </label>
+          ))}
+          <div className="sm:col-span-2">
+            <SubmitButton pendingText="Saving…" doneText="Saved" className="rounded-md bg-navy px-4 py-2 font-semibold text-white">Save details</SubmitButton>
+          </div>
+        </form>
+      </section>
 
       <section className="rounded-lg bg-white p-5 shadow-sm">
         <h2 className="font-display text-xl font-bold text-navy">Client project</h2>
