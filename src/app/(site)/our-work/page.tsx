@@ -23,7 +23,7 @@ export default function OurWorkPage() {
               as a demonstration, not a client project.
             </p>
             <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
-              <ButtonLink href="/free-audit">Get a Free Audit</ButtonLink>
+              <ButtonLink href="/free-audit">Get a Free Turbo Score</ButtonLink>
               <ButtonLink href="/contact" variant="secondary">Talk to Us</ButtonLink>
             </div>
           </div>

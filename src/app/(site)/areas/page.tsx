@@ -30,7 +30,7 @@ export default function AreasPage() {
           </ul>
           <p className="mt-8 text-muted">Somewhere else in San Diego County? We work there too.</p>
           <div className="mt-6">
-            <ButtonLink href="/free-audit">Get Your Free Audit</ButtonLink>
+            <ButtonLink href="/free-audit">Get Your Free Turbo Score</ButtonLink>
           </div>
         </Container>
       </section>

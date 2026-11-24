@@ -49,6 +49,8 @@ type Example = {
   /** Checks that look good, out of `total`, like the audit's quick check. */
   good: number;
   total: number;
+  /** Example Turbo Score (0-100), roughly what turboScore() gives for these checks. */
+  score: number;
   website: Check;
   google: Check;
   reviews: Check;
@@ -60,35 +62,35 @@ type Example = {
 
 const examples: Example[] = [
   {
-    name: "Mesa Ridge Roofing", trade: "Roofer · Santee", good: 9, total: 18,
+    name: "Mesa Ridge Roofing", trade: "Roofer · Santee", good: 9, total: 18, score: 41,
     website: { label: "Works on phones", detail: "Fits phone screens", ok: true },
     google: { label: "Business hours", detail: "No hours listed", ok: false },
     reviews: { label: "Reviews", detail: "4.6★ from 23 reviews", ok: true },
     topCompetitor: "Mission Trails Roof Co.", aiFound: [],
   },
   {
-    name: "Helix Concrete Co.", trade: "Concrete · La Mesa", good: 11, total: 18,
+    name: "Helix Concrete Co.", trade: "Concrete · La Mesa", good: 11, total: 18, score: 55,
     website: { label: "Responds quickly", detail: "Took 6.8 seconds", ok: false },
     google: { label: "Photos", detail: "3 photos on profile", ok: false },
     reviews: { label: "Reviews", detail: "4.8★ from 61 reviews", ok: true },
     topCompetitor: "Grossmont Concrete", aiFound: ["Gemini"],
   },
   {
-    name: "Cuyamaca Plumbing", trade: "Plumber · El Cajon", good: 4, total: 13,
+    name: "Cuyamaca Plumbing", trade: "Plumber · El Cajon", good: 4, total: 13, score: 18,
     website: { label: "Tap to call", detail: "No tap-to-call link", ok: false },
     google: { label: "Google profile", detail: "Not found on Google", ok: false },
     reviews: { label: "Business email address", detail: "Uses a personal address", ok: false },
     topCompetitor: "Summit Plumbing & Rooter", aiFound: [],
   },
   {
-    name: "Jamacha Air & Heat", trade: "HVAC · Spring Valley", good: 13, total: 18,
+    name: "Jamacha Air & Heat", trade: "HVAC · Spring Valley", good: 13, total: 18, score: 62,
     website: { label: "Works on phones", detail: "Fits phone screens", ok: true },
     google: { label: "Business hours", detail: "Hours listed", ok: true },
     reviews: { label: "Reviews", detail: "4.1★ from 17 reviews", ok: false },
     topCompetitor: "Valley Air Pros", aiFound: ["Perplexity"],
   },
   {
-    name: "Lakeside Tree Pros", trade: "Tree service · Lakeside", good: 8, total: 18,
+    name: "Lakeside Tree Pros", trade: "Tree service · Lakeside", good: 8, total: 18, score: 38,
     website: { label: "Answers common questions", detail: "No FAQ found", ok: false },
     google: { label: "Website link", detail: "Profile has no website", ok: false },
     reviews: { label: "Reviews", detail: "4.7★ from 38 reviews", ok: true },
@@ -107,9 +109,9 @@ export function HeroScorecard() {
   return (
     <div className="mx-auto w-full max-w-md">
       <p className="font-display text-2xl font-bold uppercase italic leading-tight text-white sm:text-3xl">
-        What your free audit <span className="text-orange">shows you</span>
+        What your Turbo Score <span className="text-orange">shows you</span>
       </p>
-      <p className="mt-1 text-sm text-white/70">Example check-ups for made-up local businesses.</p>
+      <p className="mt-1 text-sm text-white/70">Example scores for made-up local businesses.</p>
       {/* A new key restarts the count-up and the rows for each business. */}
       <ScorecardCard key={index} ex={examples[index]} />
       <div className="mt-4 flex justify-center gap-2">
@@ -129,7 +131,7 @@ export function HeroScorecard() {
 }
 
 function ScorecardCard({ ex }: { ex: Example }) {
-  const good = useCountUp(ex.good, 1200, 200);
+  const score = useCountUp(ex.score, 1200, 200);
   const rows = [ex.website, ex.google, ex.reviews];
   const shown = useStagger(rows.length + 2, 250, 500);
   const toFix = ex.total - ex.good;
@@ -137,21 +139,21 @@ function ScorecardCard({ ex }: { ex: Example }) {
   const c = 2 * Math.PI * r;
   const fade = (i: number) => `transition-all duration-500 ${i < shown ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0"}`;
   return (
-    <figure className="mt-4 rounded-2xl bg-white p-5 text-ink shadow-2xl ring-4 ring-white/10 sm:p-6" aria-label={`Example online check-up for ${ex.name}, a made-up business`}>
+    <figure className="mt-4 rounded-2xl bg-white p-5 text-ink shadow-2xl ring-4 ring-white/10 sm:p-6" aria-label={`Example Turbo Score for ${ex.name}, a made-up business`}>
       <div className="flex items-center gap-2">
         <span className="flex h-8 w-8 items-center justify-center rounded-full bg-navy text-white"><Icon name="chart" className="h-4 w-4" /></span>
-        <span className="text-sm font-semibold">Online check-up</span>
+        <span className="text-sm font-semibold">Turbo Score</span>
         <span className="ml-auto"><ExampleChip /></span>
       </div>
       <div className="mt-4 flex items-center gap-5">
         <div className="relative h-32 w-32 shrink-0">
           <svg viewBox="0 0 120 120" className="h-full w-full -rotate-90">
             <circle cx="60" cy="60" r={r} fill="none" stroke="var(--color-navy-50)" strokeWidth="12" />
-            <circle cx="60" cy="60" r={r} fill="none" stroke="var(--color-orange)" strokeWidth="12" strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c * (1 - good / ex.total)} />
+            <circle cx="60" cy="60" r={r} fill="none" stroke="var(--color-orange)" strokeWidth="12" strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c * (1 - score / 100)} />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="font-display text-4xl font-extrabold leading-none text-navy">{good}<span className="text-xl text-muted">/{ex.total}</span></span>
-            <span className="text-xs font-semibold text-muted">look good</span>
+            <span className="font-display text-5xl font-extrabold leading-none text-navy">{score}</span>
+            <span className="text-xs font-semibold text-muted">out of 100</span>
           </div>
         </div>
         <div className="min-w-0">

@@ -75,7 +75,7 @@ export function MobileMenu() {
             onAudit ? "bg-orange text-white" : "text-orange-600 hover:bg-orange hover:text-white"
           }`}
         >
-          Get a Free Audit
+          Get Your Free Turbo Score
         </Link>
         {site.showPhone ? (
           <a href={site.phoneHref} className="block rounded px-3 py-2.5 text-center font-semibold text-navy">

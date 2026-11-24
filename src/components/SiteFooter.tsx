@@ -14,7 +14,7 @@ export function SiteFooter() {
           <p className="mt-3 text-sm">Serving {site.serviceArea}.</p>
         </div>
         <nav aria-label="Footer" className="grid grid-cols-2 content-start gap-2 text-sm">
-          <Link href="/free-audit" className="hover:text-orange">Free Online Audit</Link>
+          <Link href="/free-audit" className="hover:text-orange">Free Turbo Score</Link>
           {navLinks.map((l) => (
             <Link key={l.href} href={l.href} className="hover:text-orange">{l.label}</Link>
           ))}

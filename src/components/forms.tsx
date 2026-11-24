@@ -319,7 +319,7 @@ export function AuditForm({ focus, interest, trade }: { focus?: "ai-search"; int
       <HelpWith state={state} />
       <FormError state={state} />
       <Button type="submit" disabled={pending} className="w-full sm:w-auto">
-        {pending ? "Checking your business..." : "Get My Free Audit"}
+        {pending ? "Checking your business..." : "Get My Free Turbo Score"}
       </Button>
       <p className="text-xs text-muted">
         We&apos;ll use your details only to prepare and send your audit and to follow up about it. See our{" "}

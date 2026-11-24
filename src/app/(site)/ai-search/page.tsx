@@ -127,7 +127,7 @@ export default async function AiSearchPage() {
             </div>
             <div className="mt-6 border-t border-line pt-5">
               <p className="font-display text-xl font-bold text-navy">Find out what AI says about your business</p>
-              <ButtonLink href="/free-audit?focus=ai-search" className="mt-3">Get My Free Audit</ButtonLink>
+              <ButtonLink href="/free-audit?focus=ai-search" className="mt-3">Get My Free Turbo Score</ButtonLink>
             </div>
           </div>
         </Container>
@@ -267,7 +267,7 @@ export default async function AiSearchPage() {
           <div className="rounded-xl bg-orange p-8 text-white">
             <h2 className="font-display text-3xl font-extrabold italic uppercase">Find out what AI says about you</h2>
             <p className="mt-2 text-white/90">Every free online audit includes an AI search check.</p>
-            <ButtonLink href="/free-audit?focus=ai-search" variant="dark" className="mt-6">Get Your Free Audit</ButtonLink>
+            <ButtonLink href="/free-audit?focus=ai-search" variant="dark" className="mt-6">Get Your Free Turbo Score</ButtonLink>
           </div>
         </Container>
       </section>

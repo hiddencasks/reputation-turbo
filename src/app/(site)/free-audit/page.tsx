@@ -60,7 +60,8 @@ export default async function FreeAuditPage({
             </ul>
             <h2 className="mt-10 font-display text-3xl font-bold text-navy">What you get</h2>
             <p className="mt-3 text-muted">
-              Your strengths, your biggest opportunities, and the evidence behind each one, followed by practical next steps.
+              Your <strong className="text-navy">Turbo Score</strong>, one number from 0 to 100 that shows how easy it is for customers,
+              Google and AI to find and recommend you. Then your strengths, your biggest opportunities, and the evidence behind each one, followed by practical next steps.
               A real person reviews every audit before it&apos;s sent, and we never make up numbers.
             </p>
             {site.auditTurnaround && (
