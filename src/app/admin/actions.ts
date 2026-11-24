@@ -7,7 +7,7 @@ import { z } from "zod";
 import { createSession, destroySession, requireOwner } from "@/lib/auth";
 import { sql } from "@/lib/db";
 import { sendEmail } from "@/lib/email";
-import { isSuppressed, upsertLead, type Lead } from "@/lib/leads";
+import { isSuppressed, LEAD_DETAIL_FIELDS, upsertLead, type Lead, type LeadDetails } from "@/lib/leads";
 import { site } from "@/lib/site";
 import { normalizeWebsite, phoneDigits, prospectSchema } from "@/lib/validation";
 import { findProspects } from "@/lib/finder-search";
@@ -69,6 +69,7 @@ const leadUpdate = z.object({
   trade: z.string().trim().max(80),
   city: z.string().trim().max(80),
   quoteAmount: z.string().trim().regex(/^\d*(\.\d{0,2})?$/, "Enter a dollar amount like 1497 or 1497.50"),
+  website: z.string().trim().max(500).optional(),
 });
 
 export async function updateLead(leadId: string, formData: FormData) {
@@ -78,6 +79,8 @@ export async function updateLead(leadId: string, formData: FormData) {
   if (!before) throw new Error("Lead not found");
 
   const quoteCents = data.quoteAmount ? Math.round(Number(data.quoteAmount) * 100) : null;
+  // Only forms that send a website field change it; an address we can't read keeps the old one.
+  const website = data.website === undefined ? null : normalizeWebsite(data.website);
   await sql`
     update leads set
       stage = ${data.stage},
@@ -86,6 +89,7 @@ export async function updateLead(leadId: string, formData: FormData) {
       trade = ${data.trade},
       city = ${data.city},
       quote_amount_cents = ${quoteCents},
+      website_url = ${website === null ? sql`website_url` : website},
       updated_at = now()
     where id = ${leadId}`;
 
@@ -102,6 +106,30 @@ export async function updateLead(leadId: string, formData: FormData) {
   }
   revalidatePath(`/admin/leads/${leadId}`);
   revalidatePath("/admin/leads");
+}
+
+/** Saves the internal "Business details" box on a lead page. Phone is a real lead column; the rest live in leads.details. */
+export async function updateLeadDetails(leadId: string, formData: FormData) {
+  await requireOwner();
+  const details: LeadDetails = {};
+  for (const f of LEAD_DETAIL_FIELDS) {
+    const v = String(formData.get(f.key) ?? "").trim().slice(0, 2000);
+    if (v) details[f.key] = v;
+  }
+  const phone = String(formData.get("phone") ?? "").trim().slice(0, 40);
+  try {
+    await sql`
+      update leads set
+        details = ${sql.json(details)},
+        phone = ${phone},
+        phone_digits = ${phoneDigits(phone)},
+        updated_at = now()
+      where id = ${leadId}`;
+  } catch (err) {
+    if (/column "details"/.test(String(err))) throw new Error("Run db/updates/2026-11-lead-details.sql in Supabase first, then save again.");
+    throw err;
+  }
+  revalidatePath(`/admin/leads/${leadId}`);
 }
 
 export async function moveLeadStage(leadId: string, formData: FormData) {

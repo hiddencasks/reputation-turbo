@@ -19,9 +19,26 @@ export type Lead = {
   trade: string;
   city: string;
   ai_monitoring: boolean;
+  /** Internal business details we add by hand. Missing until db/updates/2026-11-lead-details.sql is run. */
+  details?: LeadDetails | null;
   created_at: Date;
   updated_at: Date;
 };
+
+/** Internal-only facts about a lead's business, filled in by us as we learn them. */
+export const LEAD_DETAIL_FIELDS = [
+  { key: "address", label: "Business address", multiline: true, placeholder: "Street, city, ZIP (leave blank if they work from home or travel to customers)" },
+  { key: "hours", label: "Hours", multiline: false, placeholder: "Mon-Fri 9-5, Sat 9-2" },
+  { key: "googleProfile", label: "Google profile link", multiline: false, placeholder: "https://maps.app.goo.gl/..." },
+  { key: "facebook", label: "Facebook", multiline: false, placeholder: "https://facebook.com/..." },
+  { key: "instagram", label: "Instagram", multiline: false, placeholder: "https://instagram.com/..." },
+  { key: "yelp", label: "Yelp", multiline: false, placeholder: "https://yelp.com/biz/..." },
+  { key: "otherLinks", label: "Other links and listings", multiline: true, placeholder: "One per line: Bing, Apple Maps, Nextdoor, BBB..." },
+  { key: "notes", label: "Other details", multiline: true, placeholder: "Owner's name, best time to call, licenses, years in business, anything useful" },
+] as const;
+
+export type LeadDetailKey = (typeof LEAD_DETAIL_FIELDS)[number]["key"];
+export type LeadDetails = Partial<Record<LeadDetailKey, string>>;
 
 export type LeadInput = {
   firstName: string;
