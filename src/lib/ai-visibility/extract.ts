@@ -50,7 +50,9 @@ export async function analyzeAnswers(
           ].join("\n"),
         },
       ],
-    });
+    },
+    // Must finish inside the audit's time limit; if it doesn't, the text matching below is used.
+    { timeout: 75_000, maxRetries: 0 });
     const parsed = response.parsed_output;
     if (response.stop_reason === "refusal" || !parsed) return fallback;
     return fallback.map((f, i) => {

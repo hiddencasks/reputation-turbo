@@ -3,6 +3,7 @@ import { processPending, queueMonthlyChecks } from "@/lib/ai-visibility/run";
 // Runs every 15 minutes (see vercel.json): queues monthly re-checks for clients
 // on AI tracking (only once per 28 days each), then finishes any check that is
 // waiting or was interrupted, so a stalled audit is done within minutes, not a day.
+// One check per run, so each run stays inside Vercel's 300-second limit.
 export const maxDuration = 300;
 export const dynamic = "force-dynamic";
 
@@ -12,6 +13,6 @@ export async function GET(request: Request) {
     return new Response("Unauthorized", { status: 401 });
   }
   const queued = await queueMonthlyChecks();
-  const processed = await processPending(2);
+  const processed = await processPending(1);
   return Response.json({ queued, processed });
 }

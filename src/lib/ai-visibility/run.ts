@@ -45,10 +45,18 @@ export type AiCheckAnswer = {
   error: string | null;
 };
 
-/** How many questions are sent to AI services at the same time. */
-const CONCURRENCY = 4;
+/** How many questions are sent to AI services at the same time (two per service with four services). */
+const CONCURRENCY = 8;
 /** A check still "running" after this long is treated as interrupted and run again. */
 const STALE_MINUTES = 15;
+/**
+ * Time the AI questions may take, counted from when the check starts. Vercel stops a run at
+ * 300 seconds; this leaves room for reading the answers and saving the report. Questions
+ * still waiting at the deadline are recorded as timed out, so the check always finishes.
+ */
+const QUESTION_BUDGET_MS = 190_000;
+/** Marks a check that was interrupted once and is being run again. A second interruption fails it. */
+const RETRY_MARK = "Interrupted, running again.";
 
 export function aiChecksAvailable(): boolean {
   return enabledProviders().length > 0;
@@ -86,11 +94,15 @@ async function pool<T>(items: T[], limit: number, run: (item: T) => Promise<void
 /** Runs one queued check from start to finish. Safe to call twice: only one run claims the check. */
 export async function processCheck(checkId: string): Promise<void> {
   const [check] = await sql<AiCheck[]>`
-    update ai_checks set status = 'running', started_at = now(), error = null
+    update ai_checks set started_at = now(),
+      error = case when status = 'running' then ${RETRY_MARK} else null end,
+      status = 'running'
     where id = ${checkId}
-      and (status = 'queued' or (status = 'running' and started_at < now() - make_interval(mins => ${STALE_MINUTES})))
+      and (status = 'queued' or (status = 'running' and started_at < now() - make_interval(mins => ${STALE_MINUTES})
+           and error is distinct from ${RETRY_MARK}))
     returning *`;
   if (!check) return;
+  const deadline = Date.now() + QUESTION_BUDGET_MS;
 
   try {
     await sql`delete from ai_check_answers where check_id = ${check.id}`;
@@ -103,7 +115,7 @@ export async function processCheck(checkId: string): Promise<void> {
     const results: { provider: string; question: string; text: string; sources: string[]; error: string | null }[] = [];
     await pool(jobs, CONCURRENCY, async ({ question, provider }) => {
       try {
-        const answer = await provider.ask(question, { businessName: check.business_name });
+        const answer = await beforeDeadline(() => provider.ask(question, { businessName: check.business_name }), deadline);
         if (!answer.text) throw new Error("Empty answer.");
         results.push({ provider: provider.id, question, text: answer.text, sources: answer.sources, error: null });
       } catch (err) {
@@ -145,7 +157,7 @@ export async function processCheck(checkId: string): Promise<void> {
     const mentionedCount = rows.filter((r) => r.mentioned).length;
     const competitors = tallyCompetitors(rows.filter((r) => !r.error), check.business_name, check.website_url);
     await sql`
-      update ai_checks set status = 'done', finished_at = now(), mentioned_count = ${mentionedCount},
+      update ai_checks set status = 'done', finished_at = now(), error = null, mentioned_count = ${mentionedCount},
         answer_count = ${answered.length}, competitors = ${sql.json(competitors)}
       where id = ${check.id}`;
     await afterCheck({ ...check, mentioned_count: mentionedCount, answer_count: answered.length, competitors });
@@ -154,6 +166,24 @@ export async function processCheck(checkId: string): Promise<void> {
     console.error("[ai-check] check failed:", error);
     await sql`update ai_checks set status = 'failed', finished_at = now(), error = ${error} where id = ${check.id}`;
     await sql`insert into activities (lead_id, kind, body) values (${check.lead_id}, 'ai_check', ${`AI visibility check failed: ${error}`})`;
+  }
+}
+
+/** Waits for an AI answer until the deadline, then gives up on it so the rest of the check can finish. */
+async function beforeDeadline<T>(start: () => Promise<T>, deadline: number): Promise<T> {
+  const left = deadline - Date.now();
+  // Past the deadline, don't send the question at all (it would cost money for nothing).
+  if (left <= 0) throw new Error("Timed out: the audit ran out of time before this question was asked.");
+  const work = start();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error("Timed out: the audit ran out of time before this answer came back.")), left);
+  });
+  try {
+    return await Promise.race([work, timeout]);
+  } finally {
+    clearTimeout(timer);
+    work.catch(() => {});
   }
 }
 
@@ -229,11 +259,25 @@ export async function underDailyLimit(): Promise<boolean> {
   return row.n < limit;
 }
 
-/** Runs checks that are waiting or were interrupted. Used by the scheduled job. */
-export async function processPending(limit = 5): Promise<number> {
+/**
+ * Runs checks that are waiting or were interrupted. Used by the scheduled job every 15 minutes,
+ * so a check whose first run was cut off is picked up again within about 30 minutes.
+ * A check interrupted a second time is marked failed instead of being run over and over.
+ */
+export async function processPending(limit = 1): Promise<number> {
+  const gaveUp = await sql<{ id: string; lead_id: string }[]>`
+    update ai_checks set status = 'failed', finished_at = now(),
+      error = 'The audit was interrupted twice before it finished. Run it again from the lead page.'
+    where status = 'running' and error = ${RETRY_MARK}
+      and started_at < now() - make_interval(mins => ${STALE_MINUTES})
+    returning id, lead_id`;
+  for (const g of gaveUp) {
+    await sql`insert into activities (lead_id, kind, body) values (${g.lead_id}, 'ai_check', 'AI visibility check failed: it was interrupted twice before it finished.')`;
+  }
   const pending = await sql<{ id: string }[]>`
     select id from ai_checks
-    where status = 'queued' or (status = 'running' and started_at < now() - make_interval(mins => ${STALE_MINUTES}))
+    where status = 'queued'
+       or (status = 'running' and started_at < now() - make_interval(mins => ${STALE_MINUTES}) and error is distinct from ${RETRY_MARK})
     order by created_at limit ${limit}`;
   for (const p of pending) await processCheck(p.id);
   return pending.length;
