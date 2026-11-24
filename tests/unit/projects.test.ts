@@ -96,4 +96,13 @@ describe("project agreement", () => {
     expect(text).toContain("your website stays up and stays yours");
     expect(text).not.toMatch(/\bAI\b/);
   });
+  it("spells out payment terms", () => {
+    const website = agreementText({ ...base, splitPayment: true, priceCents: 149700, chargedCents: 149700 });
+    expect(website).toContain("50% ($749) is due to start");
+    expect(website).toContain("free for 30 days after launch");
+    expect(website).toContain("cancel anytime");
+    const geo = agreementText({ ...base, packageName: "GEO Setup", priceCents: 69700, chargedCents: 69700 });
+    expect(geo).toContain("Paid in full before work starts");
+    expect(geo).not.toContain("50%");
+  });
 });

@@ -14,5 +14,7 @@ const dir = path.join(process.cwd(), "db");
 
 await sql.file(path.join(dir, "schema.sql"));
 await sql.file(path.join(dir, "seed.sql"));
+// Final prices and package contents (2026-11) on top of the starting offerings.
+await sql.file(path.join(dir, "updates", "2026-11-final-pricing.sql"));
 console.log("Database is ready.");
 await sql.end();

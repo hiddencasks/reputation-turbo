@@ -97,16 +97,15 @@ describe("package suggestions", () => {
     expect(slugs(recommendPackages({ website: "", aiCheck: null }))).toEqual(["business-website-launch", "care-plan"]);
     expect(slugs(recommendPackages({ website: "", aiCheck: { mentioned: 0, answers: 12 } }))[0]).toBe("premium-digital-presence");
   });
-  it("suggests Starter, plus GEO when AI assistants rarely name them", () => {
-    expect(slugs(recommendPackages({ website: "https://a.com", aiCheck: { mentioned: 9, answers: 12 } }))).toEqual(["starter-online-presence"]);
-    expect(slugs(recommendPackages({ website: "https://a.com", aiCheck: { mentioned: 2, answers: 12 } }))).toEqual([
-      "starter-online-presence", "ai-search-setup", "ai-visibility-plan",
-    ]);
+  it("suggests GEO Setup when they already have a website, plus Google & AI Care when AI rarely names them", () => {
+    expect(slugs(recommendPackages({ website: "https://a.com", aiCheck: { mentioned: 9, answers: 12 } }))).toEqual(["ai-search-setup"]);
+    expect(slugs(recommendPackages({ website: "https://a.com", aiCheck: { mentioned: 2, answers: 12 } }))).toEqual(["ai-search-setup", "ai-visibility-plan"]);
   });
   it("uses audit findings", () => {
     const many = new Set(["mobile", "speed", "call", "title", "reviews"]);
-    expect(slugs(recommendPackages({ website: "https://a.com", aiCheck: null, fixes: many }))).toEqual(["business-website-launch", "review-automation"]);
-    expect(slugs(recommendPackages({ website: "https://a.com", aiCheck: null, fixes: new Set(["title", "faq", "schema"]) }))).toEqual(["starter-online-presence"]);
+    expect(slugs(recommendPackages({ website: "https://a.com", aiCheck: null, fixes: many }))).toEqual(["business-website-launch", "growth-plan"]);
+    expect(slugs(recommendPackages({ website: "https://a.com", aiCheck: null, fixes: new Set(["title", "faq", "schema"]) }))).toEqual(["ai-search-setup"]);
+    expect(slugs(recommendPackages({ website: "https://a.com", aiCheck: null, fixes: new Set(["reviews"]) }))).toEqual(["ai-search-setup", "ai-visibility-plan"]);
   });
   it("round-trips the stored list", () => {
     expect(splitPackages(joinPackages(["GEO Setup", "Care"]))).toEqual(["GEO Setup", "Care"]);

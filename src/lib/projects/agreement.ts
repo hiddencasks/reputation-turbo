@@ -10,6 +10,8 @@ export type AgreementInput = {
   extraRevisionCents: number | null;
   priceCents: number | null;
   chargedCents: number | null;
+  /** Website packages are paid 50/50; everything else in full upfront. */
+  splitPayment?: boolean;
   ownerName: string;
   ourName: string;
   ourAddress: string;
@@ -41,7 +43,11 @@ export function agreementText(a: AgreementInput): string {
     ...a.deliverables.map((d) => `   - ${d}`),
     ``,
     `2. Price: ${priceLine(a.priceCents, a.chargedCents)}`,
-    charged ? `   Payment terms are as we agreed in writing before work starts.` : `   We won't bill you for this package.`,
+    ...(charged
+      ? a.splitPayment
+        ? [`   50% (${money(Math.round(charged / 200) * 100)}) is due to start. The other 50% is due before your new site goes live on your domain, after you've seen and approved it.`, `   The first payment isn't refundable once work starts. If we stop partway, you keep everything that's finished.`]
+        : [`   Paid in full before work starts. It isn't refundable once work starts. If we stop partway, you keep everything that's finished.`]
+      : [`   We won't bill you for this package.`]),
     ``,
     `3. What you pay directly, in your own name`,
     `   - Domain name: about $10 to $22 a year, paid to the registrar`,
@@ -49,13 +55,13 @@ export function agreementText(a: AgreementInput): string {
     `   - Business email, if you want it: about $7 to $8.40 a month per person`,
     `   - Any other tools you choose, paid to that provider`,
     ``,
-    `4. Changes: ${rounds} rounds of changes are included.${a.extraRevisionCents ? ` More rounds are ${money(a.extraRevisionCents)} each, only if you ask for them.` : ""} Nothing goes live until you approve it.`,
+    `4. Changes: ${rounds} rounds of changes are included.${a.extraRevisionCents ? ` More rounds are ${money(a.extraRevisionCents)} each, only if you ask for them.` : ""} Nothing goes live until you approve it.${a.splitPayment ? " Small fixes (text, photos, hours, prices) are free for 30 days after launch." : ""}`,
     ``,
     `5. It's all yours: your website, domain and accounts belong to you. We never ask for your passwords; you add us as a manager and can remove us any time. If you ever stop a monthly plan, your website stays up and stays yours.`,
     ``,
     `6. Your part: send the items on your checklist and reply to review requests, so we can keep things moving. We start building once the checklist is in.`,
     ``,
-    `7. Monthly plans are optional and never required.`,
+    `7. Monthly plans are optional and never required. They're month to month, billed starting the month after launch, and you can cancel anytime.`,
     ``,
     `8. Either of us can end this project by email. Anything you've approved is yours to keep.`,
   ];

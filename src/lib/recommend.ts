@@ -18,6 +18,7 @@ const SERIOUS_SITE_FIXES = ["https", "mobile", "speed", "call", "contact"];
  */
 export function recommendPackages({ website, aiCheck, fixes = new Set() }: RecommendInput): { suggestions: Suggestion[]; note?: string } {
   const out: Suggestion[] = [];
+  let newSite = !website;
   const checked = aiCheck && aiCheck.answers > 0;
   const named = checked ? `named in ${aiCheck.mentioned} of ${aiCheck.answers} AI answers` : "";
   const weakAi = checked && aiCheck.mentioned / aiCheck.answers < 0.5;
@@ -27,28 +28,38 @@ export function recommendPackages({ website, aiCheck, fixes = new Set() }: Recom
     if (invisible) {
       out.push({ slug: "premium-digital-presence", reason: `No website and ${named}. Premium adds the full GEO setup on top of a new site.` });
     } else {
-      out.push({ slug: "business-website-launch", reason: "No website, so customers and AI assistants have little to go on. Includes GEO basics and everything in Starter." });
+      out.push({ slug: "business-website-launch", reason: "No website, so customers and AI assistants have little to go on. Includes GEO basics, Google profile setup and business email." });
     }
     out.push({ slug: "care-plan", reason: "Optional: keeps the new website updated after launch." });
   } else {
     const siteIssues = SERIOUS_SITE_FIXES.filter((id) => fixes.has(id)).length;
     if (fixes.has("website") || siteIssues >= 3) {
+      newSite = true;
       out.push({
         slug: "business-website-launch",
         reason: fixes.has("website") ? "Their website couldn't be loaded, so a new one may be the fastest fix." : `The audit found ${siteIssues} basic website problems (like security, phones or speed), so a new site may cost less than patching the old one.`,
       });
     } else {
       out.push({
-        slug: "starter-online-presence",
+        slug: "ai-search-setup",
         reason: fixes.has("gbp")
-          ? "Already has a website but no Google profile was found. Starter sets up their Google profile, reviews and listings."
-          : "Already has a website, so start with their Google profile, reviews and listings instead of a rebuild.",
+          ? "Already has a website but no Google profile was found. GEO Setup sets up their Google profile, reviews and listings, and makes them easy for AI assistants to recommend."
+          : weakAi
+            ? `Already has a website, but only ${named}. GEO Setup works with the website they already have.`
+            : "Already has a website, so start with their Google profile, reviews and listings instead of a rebuild.",
       });
     }
-    if (weakAi) out.push({ slug: "ai-search-setup", reason: `Only ${named}. GEO Setup works with the website they already have.` });
   }
-  if (fixes.has("reviews")) out.push({ slug: "review-automation", reason: "Few or no Google reviews. Automatic review requests after each job build them up." });
-  if (weakAi) out.push({ slug: "ai-visibility-plan", reason: "Optional: tracks every month whether AI assistants start naming them." });
+  // Monthly help: Growth goes with a website we build, Google & AI Care with one they keep.
+  if (fixes.has("reviews")) {
+    out.push(
+      newSite
+        ? { slug: "growth-plan", reason: "Optional: few or no Google reviews. Growth replies to every review and posts on their Google profile each week." }
+        : { slug: "ai-visibility-plan", reason: "Optional: few or no Google reviews. Google & AI Care replies to every review and keeps their profile active." },
+    );
+  } else if (weakAi && !newSite) {
+    out.push({ slug: "ai-visibility-plan", reason: "Optional: Google & AI Care tracks every month whether AI assistants start naming them." });
+  }
 
   return { suggestions: out, note: checked ? undefined : "Run an AI check for a sharper suggestion." };
 }

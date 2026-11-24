@@ -20,8 +20,8 @@ export const metadata: Metadata = {
 
 const picker: { title: string; body: string; icon: IconName; href: string }[] = [
   { title: "I need a new website", body: "A fast, phone-friendly website with GEO built in.", icon: "browser", href: "#business-website-launch" },
-  { title: "I like my website, help me get found", body: "Google profile, reviews and listings, no rebuild.", icon: "pin", href: "#starter-online-presence" },
-  { title: "Just AI visibility", body: "Get recommended by AI assistants, nothing else.", icon: "sparkle", href: "#geo" },
+  { title: "I like my website, help me get found", body: "Google profile, reviews, listings and AI visibility, no rebuild.", icon: "pin", href: "#geo" },
+  { title: "Keep it all up to date", body: "Optional monthly help with posts, reviews and edits.", icon: "refresh", href: "#plans" },
 ];
 
 const onboarding: { title: string; body: string; icon: IconName }[] = [
@@ -41,7 +41,7 @@ const thirdParty: { item: string; cost: string; icon: IconName }[] = [
 // Add-ons grouped for scanning. Anything new added in the dashboard lands in "More".
 const addonGroups: { title: string; icon: IconName; slugs: string[] }[] = [
   { title: "Branding", icon: "palette", slugs: ["logo-creation", "brand-identity-kit"] },
-  { title: "Website extras", icon: "layout", slugs: ["additional-page", "service-area-page", "photo-gallery", "booking-integration", "extra-revision"] },
+  { title: "Website extras", icon: "layout", slugs: ["additional-page", "service-area-page", "city-page-5-pack", "photo-gallery", "business-email-setup", "booking-integration", "extra-revision"] },
   { title: "Automation", icon: "bolt", slugs: ["review-automation", "ai-chatbot", "ai-lead-response"] },
   { title: "Content", icon: "pen", slugs: ["social-post-pack", "blog-post", "extra-local-seo"] },
 ];
@@ -63,7 +63,15 @@ function faqsFor(showPrices: boolean): Faq[] {
     },
     {
       q: "Do I have to sign up for a monthly plan?",
-      a: "No. Every package is a one-time project. Monthly plans are optional, and you can add one after launch if you want us to keep things updated.",
+      a: "No. Every package is a one-time project. Monthly plans are optional, month to month, and you can cancel anytime. If you stop a plan, your website stays up and stays yours.",
+    },
+    {
+      q: "How do I pay?",
+      a: "GEO Setup and add-ons are paid in full when you order. Websites are 50% to start and 50% before your new site goes live on your domain, so you see the finished site first. Monthly plans are billed each month, starting the month after launch.",
+    },
+    {
+      q: "What if I need changes after launch?",
+      a: "Small fixes like text, photos, hours and prices are free for 30 days after your website launches. New pages or features get a clear quote first.",
     },
     {
       q: "Can you work with my existing website?",
@@ -131,7 +139,7 @@ export default async function ServicesPage() {
                   <span className="block font-display text-xl font-bold leading-tight text-navy">{p.title}</span>
                   <span className="mt-1 block text-sm text-muted">{p.body}</span>
                   <span className="mt-2 inline-flex items-center gap-1 text-sm font-semibold text-navy group-hover:text-orange">
-                    See the package <Icon name="arrow" className="h-4 w-4" />
+                    {p.href === "#plans" ? "See the plans" : "See the package"} <Icon name="arrow" className="h-4 w-4" />
                   </span>
                 </span>
               </Link>
@@ -148,9 +156,9 @@ export default async function ServicesPage() {
             Every website we build is ready for Google and for AI assistants like {aiAssistantList}, with structured data and an
             AI-friendly FAQ. Premium adds our full GEO setup. Each package is a one-time project.
           </p>
-          <div className="mt-10 grid gap-6 lg:grid-cols-3">
-            {packages.map((o, i) => (
-              <OfferingCard key={o.id} o={o} showPrices={showPrices} featured={i === 1} badge={i === 1 ? "Recommended" : undefined} tag="One-time project" siblings={packages} />
+          <div className={`mt-10 grid gap-6 ${packages.length >= 3 ? "lg:grid-cols-3" : "md:grid-cols-2"}`}>
+            {packages.map((o) => (
+              <OfferingCard key={o.id} o={o} showPrices={showPrices} featured={o.slug === "business-website-launch"} badge={o.slug === "business-website-launch" ? "Recommended" : undefined} tag="One-time project" siblings={packages} />
             ))}
           </div>
           <p className="mt-8 text-muted">

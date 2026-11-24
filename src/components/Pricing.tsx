@@ -91,7 +91,7 @@ export function OfferingCard({
       {cta && (
         <div className="mt-auto pt-6">
           <ButtonLink href={ctaHref(o)} variant={featured ? "primary" : "dark"} className="w-full">
-            {o.kind !== "plan" ? "Get My Free Turbo Score" : o.slug === "ai-visibility-plan" ? "Add Monitoring" : "Ask About This Plan"}
+            {o.kind !== "plan" ? "Get My Free Turbo Score" : "Ask About This Plan"}
           </ButtonLink>
         </div>
       )}
@@ -99,7 +99,7 @@ export function OfferingCard({
   );
 }
 
-/** GEO as two steps: the one-time setup, then optional monthly monitoring. */
+/** GEO as two steps: the one-time setup, then the optional monthly Google & AI Care plan. */
 export function GeoSteps({ setup, plan, showPrices }: { setup?: Offering; plan?: Offering; showPrices: boolean }) {
   if (!setup && !plan) return null;
   return (
@@ -130,12 +130,12 @@ export function GeoSteps({ setup, plan, showPrices }: { setup?: Offering; plan?:
 export function AfterLaunch({ plans, showPrices, className = "bg-navy" }: { plans: Offering[]; showPrices: boolean; className?: string }) {
   if (plans.length === 0) return null;
   return (
-    <section className={`py-16 text-white ${className}`}>
+    <section id="plans" className={`scroll-mt-24 py-16 text-white ${className}`}>
       <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
         <p className="font-display text-sm font-bold uppercase tracking-[0.18em] text-orange">Step 2 · After launch</p>
         <h2 className="mt-2 font-display text-4xl font-bold">After launch, keep it working</h2>
         <p className="mt-2 max-w-2xl text-white/85">
-          Monthly plans are optional and never required. Add one after launch if you want us to keep things updated for you. If you ever stop a plan, your website stays up and stays yours.
+          Monthly plans are optional and never required. Add one after launch if you want us to keep things updated for you. Plans are month to month, so you can cancel anytime, and your website stays up and stays yours.
         </p>
         <div className={`mt-8 grid gap-6 ${plans.length >= 3 ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
           {plans.map((o) => (

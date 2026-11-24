@@ -55,7 +55,7 @@ const faqs: Faq[] = [
   },
   {
     q: "How soon will I see a difference?",
-    a: "It varies, and nobody can promise a date. Some fixes, like correcting your listings, can show up within weeks. Others take longer while AI tools refresh what they know. With monthly monitoring we re-check every month so you can see what changes.",
+    a: "It varies, and nobody can promise a date. Some fixes, like correcting your listings, can show up within weeks. Others take longer while AI tools refresh what they know. With our Google & AI Care plan we re-check every month so you can see what changes.",
   },
 ];
 
@@ -63,7 +63,7 @@ const steps: { title: string; body: string; icon: IconName }[] = [
   { title: "We ask the AIs", icon: "chat", body: `We ask ${checkedAssistantList} the questions your customers ask, and record who gets recommended.` },
   { title: "We show you the results", icon: "chart", body: "You see where you show up, where you don't, which competitors are named instead, and anything the AI gets wrong about you." },
   { title: "We fix the gaps", icon: "wrench", body: "We update your website, listings, FAQs and structured data, and help you get the reviews that AI assistants trust." },
-  { title: "We keep checking", icon: "refresh", body: "With monthly monitoring we re-run the same questions every month so you can see the changes over time." },
+  { title: "We keep checking", icon: "refresh", body: "With our Google & AI Care plan we re-run the same questions every month so you can see the changes over time." },
 ];
 
 // One-time ways to get GEO: on its own, or included with a new website.
@@ -234,10 +234,11 @@ export default async function AiSearchPage() {
                 <Eyebrow>Step 2 · After your setup</Eyebrow>
                 <h2 className="mt-2 font-display text-4xl font-bold">Keep it working every month</h2>
                 <p className="mt-3 text-white/85">
-                  After your setup, we keep checking and improving every month. AI answers change often, so monitoring re-asks
-                  the same customer questions, shows you what changed, and keeps fixing what the AI gets wrong.
+                  After your setup, we keep your Google profile active with weekly posts and a reply to every new review. AI
+                  answers change often, so we also re-ask the same customer questions each month, show you what changed, and keep
+                  fixing what the AI gets wrong.
                 </p>
-                <p className="mt-3 text-white/85">Optional, and never required.</p>
+                <p className="mt-3 text-white/85">Optional and never required. Month to month, cancel anytime.</p>
               </div>
               <OfferingCard o={monitoring} showPrices={showPrices} tag="Monthly, optional" />
             </div>
