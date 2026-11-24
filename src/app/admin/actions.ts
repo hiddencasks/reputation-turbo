@@ -69,6 +69,7 @@ const leadUpdate = z.object({
   trade: z.string().trim().max(80),
   city: z.string().trim().max(80),
   quoteAmount: z.string().trim().regex(/^\d*(\.\d{0,2})?$/, "Enter a dollar amount like 1497 or 1497.50"),
+  website: z.string().trim().max(500).optional(),
 });
 
 export async function updateLead(leadId: string, formData: FormData) {
@@ -78,6 +79,8 @@ export async function updateLead(leadId: string, formData: FormData) {
   if (!before) throw new Error("Lead not found");
 
   const quoteCents = data.quoteAmount ? Math.round(Number(data.quoteAmount) * 100) : null;
+  // Only forms that send a website field change it; an address we can't read keeps the old one.
+  const website = data.website === undefined ? null : normalizeWebsite(data.website);
   await sql`
     update leads set
       stage = ${data.stage},
@@ -86,6 +89,7 @@ export async function updateLead(leadId: string, formData: FormData) {
       trade = ${data.trade},
       city = ${data.city},
       quote_amount_cents = ${quoteCents},
+      website_url = ${website === null ? sql`website_url` : website},
       updated_at = now()
     where id = ${leadId}`;
 

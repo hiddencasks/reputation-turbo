@@ -151,6 +151,9 @@ export default async function LeadPage({ params, searchParams }: { params: Promi
               <input name="city" defaultValue={lead.city} list="city-options" className={input} />
               <datalist id="city-options">{site.cities.map((c) => <option key={c} value={c} />)}</datalist>
             </label>
+            <label className="text-sm font-semibold">Website
+              <input name="website" type="text" inputMode="url" placeholder="example.com" defaultValue={lead.website_url ?? ""} className={input} />
+            </label>
             <label className="text-sm font-semibold">Quote amount ($)
               <input name="quoteAmount" inputMode="decimal" defaultValue={lead.quote_amount_cents != null ? String(lead.quote_amount_cents / 100) : ""} className={input} />
             </label>
