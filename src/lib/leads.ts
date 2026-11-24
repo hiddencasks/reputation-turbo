@@ -28,7 +28,7 @@ export type Lead = {
 /** Internal-only facts about a lead's business, filled in by us as we learn them. */
 export const LEAD_DETAIL_FIELDS = [
   { key: "address", label: "Business address", multiline: true, placeholder: "Street, city, ZIP (leave blank if they work from home or travel to customers)" },
-  { key: "hours", label: "Hours", multiline: false, placeholder: "Mon-Fri 9-5, Sat 9-2" },
+  { key: "hours", label: "Hours", multiline: true, placeholder: "Mon-Fri 9-5, Sat 9-2" },
   { key: "googleProfile", label: "Google profile link", multiline: false, placeholder: "https://maps.app.goo.gl/..." },
   { key: "facebook", label: "Facebook", multiline: false, placeholder: "https://facebook.com/..." },
   { key: "instagram", label: "Instagram", multiline: false, placeholder: "https://instagram.com/..." },

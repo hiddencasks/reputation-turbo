@@ -11,7 +11,7 @@ import { PackagePicker } from "@/components/PackagePicker";
 import { getOfferings } from "@/lib/offerings";
 import { recommendPackages, splitPackages } from "@/lib/recommend";
 import { auditScore, fixIds } from "@/lib/audit/checks";
-import { addNote, approveReport, deleteLead, markVendor, runAiCheck, setAiMonitoring, updateLead, updateLeadDetails } from "../../../actions";
+import { addNote, approveReport, deleteLead, markVendor, runAiCheck, setAiMonitoring, updateLead, updateLeadDetails, copyDetailsFromChecklist } from "../../../actions";
 import { summarizeLead } from "@/lib/lead-summary";
 import { DeleteLead } from "./DeleteLead";
 import { FollowupNote } from "./FollowupNote";
@@ -166,7 +166,15 @@ export default async function LeadPage({ params, searchParams }: { params: Promi
 
       <section className="rounded-lg bg-white p-5 shadow-sm">
         <h2 className="font-display text-xl font-bold text-navy">Business details</h2>
-        <p className="mt-1 text-sm text-muted">For our own records only. The lead never sees this. Add things as you learn them.</p>
+        <p className="mt-1 text-sm text-muted">
+          For our own records only. The lead never sees this. Add things as you learn them.
+          {project && " Answers the client gives in their checklist (address, hours, profile links, listings) fill in here automatically."}
+        </p>
+        {project && (
+          <form action={copyDetailsFromChecklist.bind(null, lead.id)} className="mt-2">
+            <SubmitButton pendingText="Copying…" doneText="Copied" className="text-sm font-semibold text-orange underline">Copy from client checklist now</SubmitButton>
+          </form>
+        )}
         <form action={updateLeadDetails.bind(null, lead.id)} className="mt-3 grid gap-3 sm:grid-cols-2">
           <label className="text-sm font-semibold">Phone
             <input name="phone" type="tel" defaultValue={lead.phone} className={input} />

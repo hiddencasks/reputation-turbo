@@ -1,7 +1,8 @@
 import "server-only";
 import { sql } from "../db";
 import { phoneDigits } from "../phone";
-import { INTAKE, intakeDef, type Fields } from "./intake";
+import { INTAKE, intakeDef, leadChanges, type Fields, type LeadChanges } from "./intake";
+import { LEAD_DETAIL_FIELDS, type LeadDetails } from "../leads";
 import { intakeFor, stepsFor, type IntakeKind, type StepStatus } from "./template";
 
 export type ClientProject = {
@@ -294,8 +295,8 @@ export async function saveFields(projectId: string, itemId: string, fields: Fiel
     where id = ${itemId} and project_id = ${projectId}`;
 }
 
-/** Copies a changed business name, city or phone from the client checklist onto the lead. Returns what changed. */
-export async function updateLeadFromIntake(leadId: string, changes: { business_name?: string; city?: string; phone?: string }): Promise<string[]> {
+/** Copies a changed business name, city, phone or business detail from the client checklist onto the lead. Returns what changed. */
+export async function updateLeadFromIntake(leadId: string, changes: LeadChanges): Promise<string[]> {
   const [lead] = await sql<{ business_name: string; city: string; phone: string }[]>`select business_name, city, phone from leads where id = ${leadId}`;
   if (!lead) return [];
   const changed: string[] = [];
@@ -311,10 +312,52 @@ export async function updateLeadFromIntake(leadId: string, changes: { business_n
     await sql`update leads set phone = ${changes.phone}, phone_digits = ${phoneDigits(changes.phone)}, updated_at = now() where id = ${leadId}`;
     changed.push(`phone to ${changes.phone}`);
   }
+  if (changes.details) changed.push(...(await mergeLeadDetails(leadId, changes.details)));
   if (changed.length) {
     await sql`insert into activities (lead_id, kind, body) values (${leadId}, 'project', ${`Client checklist updated the ${changed.join(", ")}.`})`;
   }
   return changed;
+}
+
+/**
+ * Writes checklist answers into the lead's internal Business details. The client's latest answer wins;
+ * an earlier value we typed by hand is kept in the activity log. Skipped quietly if the details column isn't there yet.
+ */
+async function mergeLeadDetails(leadId: string, incoming: LeadDetails): Promise<string[]> {
+  try {
+    const [row] = await sql<{ details: LeadDetails | null }[]>`select details from leads where id = ${leadId}`;
+    const current = row?.details ?? {};
+    const next: LeadDetails = { ...current };
+    const changed: string[] = [];
+    const replaced: string[] = [];
+    for (const f of LEAD_DETAIL_FIELDS) {
+      const v = incoming[f.key]?.trim();
+      if (!v || v === current[f.key]) continue;
+      if (current[f.key]) replaced.push(`${f.label} was: ${current[f.key]}`);
+      next[f.key] = v;
+      changed.push(f.label.toLowerCase());
+    }
+    if (!changed.length) return [];
+    await sql`update leads set details = ${sql.json(next)}, updated_at = now() where id = ${leadId}`;
+    if (replaced.length) {
+      await sql`insert into activities (lead_id, kind, body) values (${leadId}, 'note', ${`Replaced by the client checklist. ${replaced.join(" | ")}`})`;
+    }
+    return changed;
+  } catch (err) {
+    if (/column "details"/.test(String(err))) return [];
+    throw err;
+  }
+}
+
+/** Fills the lead's Business details from everything already saved in its client checklist. */
+export async function syncLeadDetailsFromChecklist(leadId: string): Promise<string[]> {
+  const rows = await sql<{ key: string; fields: Fields | null }[]>`
+    select i.key, i.fields from intake_items i
+    join client_projects p on p.id = i.project_id
+    where p.lead_id = ${leadId} and i.key <> ''`;
+  const details: LeadDetails = {};
+  for (const r of rows) Object.assign(details, leadChanges(r.key, r.fields ?? {}).details);
+  return updateLeadFromIntake(leadId, { details });
 }
 
 export async function setItemDone(projectId: string, itemId: string, done: boolean, by: "client" | "owner"): Promise<void> {
