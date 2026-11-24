@@ -524,3 +524,34 @@ export async function setShowPrices(formData: FormData) {
     on conflict (key) do update set value = excluded.value, updated_at = now()`;
   revalidatePricing();
 }
+
+/**
+ * Makes a Stripe payment link for this lead: the final 50% of a website package, a monthly plan,
+ * an add-on, or a custom amount. The link is saved on the lead's timeline to copy into an email or text.
+ */
+export async function createLeadPaymentLink(leadId: string, formData: FormData) {
+  await requireOwner();
+  const { stripeEnabled, createPaymentLink, depositCents, dollars } = await import("@/lib/stripe");
+  if (!stripeEnabled()) throw new Error("Connect Stripe first (STRIPE_SECRET_KEY in Vercel).");
+  const what = String(formData.get("what") ?? "");
+  const customName = String(formData.get("name") ?? "").trim();
+  const customAmount = Math.round(Number(String(formData.get("amount") ?? "").replace(/[$,]/g, "")) * 100);
+  const [kind, slug = ""] = what.split(":");
+  let name = customName;
+  let cents = customAmount;
+  let monthly = formData.get("monthly") === "on";
+  if (kind !== "custom") {
+    const [o] = await sql<{ name: string; price_cents: number; kind: string }[]>`select name, price_cents, kind from offerings where slug = ${slug}`;
+    if (!o) throw new Error("Pick what the payment is for.");
+    const due = kind === "final" ? o.price_cents - depositCents(o.price_cents) : o.price_cents;
+    name ||= kind === "final" ? `${o.name}: final payment` : o.name;
+    cents = customAmount > 0 ? customAmount : due;
+    monthly = kind === "plan";
+  }
+  if (!name || !(cents >= 50)) throw new Error("Give the payment a name and an amount of at least $0.50.");
+  const url = await createPaymentLink({ leadId, name, cents, monthly, payment: kind, slug });
+  await sql`
+    insert into activities (lead_id, kind, body, meta)
+    values (${leadId}, 'payment_link', ${`Payment link for ${name}, ${dollars(cents)}${monthly ? "/month" : ""}: ${url}`}, ${sql.json({ url } as never)})`;
+  revalidatePath(`/admin/leads/${leadId}`);
+}

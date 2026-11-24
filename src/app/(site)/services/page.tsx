@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { getOfferings, getShowPrices, isGeo, type Offering } from "@/lib/offerings";
+import { stripeEnabled } from "@/lib/stripe";
 import { photos } from "@/lib/photos";
 import { aiAssistantList } from "@/lib/site";
 import { faqJsonLd, type Faq } from "@/lib/structured-data";
@@ -88,7 +89,8 @@ function faqsFor(showPrices: boolean): Faq[] {
   ];
 }
 
-export default async function ServicesPage() {
+export default async function ServicesPage({ searchParams }: { searchParams: Promise<{ checkout?: string }> }) {
+  const checkoutProblem = Boolean((await searchParams).checkout);
   const [offerings, showPrices] = await Promise.all([getOfferings({ activeOnly: true }), getShowPrices()]);
   const geo = offerings.filter(isGeo);
   const rest = offerings.filter((o) => !isGeo(o));
@@ -98,6 +100,7 @@ export default async function ServicesPage() {
   const geoSetup = geo.find((o) => o.kind === "package");
   const geoPlan = geo.find((o) => o.kind === "plan");
   const faqs = faqsFor(showPrices);
+  const buy = showPrices && stripeEnabled();
   const hero = photos.servicesHero;
 
   return (
@@ -150,6 +153,13 @@ export default async function ServicesPage() {
 
       <section id="packages" className="scroll-mt-24 bg-navy-50 py-16">
         <Container>
+          {checkoutProblem && (
+            <p role="alert" className="mb-6 rounded-md border border-orange bg-white p-4 text-ink">
+              Online checkout isn&apos;t available right now. Nothing was charged. Please{" "}
+              <Link href="/contact" className="font-semibold text-navy underline decoration-orange underline-offset-2">contact us</Link> and
+              we&apos;ll send you a secure payment link.
+            </p>
+          )}
           <Eyebrow>Step 1 · One-time project</Eyebrow>
           <h2 className="mt-2 font-display text-4xl font-bold text-navy">Packages, with GEO built in</h2>
           <p className="mt-2 max-w-2xl text-muted">
@@ -158,7 +168,7 @@ export default async function ServicesPage() {
           </p>
           <div className={`mt-10 grid gap-6 ${packages.length >= 3 ? "lg:grid-cols-3" : "md:grid-cols-2"}`}>
             {packages.map((o) => (
-              <OfferingCard key={o.id} o={o} showPrices={showPrices} featured={o.slug === "business-website-launch"} badge={o.slug === "business-website-launch" ? "Recommended" : undefined} tag="One-time project" siblings={packages} />
+              <OfferingCard key={o.id} o={o} showPrices={showPrices} featured={o.slug === "business-website-launch"} badge={o.slug === "business-website-launch" ? "Recommended" : undefined} tag="One-time project" siblings={packages} buy={buy} />
             ))}
           </div>
           <p className="mt-8 text-muted">
@@ -188,7 +198,7 @@ export default async function ServicesPage() {
               Happy with your current website, or don&apos;t need one? We work with what you already have, including your Google
               Business Profile, listings and reviews, so {aiAssistantList} can find, understand and recommend you.
             </p>
-            <GeoSteps setup={geoSetup} plan={geoPlan} showPrices={showPrices} />
+            <GeoSteps setup={geoSetup} plan={geoPlan} showPrices={showPrices} buy={buy} />
             <div className="mt-8">
               <ButtonLink href="/ai-search" variant="ghostLight">How AI Search Works</ButtonLink>
             </div>

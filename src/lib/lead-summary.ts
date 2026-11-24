@@ -68,6 +68,7 @@ export function sourceLabel(source: string, firstBody = ""): string {
     case "ai_search": return "AI search audit form";
     case "contact_form": return "Contact form";
     case "geo_quiz": return "GEO quiz";
+    case "stripe": return "Online payment";
     case "manual": return "Added by you (asked for audit)";
     case "outreach": return firstBody.startsWith(FINDER_PREFIX) ? "Prospect finder" : "Added by you (outreach)";
     default: return source.replace(/_/g, " ");

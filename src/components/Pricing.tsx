@@ -1,7 +1,8 @@
 import Link from "next/link";
 import type { Offering } from "@/lib/offerings";
 import { Icon } from "./Icon";
-import { ButtonLink, cardHover, formatPrice } from "./ui";
+import { checkoutTerms } from "@/lib/checkout-terms";
+import { Button, ButtonLink, cardHover, formatPrice } from "./ui";
 
 export function priceText(o: Offering, showPrices: boolean): string | null {
   if (!showPrices) return null;
@@ -45,6 +46,7 @@ export function OfferingCard({
   tag,
   cta = true,
   siblings = [],
+  buy = false,
 }: {
   o: Offering;
   showPrices: boolean;
@@ -56,8 +58,11 @@ export function OfferingCard({
   cta?: boolean;
   /** The other cards on the page, so "Everything in X" can link to X. */
   siblings?: Offering[];
+  /** Stripe is connected: packages get a "Buy now" / "Pay deposit" button. */
+  buy?: boolean;
 }) {
   const price = priceText(o, showPrices);
+  const terms = buy && showPrices ? checkoutTerms(o) : null;
   return (
     <div
       id={o.slug}
@@ -88,7 +93,22 @@ export function OfferingCard({
         </ul>
       )}
       {o.revision_rounds != null && <p className="mt-4 text-sm text-muted">Includes {o.revision_rounds} revision rounds.</p>}
-      {cta && (
+      {cta && terms && (
+        <div className="mt-auto pt-6">
+          <form action={`/checkout/${o.slug}`} method="post">
+            <Button type="submit" variant={featured ? "primary" : "dark"} className="w-full">
+              {terms.label}
+            </Button>
+          </form>
+          <p className="mt-2 text-center text-xs text-muted">
+            Secure checkout by Stripe.{" "}
+            <Link href={ctaHref(o)} className="font-semibold text-navy underline decoration-orange underline-offset-2 hover:text-orange">
+              Or get a free Turbo Score first
+            </Link>
+          </p>
+        </div>
+      )}
+      {cta && !terms && (
         <div className="mt-auto pt-6">
           <ButtonLink href={ctaHref(o)} variant={featured ? "primary" : "dark"} className="w-full">
             {o.kind !== "plan" ? "Get My Free Turbo Score" : "Ask About This Plan"}
@@ -100,14 +120,14 @@ export function OfferingCard({
 }
 
 /** GEO as two steps: the one-time setup, then the optional monthly Google & AI Care plan. */
-export function GeoSteps({ setup, plan, showPrices }: { setup?: Offering; plan?: Offering; showPrices: boolean }) {
+export function GeoSteps({ setup, plan, showPrices, buy = false }: { setup?: Offering; plan?: Offering; showPrices: boolean; buy?: boolean }) {
   if (!setup && !plan) return null;
   return (
     <div className="mt-8 grid items-stretch gap-6 md:grid-cols-[1fr_auto_1fr]">
       {setup && (
         <div className="flex flex-col">
           <p className="mb-3 font-display text-sm font-bold uppercase tracking-[0.18em] text-orange">Step 1 · One-time project</p>
-          <OfferingCard o={setup} showPrices={showPrices} featured />
+          <OfferingCard o={setup} showPrices={showPrices} featured buy={buy} />
         </div>
       )}
       {setup && plan && (

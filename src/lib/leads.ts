@@ -49,7 +49,7 @@ export type LeadInput = {
   website?: string;
   trade?: string;
   city?: string;
-  source: "audit_form" | "ai_search" | "contact_form" | "outreach" | "geo_quiz" | "manual";
+  source: "audit_form" | "ai_search" | "contact_form" | "outreach" | "geo_quiz" | "manual" | "stripe";
   stage: StageId;
   note: string;
   meta?: Record<string, unknown>;

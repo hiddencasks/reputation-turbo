@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { photos } from "@/lib/photos";
+import { stripeEnabled } from "@/lib/stripe";
 import { getOfferings, getShowPrices } from "@/lib/offerings";
 import { aiAssistantList, checkedAssistantList } from "@/lib/site";
 import { AfterLaunch, OfferingCard } from "@/components/Pricing";
@@ -74,6 +75,7 @@ export default async function AiSearchPage() {
   const packages = packageSlugs.map((slug) => offerings.find((o) => o.slug === slug)).filter((o) => o !== undefined);
   const monitoring = offerings.find((o) => o.slug === "ai-visibility-plan");
   const hero = photos.aiSearchHero;
+  const buy = showPrices && stripeEnabled();
   const carePlans = offerings.filter((o) => o.kind === "plan" && o.slug !== "ai-visibility-plan");
 
   return (
@@ -219,7 +221,7 @@ export default async function AiSearchPage() {
             </p>
             <div className="mt-10 grid gap-6 lg:grid-cols-3">
               {packages.map((o) => (
-                <OfferingCard key={o.id} o={o} showPrices={showPrices} featured={o.slug === "ai-search-setup"} badge={o.slug === "ai-search-setup" ? "No new website needed" : undefined} tag="One-time project" siblings={packages} />
+                <OfferingCard key={o.id} o={o} showPrices={showPrices} featured={o.slug === "ai-search-setup"} badge={o.slug === "ai-search-setup" ? "No new website needed" : undefined} tag="One-time project" siblings={packages} buy={buy} />
               ))}
             </div>
           </Container>

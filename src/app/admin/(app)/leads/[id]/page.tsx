@@ -11,7 +11,9 @@ import { PackagePicker } from "@/components/PackagePicker";
 import { getOfferings } from "@/lib/offerings";
 import { recommendPackages, splitPackages } from "@/lib/recommend";
 import { auditScore, fixIds } from "@/lib/audit/checks";
-import { addNote, approveReport, deleteLead, markVendor, runAiCheck, setAiMonitoring, updateLead, updateLeadDetails, copyDetailsFromChecklist } from "../../../actions";
+import { addNote, approveReport, createLeadPaymentLink, deleteLead, markVendor, runAiCheck, setAiMonitoring, updateLead, updateLeadDetails, copyDetailsFromChecklist } from "../../../actions";
+import { paymentsForLead } from "@/lib/payments";
+import { depositCents, dollars, stripeEnabled } from "@/lib/stripe";
 import { summarizeLead } from "@/lib/lead-summary";
 import { DeleteLead } from "./DeleteLead";
 import { FollowupNote } from "./FollowupNote";
@@ -40,6 +42,9 @@ const kindLabel: Record<string, string> = {
   vendor_flag: "Sales pitch",
   followup: "Personal follow-up",
   project: "Client project",
+  payment: "Payment",
+  payment_link: "Payment link",
+  stripe: "Online payment",
 };
 
 const fmt = (d: Date) => d.toLocaleString("en-US", { timeZone: "America/Los_Angeles", dateStyle: "medium", timeStyle: "short" });
@@ -59,6 +64,9 @@ export default async function LeadPage({ params, searchParams }: { params: Promi
   ]);
   if (!lead) notFound();
   const projectTable = await projectsReady();
+  const payments = await paymentsForLead(lead.id);
+  const payEnabled = stripeEnabled();
+  const paymentLinks = activities.filter((a) => a.kind === "payment_link").slice(0, 3);
   const project = projectTable ? await getProjectForLead(lead.id) : null;
   const providerErrors = await getProviderErrors(checks.filter((c) => c.status === "done").map((c) => c.id));
   const checkRunning = checks.some((c) => c.status === "queued" || c.status === "running") || followups.some((f) => f.status === "writing" || f.status === "sending");
@@ -217,6 +225,67 @@ export default async function LeadPage({ params, searchParams }: { params: Promi
             <SubmitButton pendingText="Starting…" className="rounded-md bg-orange px-4 py-2 font-semibold text-white">Start client project</SubmitButton>
             <p className="text-xs text-muted sm:col-span-3">Creates the delivery steps with a timer for each, and the client&apos;s checklist. Also moves this lead to Won. Nothing is emailed until you send the invite.</p>
           </form>
+        )}
+      </section>
+
+      <section className="rounded-lg bg-white p-5 shadow-sm">
+        <h2 className="font-display text-xl font-bold text-navy">Payments</h2>
+        {payments.length > 0 ? (
+          <ul className="mt-2 divide-y divide-line text-sm">
+            {payments.map((p) => (
+              <li key={p.id} className="flex flex-wrap justify-between gap-2 py-2">
+                <span><strong className="text-green-800">Paid</strong> {p.item}</span>
+                <span className="text-muted">{dollars(p.amount_cents)}{p.monthly ? "/month" : ""} · {fmt(p.created_at)}</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-1 text-sm text-muted">No online payments yet.</p>
+        )}
+        {payEnabled ? (
+          <form action={createLeadPaymentLink.bind(null, lead.id)} className="mt-4 grid gap-3 sm:grid-cols-[2fr_1fr_1fr_auto] sm:items-end">
+            <label className="text-sm font-semibold">Payment link for
+              <select name="what" required className={input} defaultValue="">
+                <option value="" disabled>Choose…</option>
+                <optgroup label="Website: second half (before go-live)">
+                  {offerings.filter((o) => o.kind === "package" && o.slug !== "ai-search-setup").map((o) => (
+                    <option key={o.slug} value={`final:${o.slug}`}>{o.name}: final {dollars(o.price_cents - depositCents(o.price_cents))}</option>
+                  ))}
+                </optgroup>
+                <optgroup label="Monthly plan (starts billing today)">
+                  {offerings.filter((o) => o.kind === "plan").map((o) => <option key={o.slug} value={`plan:${o.slug}`}>{o.name}: {dollars(o.price_cents)}/month</option>)}
+                </optgroup>
+                <optgroup label="Package in full">
+                  {offerings.filter((o) => o.kind === "package").map((o) => <option key={o.slug} value={`full:${o.slug}`}>{o.name}: {dollars(o.price_cents)}</option>)}
+                </optgroup>
+                <optgroup label="Add-on">
+                  {offerings.filter((o) => o.kind === "addon" && o.price_cents > 0).map((o) => <option key={o.slug} value={`addon:${o.slug}`}>{o.name}: {dollars(o.price_cents)}</option>)}
+                </optgroup>
+                <option value="custom">Something else (type a name and amount)</option>
+              </select>
+            </label>
+            <label className="text-sm font-semibold">Name (optional)
+              <input name="name" placeholder="e.g. Founding client deposit" className={input} />
+            </label>
+            <label className="text-sm font-semibold">Amount $ (optional)
+              <input name="amount" inputMode="decimal" placeholder="Uses the price" className={input} />
+            </label>
+            <SubmitButton pendingText="Making link…" className="rounded-md bg-navy px-4 py-2 font-semibold text-white">Make payment link</SubmitButton>
+            <label className="flex items-center gap-2 text-sm sm:col-span-4"><input type="checkbox" name="monthly" /> Charge monthly (only for &quot;Something else&quot;)</label>
+            <p className="text-xs text-muted sm:col-span-4">
+              Copy the link into an email or text. When they pay, it shows up here, the lead moves to Won for project payments, and you get an email.
+              For a founding client, type the discounted amount, or let them use your Stripe promotion code at checkout.
+            </p>
+          </form>
+        ) : (
+          <p className="mt-2 text-sm text-muted">Connect Stripe to make payment links: add STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET in Vercel, and run <code>db/updates/2026-11-stripe-payments.sql</code>.</p>
+        )}
+        {paymentLinks.length > 0 && (
+          <ul className="mt-3 space-y-1 text-sm">
+            {paymentLinks.map((a) => (
+              <li key={a.id} className="break-all"><span className="text-muted">{fmt(a.created_at)}:</span> {a.body}</li>
+            ))}
+          </ul>
         )}
       </section>
 
