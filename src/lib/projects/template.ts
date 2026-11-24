@@ -40,7 +40,7 @@ export const STEP_TEMPLATE: StepTemplate[] = [
   { phase: "Google and listings", title: "Review request link, QR code and message templates", who: "Us", detail: "" },
   { phase: "Launch", title: "Go live and test", who: "Us (client approves)", detail: "Connect the domain, then test the contact form, click-to-call, phone layout and speed.", website: true },
   { phase: "Launch", title: "Tell Google and Bing about the website", who: "Us", detail: "Search Console and Bing Webmaster Tools, with the client as the owner.", website: true },
-  { phase: "Handoff", title: "Handoff call and packet", who: "You + client", detail: "Where everything lives, what they own and pay, and how to ask for changes. Offer the optional monthly plans." },
+  { phase: "Handoff", title: "Handoff call and packet", who: "You + client", detail: "Where everything lives, what they own and pay, and how to ask for changes. Have the client sign in to their own accounts during the call. Any login we created is handed over in person or read out on the call (never by email, text, chat or the dashboard), then the client changes each password and turn on 2-step verification, and keep our own access as a separate admin user. Offer the optional monthly plans." },
   { phase: "Handoff", title: "30-day check", who: "Us", detail: "Re-run the audit for a before/after, and ask for a Google review and a short testimonial." },
 ];
 
