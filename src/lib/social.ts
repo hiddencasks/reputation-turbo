@@ -124,7 +124,7 @@ export const freeAuditUrl = "https://reputationturbo.com/free-audit";
  */
 export const commentToDm = {
   /** Per network. Facebook's automation hasn't sent a DM in tests yet (2026-11-17), so its captions leave the keyword out. */
-  live: { instagram: true, facebook: false } as Record<Network, boolean>,
+  live: { instagram: true, facebook: false, google: false } as Record<Network, boolean>,
   keywords: {
     AUDIT: {
       offer: "the link to your free online audit",
@@ -141,7 +141,7 @@ export const commentToDm = {
 export type Keyword = keyof typeof commentToDm.keywords;
 
 /** The keyword a post shows, or undefined while comment-to-DM isn't live. */
-/** The images go to both networks, so they show the keyword only when it works on all of them. */
+/** The images go to every network (Google too), so they show the keyword only when it works on all of them. */
 const liveEverywhere = () => Object.values(commentToDm.live).every(Boolean);
 
 export function activeKeyword(post: SocialPost, live: boolean = liveEverywhere()): Keyword | undefined {
@@ -303,7 +303,7 @@ export const fridayPosts: SocialPost[] = [
     publishAt: "2026-12-18T09:00:00-08:00",
     kind: "tip",
     body:
-      "The week before the holidays, customers with a leak, a broken heater or a last-minute job don't shop around for long. They look you up, decide in seconds, and call whoever looks ready.\n\nHere's what they check before they ever pick up the phone. Swipe through and ask yourself how your business looks right now.",
+      "The week before the holidays, customers with a leak, a broken heater or a last-minute job don't shop around for long. They look you up, decide in seconds, and call whoever looks ready.\n\nHere's what they check before they ever pick up the phone. How does your business look right now?",
     card: { layout: "statement", theme: "light", kicker: "Before the holidays", headline: "4 things customers check before they call you" },
     slides: [
       { layout: "point", kicker: "They check", number: 1, headline: "Are you open?", subline: "Holiday hours that are wrong, or missing, send them to the next name." },
@@ -410,21 +410,39 @@ export function duePosts(now: Date = new Date(), all: SocialPost[] = allSocialPo
   });
 }
 
-export type Network = "facebook" | "instagram";
-export const networks: Network[] = ["facebook", "instagram"];
-export const networkLabel: Record<Network, string> = { facebook: "Facebook", instagram: "Instagram" };
+export type Network = "facebook" | "instagram" | "google";
+export const networks: Network[] = ["facebook", "instagram", "google"];
+export const networkLabel: Record<Network, string> = { facebook: "Facebook", instagram: "Instagram", google: "Google profile" };
+
+/** Google Business Profile posts allow up to 1,500 characters. */
+export const GOOGLE_POST_MAX = 1500;
+
+/**
+ * Where the Google post's "Learn more" button goes. Tagged so the dashboard shows
+ * a lead came from a Google profile post.
+ */
+export function googleButtonUrl(post: SocialPost): string {
+  const url = new URL(post.link?.url ?? freeAuditUrl);
+  url.searchParams.set("utm_source", "google");
+  url.searchParams.set("utm_medium", "gbp-post");
+  url.searchParams.set("utm_campaign", post.id);
+  return url.toString();
+}
 
 const instagramTags = "#SanDiegoSmallBusiness #EastCounty #SanDiegoContractors #LocalBusiness #GEO";
 
 /**
  * The caption for one network. Facebook links are clickable. Instagram captions
- * can't hold clickable links, so they point to the link in the profile bio.
+ * can't hold clickable links, so they point to the link in the profile bio. Google
+ * posts point to their "Learn more" button (see googleButtonUrl) and skip hashtags.
  */
 export function captionFor(post: SocialPost, network: Network, live: boolean = commentToDm.live[network]): string {
   const parts = [post.body.trim()];
   const keyword = activeKeyword(post, live);
   if (keyword) parts.push(`Comment ${keyword} and we'll DM you ${commentToDm.keywords[keyword].offer.replace(/[^.?!]$/, "$&.")}`);
-  if (network === "facebook") {
+  if (network === "google") {
+    parts.push(post.link ? "Read the full post with the Learn more button." : "Get your free online audit with the Learn more button.");
+  } else if (network === "facebook") {
     if (post.link) parts.push(`${post.link.label}: ${post.link.url}`);
     parts.push(`Get your free online audit: ${freeAuditUrl}`);
   } else {
