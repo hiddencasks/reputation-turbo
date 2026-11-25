@@ -112,8 +112,8 @@ export async function sendDueReminders(): Promise<{ project: string; status: str
 
 /** Agreement details for a project: the lead, its package's deliverables and the extra-round price. */
 export async function agreementBase(p: ProjectWithLead): Promise<{ input: Omit<AgreementInput, "priceCents" | "chargedCents" | "date">; packagePriceCents: number | null }> {
-  const [offering] = await sql<{ price_cents: number; deliverables: string[]; revision_rounds: number | null }[]>`
-    select price_cents, deliverables, revision_rounds from offerings where kind = 'package' and lower(name) = lower(${p.package}) limit 1`;
+  const [offering] = await sql<{ slug: string; price_cents: number; deliverables: string[]; revision_rounds: number | null }[]>`
+    select slug, price_cents, deliverables, revision_rounds from offerings where kind = 'package' and lower(name) = lower(${p.package}) limit 1`;
   const [extra] = await sql<{ price_cents: number }[]>`select price_cents from offerings where slug = 'extra-revision'`;
   return {
     input: {
@@ -123,6 +123,7 @@ export async function agreementBase(p: ProjectWithLead): Promise<{ input: Omit<A
       deliverables: offering?.deliverables ?? [],
       revisionRounds: offering?.revision_rounds ?? 2,
       extraRevisionCents: extra?.price_cents ?? null,
+      splitPayment: offering ? offering.slug !== "ai-search-setup" : true,
       ownerName: site.founderName,
       ourName: site.name,
       ourAddress: addressOneLine,

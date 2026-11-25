@@ -8,7 +8,7 @@ export const metadata: Metadata = { title: "Terms of Use" };
 export default function TermsPage() {
   return (
     <>
-      <PageHeader title="Terms of Use" intro="Last updated October 25, 2026" />
+      <PageHeader title="Terms of Use" intro="Last updated November 24, 2026" />
       <section className="py-14">
         <Container>
           <Prose>
@@ -27,6 +27,14 @@ export default function TermsPage() {
             <p>
               Paid work is governed by the proposal and service agreement you accept. Third-party products such as domains,
               hosting, business email and software are purchased by you directly from their providers under their own terms.
+            </p>
+            <h2>Payments and refunds</h2>
+            <p>
+              Online payments are processed securely by Stripe; we never see or store your card number. GEO Setup and add-ons are
+              paid in full when ordered. Website packages are paid 50% to start and 50% before the new site goes live on your
+              domain. The first payment isn&apos;t refundable once work has started; if a project stops partway, you keep
+              everything that&apos;s finished. Monthly plans are month to month and can be cancelled anytime, effective at the end
+              of the month already paid.
             </p>
             <h2>Acceptable use</h2>
             <p>Do not misuse the site, submit false information, or attempt to disrupt or gain unauthorized access to it.</p>

@@ -246,7 +246,7 @@ test("dashboard requires sign-in and manages leads and pricing", async ({ page }
   await page.getByLabel("Stage").selectOption("interested");
   await page.getByLabel("Next follow-up").fill("2026-10-30");
   await page.getByLabel("Quote amount ($)").fill("1497");
-  // Lopez Concrete has a website and is rarely named by AI, so Starter plus GEO is suggested; add a monthly plan too.
+  // Lopez Concrete has a website and is rarely named by AI, so GEO Setup plus Google & AI Care is suggested; add a monthly plan too.
   await expect(page.getByText("Already has a website")).toBeVisible();
   await page.getByText("Choose one or more...").click();
   await page.getByRole("button", { name: "Use suggested" }).click();
@@ -257,7 +257,7 @@ test("dashboard requires sign-in and manages leads and pricing", async ({ page }
   await page.getByRole("button", { name: "Add note" }).click();
   await expect(page.getByText("Called, wants a quote for a 5-page site.")).toBeVisible();
   const [lead] = await db`select stage, next_follow_up::text as f, quote_amount_cents as q, recommended_package as p from leads`;
-  expect(lead).toEqual({ stage: "interested", f: "2026-10-30", q: 149700, p: "Starter Online Presence, GEO Setup, AI Visibility Monitoring, Care" });
+  expect(lead).toEqual({ stage: "interested", f: "2026-10-30", q: 149700, p: "GEO Setup, Google & AI Care, Care" });
 
   // Search and list view.
   await page.goto("/admin/leads?view=list&q=lopez");

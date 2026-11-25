@@ -16,7 +16,8 @@ const steps = ["Free online audit", "Clear plan and price", "We build, you appro
 
 export default async function OneSheetPage() {
   const [offerings, showPrices] = await Promise.all([getOfferings({ activeOnly: true }), getShowPrices()]);
-  const packages = offerings.filter((o) => o.kind === "package" && !isGeo(o));
+  // GEO Setup first (for businesses keeping their website), then the website packages.
+  const packages = [...offerings.filter((o) => o.kind === "package" && isGeo(o)), ...offerings.filter((o) => o.kind === "package" && !isGeo(o))];
 
   return (
     <div className="bg-navy-50 py-8 print:bg-white print:py-0">
@@ -52,12 +53,12 @@ export default async function OneSheetPage() {
               ))}
             </div>
             <p className="mt-3 text-sm">
-              <strong className="text-navy">Add-ons:</strong> logo creation, brand identity kits, extra pages, service-area
-              pages, social media post packs, review request automation, AI chat and lead response, and monthly care plans.
+              <strong className="text-navy">Add-ons:</strong> professional logo, extra pages, city pages, business email setup,
+              photo galleries and booking setup.
             </p>
             <p className="mt-2 text-sm">
-              <strong className="text-navy">Don&apos;t need a new website?</strong> Our standalone AI search visibility service (GEO)
-              gets your business mentioned when customers ask ChatGPT or Google&apos;s AI answers who to hire.
+              <strong className="text-navy">After launch:</strong> optional monthly plans for website care, Google posts, review
+              replies and AI visibility checks. Month to month, cancel anytime, and your website stays yours.
             </p>
           </section>
 
