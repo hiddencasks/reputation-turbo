@@ -37,7 +37,7 @@ export default async function OneSheetPage() {
 
         <div className="space-y-6 px-8 py-7">
           <p className="text-lg">
-            We help contractors and home service businesses in {site.serviceArea}, get found on Google and in AI answers like
+            We help contractors, home service pros and other local service businesses in {site.serviceArea}, get found on Google and in AI answers like
             ChatGPT, so more of the right customers find them, trust them and call. Every website we build includes GEO.
           </p>
 

@@ -9,7 +9,7 @@ export const revalidate = 3600;
 export const metadata: Metadata = {
   title: "Blog: Local Marketing Tips",
   description:
-    "Plain-English tips for San Diego County contractors and home service businesses on showing up in Google, Maps and AI answers, plus Google profiles and reviews.",
+    "Plain-English tips for San Diego County contractors, home service pros and other local businesses on showing up in Google, Maps and AI answers, plus Google profiles and reviews.",
   alternates: { canonical: "/blog" },
 };
 
@@ -20,7 +20,7 @@ export default function BlogPage() {
       <PageHeader
         eyebrow="Blog"
         title="Local Marketing Tips"
-        intro="Plain-English advice for San Diego County contractors and home service businesses on Google, Maps, reviews and AI search."
+        intro="Plain-English advice for San Diego County contractors, home service pros and other local businesses on Google, Maps, reviews and AI search."
       />
       <section className="py-14">
         <Container>

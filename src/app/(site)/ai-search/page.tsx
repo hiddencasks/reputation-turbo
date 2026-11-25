@@ -28,6 +28,7 @@ const questions = [
   "Is there a good electrician near Lemon Grove?",
   "Who does house painting in La Mesa for a fair price?",
   "Top-rated pest control in El Cajon?",
+  "Where can I get a smog check near Spring Valley today?",
 ];
 
 const signals: { title: string; body: string; icon: IconName }[] = [

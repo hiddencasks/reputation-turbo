@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
   if (!city) return {};
   return {
     title: `Web Design, GEO & Reviews in ${city}, CA`,
-    description: `Web design, GEO, Google profiles and reviews in ${city}, CA. Reputation Turbo helps ${city} contractors and home service businesses get found on Google and in AI answers from ${aiAssistantList}. Free online audit.`,
+    description: `Web design, GEO, Google profiles and reviews in ${city}, CA. Reputation Turbo helps ${city} contractors, home service pros and other local service businesses get found on Google and in AI answers from ${aiAssistantList}. Free online audit.`,
     alternates: { canonical: `/areas/${citySlug(city)}` },
   };
 }
@@ -46,11 +46,11 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
   const faqs: Faq[] = [
     {
       q: `Do you work with businesses in ${city}?`,
-      a: `Yes. We're based in ${site.address.city} and work with contractors and home service businesses in ${city} and across San Diego County.`,
+      a: `Yes. We're based in ${site.address.city} and work with contractors, home service pros, auto shops and other local service businesses in ${city} and across San Diego County.`,
     },
     {
       q: `Who does web design for small businesses in ${city}?`,
-      a: `Reputation Turbo builds websites for contractors and home service businesses in ${city}, from our base in ${site.address.city}. Every website we build includes GEO, so Google and AI assistants can understand and recommend your business, and you own the domain, hosting and site.`,
+      a: `Reputation Turbo builds websites for local service businesses in ${city}, from contractors and home service pros to auto shops,, from our base in ${site.address.city}. Every website we build includes GEO, so Google and AI assistants can understand and recommend your business, and you own the domain, hosting and site.`,
     },
     {
       q: `Can you check what AI says about my ${city} business?`,
@@ -82,7 +82,7 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
       <PageHeader
         eyebrow={`Web design & GEO in ${city}, CA`}
         title={`Get found in ${city}`}
-        intro={`Web design, GEO, Google profiles and reviews for ${city} contractors and home service businesses. We help you show up on Google and in AI answers from ${aiAssistantList}, so more local customers find you, trust you and call.`}
+        intro={`Web design, GEO, Google profiles and reviews for ${city} contractors, home service pros and other local service businesses. We help you show up on Google and in AI answers from ${aiAssistantList}, so more local customers find you, trust you and call.`}
       />
 
       <section className="py-14">
@@ -123,12 +123,16 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
               </Link>
             ))}
           </div>
-          <h3 className="mt-10 font-display text-2xl font-bold text-navy">Trades we work with</h3>
+          <h3 className="mt-10 font-display text-2xl font-bold text-navy">Businesses we work with</h3>
           <ul className="mt-3 flex flex-wrap gap-2">
             {site.industries.map((i) => (
               <li key={i} className="rounded-full bg-white px-3 py-1.5 text-sm font-medium text-navy">{i}</li>
             ))}
           </ul>
+          <p className="mt-4 text-sm text-muted">
+            Run an auto shop in {city}?{" "}
+            <Link href="/auto-shops" className="font-semibold text-navy underline decoration-orange underline-offset-2 hover:text-orange">See how we help smog, repair and tire shops</Link>
+          </p>
         </Container>
       </section>
 

@@ -59,7 +59,12 @@ export const site = {
     "Cleaning",
     "Pressure washing",
     "Pool services",
+    "Smog check stations",
+    "Auto repair shops",
+    "Tire shops",
   ],
+  /** The auto shop group, which has its own page at /auto-shops. */
+  autoIndustries: ["Smog check stations", "Auto repair shops", "Tire shops"],
   /** Optional "What do you want help with?" choices on the audit form. */
   helpOptions: ["A new or better website", "Google profile and reviews", "Showing up in AI search", "Social media", "Not sure yet"],
 } as const;

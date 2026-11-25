@@ -5,7 +5,7 @@ import { ButtonLink, Container, PageHeader } from "@/components/ui";
 
 export const metadata: Metadata = {
   title: "Areas We Serve",
-  description: "Reputation Turbo helps contractors and home service businesses across San Diego County get found on Google and in AI answers.",
+  description: "Reputation Turbo helps contractors, home service pros and other local service businesses across San Diego County get found on Google and in AI answers.",
 };
 
 export default function AreasPage() {
@@ -14,7 +14,7 @@ export default function AreasPage() {
       <PageHeader
         eyebrow="Areas we serve"
         title="Local help across San Diego County"
-        intro={`We're based in ${site.address.city} and work with contractors and home service businesses throughout ${site.serviceArea}.`}
+        intro={`We're based in ${site.address.city} and work with contractors, home service pros, auto shops and other local service businesses throughout ${site.serviceArea}.`}
       />
       <section className="py-14">
         <Container>
