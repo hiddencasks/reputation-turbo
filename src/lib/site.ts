@@ -87,7 +87,7 @@ export const googleProfileUrl = "https://g.page/r/CWqMqUDHehn6ECE";
 /** Profiles linked in the site footer, in this order. Add new ones (Yelp, Nextdoor...) here as they go live. */
 export const socialLinks: { label: string; href: string }[] = [
   { label: "Google", href: googleProfileUrl },
-  { label: "Facebook", href: "https://www.facebook.com/profile.php?id=61595725937548" },
+  { label: "Facebook", href: "https://www.facebook.com/reputationturbo" },
   { label: "Instagram", href: "https://www.instagram.com/reputationturbo" },
   { label: "LinkedIn", href: "https://www.linkedin.com/company/reputation-turbo/" },
 ];
