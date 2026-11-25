@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { aiAssistantList, checkedAssistantList, citySlug, site } from "@/lib/site";
 import { businessJsonLd, faqJsonLd, type Faq } from "@/lib/structured-data";
@@ -9,7 +10,7 @@ import { FaqList } from "@/components/FaqList";
 import { JsonLd } from "@/components/JsonLd";
 
 // The second group we serve after contractors and home services: smog, repair and tire shops.
-// Add a case study section here once a client's results are live and they've agreed to be named.
+// Smoggy Joe's agreed to be named as a case study (2026-11-25). Add the "after" numbers once the 30-day re-check is done.
 
 export const metadata: Metadata = {
   title: "Google, Reviews & AI Search for Auto Shops in San Diego County",
@@ -66,6 +67,21 @@ const services: { title: string; body: string; href: string; icon: IconName }[] 
     href: "/ai-search",
     icon: "sparkle",
   },
+];
+
+// Smoggy Joe's, from the before audit on Nov 24, 2026 and the work done in the Website Launch.
+const caseBefore = [
+  "No website",
+  "Named in 0 of 16 AI answers from ChatGPT, Gemini, Perplexity and Claude",
+  "4.9 stars from 43 Google reviews, but most had no reply",
+  "A Gmail address and only 6 photos on Google",
+];
+const caseDone = [
+  "A new website at smoggyjoes.com with prices, the free retest offer, STAR Certified status and one-tap call, text and directions",
+  "A business email at the shop's own domain",
+  "A reply to every Google review, plus a new category and service areas on the Google profile",
+  "Bing, Yelp and Apple Maps listings fixed or claimed, with correct hours and the website",
+  "Search Console and Bing set up, and a review card with a QR code for the counter",
 ];
 
 const faqs: Faq[] = [
@@ -144,6 +160,51 @@ export default function AutoShopsPage() {
                 <li key={q} className="rounded-md bg-white p-3 italic text-ink shadow-sm">&ldquo;{q}&rdquo;</li>
               ))}
             </ul>
+          </div>
+        </Container>
+      </section>
+
+      <section className="bg-navy py-14 text-white">
+        <Container>
+          <Eyebrow>Case study</Eyebrow>
+          <h2 className="mt-2 font-display text-3xl font-bold sm:text-4xl">Smoggy Joe&apos;s, Market St., San Diego</h2>
+          <p className="mt-3 max-w-3xl text-white/85">
+            A STAR Certified smog check station with great reviews that drivers and AI assistants couldn&apos;t find much
+            about online. Here&apos;s where it started and what we did.
+          </p>
+          <div className="mt-8 grid gap-8 lg:grid-cols-[1.1fr_1fr] lg:items-start">
+            <a href="https://smoggyjoes.com" target="_blank" rel="noopener" className="group block overflow-hidden rounded-xl ring-1 ring-white/15 transition hover:ring-orange">
+              <Image
+                src="/images/case-smoggy-joes.jpg"
+                alt="The new Smoggy Joe's website: Honest smog checks. Free retest if you don't pass."
+                width={1280}
+                height={730}
+                sizes="(min-width: 1024px) 600px, 100vw"
+                className="w-full transition duration-500 group-hover:scale-[1.02]"
+              />
+            </a>
+            <div className="grid gap-4">
+              <div className="rounded-xl bg-white/5 p-6 ring-1 ring-white/10">
+                <h3 className="font-display text-xl font-bold text-orange">Before (Nov 24, 2026 audit)</h3>
+                <ul className="mt-3 space-y-2 text-white/85">
+                  {caseBefore.map((t) => (
+                    <li key={t} className="flex gap-2"><span aria-hidden="true" className="text-orange">&bull;</span>{t}</li>
+                  ))}
+                </ul>
+              </div>
+              <div className="rounded-xl bg-white/5 p-6 ring-1 ring-white/10">
+                <h3 className="font-display text-xl font-bold text-orange">What we did</h3>
+                <ul className="mt-3 space-y-2 text-white/85">
+                  {caseDone.map((t) => (
+                    <li key={t} className="flex gap-2"><span aria-hidden="true" className="text-orange">&#10003;</span>{t}</li>
+                  ))}
+                </ul>
+              </div>
+              <p className="text-sm text-white/70">
+                We&apos;ll run the same audit again after 30 days and share the before and after here.{" "}
+                <a href="https://smoggyjoes.com" target="_blank" rel="noopener" className="font-semibold text-white underline decoration-orange underline-offset-2 hover:text-orange">Visit smoggyjoes.com</a>
+              </p>
+            </div>
           </div>
         </Container>
       </section>

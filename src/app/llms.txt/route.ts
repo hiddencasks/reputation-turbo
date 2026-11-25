@@ -48,7 +48,7 @@ ${plans.map(line).join("\n")}
 - [Free Online Audit](${url("/free-audit")}): request a free audit
 - [About](${url("/about")})
 - [Contact](${url("/contact")})
-- [Auto Shops](${url("/auto-shops")}): Google, reviews, websites and AI search for smog check stations, auto repair shops and tire shops
+- [Auto Shops](${url("/auto-shops")}): Google, reviews, websites and AI search for smog check stations, auto repair shops and tire shops, with the Smoggy Joe's case study
 - [Areas We Serve](${url("/areas")})
 ${site.cities.map((c) => `- [${c}](${url(`/areas/${citySlug(c)}`)}): services in ${c}, CA`).join("\n")}
 - [Blog](${url("/blog")}): local marketing tips
