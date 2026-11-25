@@ -14,6 +14,11 @@ function connect(): postgres.Sql {
     // Supabase's connection pooler does not support prepared statements.
     prepare: false,
     max: 5,
+    // Vercel freezes idle functions, which can leave a pooled connection dead without anyone noticing.
+    // Drop idle connections quickly and give up on a stuck connect, so a page never hangs on a dead one.
+    idle_timeout: 20,
+    max_lifetime: 60 * 5,
+    connect_timeout: 10,
     // Keep calendar dates (like next_follow_up) as "YYYY-MM-DD" strings.
     types: { date: { to: 1082, from: [1082], serialize: (v: string) => v, parse: (v: string) => v } },
     onnotice: () => {},
