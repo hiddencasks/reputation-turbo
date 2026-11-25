@@ -23,7 +23,7 @@ export async function GET() {
 
   const text = `# ${site.name}
 
-> ${site.name} is a local marketing agency in ${site.address.city}, California. It helps contractors and home service businesses in ${site.serviceArea}, get found on Google and in AI answers from ${aiAssistantList}, through GEO (generative engine optimization), websites, Google Business Profile optimization and online reviews.
+> ${site.name} is a local marketing agency in ${site.address.city}, California. It helps contractors, home service pros and other local service businesses, including auto shops, in ${site.serviceArea}, get found on Google and in AI answers from ${aiAssistantList}, through GEO (generative engine optimization), websites, Google Business Profile optimization and online reviews.
 
 - Address: ${addressOneLine}
 ${site.showPhone ? `- Phone: ${site.phoneDisplay}\n` : ""}- Email: ${site.email}
@@ -48,6 +48,7 @@ ${plans.map(line).join("\n")}
 - [Free Online Audit](${url("/free-audit")}): request a free audit
 - [About](${url("/about")})
 - [Contact](${url("/contact")})
+- [Auto Shops](${url("/auto-shops")}): Google, reviews, websites and AI search for smog check stations, auto repair shops and tire shops
 - [Areas We Serve](${url("/areas")})
 ${site.cities.map((c) => `- [${c}](${url(`/areas/${citySlug(c)}`)}): services in ${c}, CA`).join("\n")}
 - [Blog](${url("/blog")}): local marketing tips

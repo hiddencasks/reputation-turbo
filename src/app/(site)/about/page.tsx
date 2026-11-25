@@ -9,7 +9,7 @@ import logoFullWhite from "../../../../public/brand/logo-full-white.png";
 export const metadata: Metadata = {
   title: "About Us",
   description:
-    "Meet Alvin Shamoun, founder of Reputation Turbo, helping contractors and home service businesses across San Diego County get found on Google and AI search.",
+    "Meet Alvin Shamoun, founder of Reputation Turbo, helping contractors, home service pros and other local service businesses across San Diego County get found on Google and AI search.",
 };
 
 const principles: { title: string; body: string; icon: IconName }[] = [
@@ -26,7 +26,7 @@ export default function AboutPage() {
       <PageHeader
         eyebrow="About us"
         title="Local roots, modern marketing"
-        intro={`${site.name} helps contractors and home service businesses get found, build trust and win more jobs across ${site.serviceArea}.`}
+        intro={`${site.name} helps contractors, home service pros and other local service businesses get found, build trust and win more jobs across ${site.serviceArea}.`}
       />
 
       <section className="py-16">

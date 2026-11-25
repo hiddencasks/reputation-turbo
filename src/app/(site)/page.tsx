@@ -72,7 +72,7 @@ function faqsFor(showPrices: boolean): Faq[] {
     },
     {
       q: "Who does web design for small businesses in Spring Valley and East County?",
-      a: `Reputation Turbo is based in ${site.address.city} and builds websites for contractors and home service businesses across East County and San Diego County, including El Cajon, La Mesa, Santee and Lemon Grove. Every website includes GEO, and you own the domain, hosting and site.`,
+      a: `Reputation Turbo is based in ${site.address.city} and builds websites for local service businesses across East County, from contractors and home service pros to auto shops, and San Diego County, including El Cajon, La Mesa, Santee and Lemon Grove. Every website includes GEO, and you own the domain, hosting and site.`,
     },
     {
       q: "How much does a small business website cost in San Diego County?",
@@ -115,7 +115,7 @@ export default async function HomePage() {
               Get Found. <span className="text-orange">Build Trust.</span> Grow Your Business.
             </h1>
             <p className="mt-6 max-w-2xl text-lg text-white/85 sm:text-xl">
-              We help contractors and home service businesses get found on Google and AI search. We&apos;ll build you a new
+              We help contractors, home service pros and other local service businesses get found on Google and AI search. We&apos;ll build you a new
               website from scratch or upgrade the one you already have.
             </p>
             <div className="mt-6">
@@ -268,6 +268,11 @@ export default async function HomePage() {
                   </span>
                 ))}{" "}
                 and the rest of San Diego County.
+              </p>
+              <p className="mt-4">
+                <Link href="/auto-shops" className="inline-flex items-center gap-1 font-semibold text-navy underline decoration-orange underline-offset-2 hover:text-orange">
+                  Run a smog, repair or tire shop? See how we help auto shops <Icon name="arrow" className="h-4 w-4" />
+                </Link>
               </p>
             </div>
             <div className="grid gap-4 rounded-2xl bg-navy p-4 sm:p-6">

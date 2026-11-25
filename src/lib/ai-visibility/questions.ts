@@ -15,6 +15,10 @@ const tradePhrases: Record<string, string> = {
   fencing: "fencing company",
   cleaning: "cleaning service",
   "pressure washing": "pressure washing company",
+  "pool services": "pool service",
+  "smog check stations": "smog check station",
+  "auto repair shops": "auto repair shop",
+  "tire shops": "tire shop",
 };
 
 /** "Plumbers" -> "plumber"; anything not in the list is used as typed. */
