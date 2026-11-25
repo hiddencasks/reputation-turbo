@@ -81,10 +81,15 @@ export const aiAssistantList = "ChatGPT, Claude, Gemini, Perplexity and Copilot"
 export const checkedAssistants = ["ChatGPT", "Gemini", "Perplexity", "Claude"] as const;
 export const checkedAssistantList = "ChatGPT, Gemini, Perplexity and Claude";
 
-/** Social profiles shown in the site footer. Add Facebook, LinkedIn and others here as they go live. */
+/** Our public Google Business Profile (opens the profile on Google Maps). */
+export const googleProfileUrl = "https://g.page/r/CWqMqUDHehn6ECE";
+
+/** Profiles linked in the site footer, in this order. Add new ones (Yelp, Nextdoor...) here as they go live. */
 export const socialLinks: { label: string; href: string }[] = [
+  { label: "Google", href: googleProfileUrl },
   { label: "Facebook", href: "https://www.facebook.com/profile.php?id=61595725937548" },
   { label: "Instagram", href: "https://www.instagram.com/reputationturbo" },
+  { label: "LinkedIn", href: "https://www.linkedin.com/company/reputation-turbo/" },
 ];
 
 /**
@@ -95,10 +100,12 @@ export const googleReviewUrl = "https://g.page/r/CWqMqUDHehn6ECE/review";
 export const reviewShortLink = "reputationturbo.com/review";
 
 export const profiles: string[] = [
-  // Google Business Profile
-  "https://share.google/aaY0E5tU0YEKdS4ag",
-  "https://g.page/r/CWqMqUDHehn6ECE",
-  ...socialLinks.map((l) => l.href),
+  ...new Set([
+    // Google Business Profile
+    "https://share.google/aaY0E5tU0YEKdS4ag",
+    googleProfileUrl,
+    ...socialLinks.map((l) => l.href),
+  ]),
 ];
 
 /** "El Cajon" -> "el-cajon" */
