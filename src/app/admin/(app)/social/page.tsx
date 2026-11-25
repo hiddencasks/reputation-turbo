@@ -1,7 +1,8 @@
-import { captionFor, cardsOf, formatOf, postTiming, recentSocialPosts, formatPostTime, imagePath, networkLabel, networks, PUBLISH_WINDOW_HOURS, videoPath, type SocialPost } from "@/lib/social";
+import { captionFor, cardsOf, formatOf, googleButtonUrl, googleImagePath, postTiming, recentSocialPosts, formatPostTime, imagePath, networkLabel, networks, PUBLISH_WINDOW_HOURS, videoPath, type SocialPost } from "@/lib/social";
 import { getStates, socialConfig, stateFor, type PublishState } from "@/lib/social-publish";
 import { postNow, testConnection } from "./actions";
 import { SubmitButton } from "@/components/admin/SubmitButton";
+import { CopyButton } from "@/components/admin/CopyButton";
 
 const kindLabel: Record<SocialPost["kind"], string> = {
   blog: "Blog share",
@@ -12,12 +13,13 @@ const kindLabel: Record<SocialPost["kind"], string> = {
 
 const formatLabel = { image: "Image", carousel: "Carousel", reel: "Reel" } as const;
 
-function StatusPill({ state, missed, connected }: { state?: PublishState; missed: boolean; connected: boolean }) {
+function StatusPill({ state, missed, connected, manual }: { state?: PublishState; missed: boolean; connected: boolean; manual?: boolean }) {
   let text = missed ? "Missed (too late to post)" : "Scheduled";
   let cls = "bg-navy-50 text-navy";
   if (state?.status === "posted") [text, cls] = [`Posted ${new Date(state.at).toLocaleDateString("en-US", { timeZone: "America/Los_Angeles", month: "short", day: "numeric" })}`, "bg-green-100 text-green-800"];
   else if (state?.status === "failed") [text, cls] = [`Failed (${state.attempts} ${state.attempts === 1 ? "try" : "tries"})`, "bg-red-100 text-red-800"];
   else if (state?.status === "posting") [text, cls] = ["Posting… (check the page if this stays)", "bg-amber-100 text-amber-800"];
+  else if (!connected && manual) text = "Post by hand (emailed to you that morning)";
   else if (!connected) text = missed ? "Not posted (not connected)" : "Scheduled (not connected yet)";
   return <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${cls}`}>{text}</span>;
 }
@@ -34,6 +36,7 @@ export default async function SocialPage({ searchParams }: { searchParams: Promi
         <h1 className="font-display text-3xl font-bold text-navy">Social posts</h1>
         <p className="mt-1 text-sm text-muted">
           Tuesdays share the week&apos;s blog post, Fridays a tip. Each post goes to Facebook and Instagram on its own at its time.
+          Until Google approves automatic posting, the Google profile version is emailed to you to paste in (about a minute).
           Posts more than {PUBLISH_WINDOW_HOURS} hours late are skipped so nothing piles up.
         </p>
       </div>
@@ -44,7 +47,14 @@ export default async function SocialPage({ searchParams }: { searchParams: Promi
         <h2 className="font-display text-xl font-bold text-navy">Connection</h2>
         <ul className="mt-2 space-y-1 text-sm">
           {networks.map((n) => (
-            <li key={n}>{networkLabel[n]}: {config[n] ? "set up" : "not connected yet (add the META_ settings in Vercel)"}</li>
+            <li key={n}>
+              {networkLabel[n]}:{" "}
+              {config[n]
+                ? "set up"
+                : n === "google"
+                  ? "posted by hand for now (waiting on Google's API approval, then the GOOGLE_BUSINESS_ settings in Vercel)"
+                  : "not connected yet (add the META_ settings in Vercel)"}
+            </li>
           ))}
           {config.paused ? <li className="font-semibold text-orange-600">Paused (SOCIAL_PAUSED=1 in Vercel). Nothing will post.</li> : null}
         </ul>
@@ -89,9 +99,25 @@ export default async function SocialPage({ searchParams }: { searchParams: Promi
                     <details key={n} className="rounded-md border border-line p-3">
                       <summary className="flex cursor-pointer flex-wrap items-center gap-2 text-sm">
                         <span className="font-semibold">{networkLabel[n]}</span>
-                        <StatusPill state={state} missed={missed} connected={config[n]} />
+                        <StatusPill state={state} missed={missed} connected={config[n]} manual={n === "google"} />
                       </summary>
                       <pre className="mt-2 whitespace-pre-wrap font-sans text-sm text-ink">{captionFor(post, n)}</pre>
+                      {n === "google" ? (
+                        <div className="mt-2 space-y-2 text-sm">
+                          <p className="text-muted">
+                            A photo version of the cover and a <strong>Learn more</strong> button: <span className="break-all">{googleButtonUrl(post)}</span>
+                          </p>
+                          <a href={googleImagePath(post)} target="_blank" rel="noreferrer">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={googleImagePath(post)} alt="" width={240} height={180} loading="lazy" className="rounded-md border border-line" />
+                          </a>
+                          <div className="flex flex-wrap gap-2">
+                            <CopyButton text={captionFor(post, n)} label="Copy text" />
+                            <CopyButton text={googleButtonUrl(post)} label="Copy button link" />
+                            <a href={googleImagePath(post)} download={`${post.id}-google.jpg`} className="rounded-md border border-navy px-3 py-1.5 text-sm font-semibold text-navy">Download photo</a>
+                          </div>
+                        </div>
+                      ) : null}
                       {state?.error ? <p className="mt-2 text-sm text-red-700">Last error: {state.error}</p> : null}
                       {state?.status !== "posted" && config[n] ? (
                         <form action={postNow} className="mt-2">

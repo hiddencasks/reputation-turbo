@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireOwner } from "@/lib/auth";
-import { getSocialPost, networks, type Network } from "@/lib/social";
+import { getSocialPost, networkLabel, networks, type Network } from "@/lib/social";
 import { checkConnection, publishNow } from "@/lib/social-publish";
 
 export async function postNow(formData: FormData) {
@@ -20,6 +20,6 @@ export async function postNow(formData: FormData) {
 export async function testConnection() {
   await requireOwner();
   const results = await checkConnection();
-  const msg = results.map((r) => `${r.network === "facebook" ? "Facebook" : "Instagram"}: ${r.ok ? "✓ " : "✕ "}${r.detail}`).join("  ·  ");
+  const msg = results.map((r) => `${networkLabel[r.network]}: ${r.ok ? "✓ " : "✕ "}${r.detail}`).join("  ·  ");
   redirect(`/admin/social?msg=${encodeURIComponent(msg)}`);
 }

@@ -2,7 +2,7 @@ import "server-only";
 import { sql } from "./db";
 import { sendEmail } from "./email";
 import { site } from "./site";
-import { captionFor, cardsOf, duePosts, formatOf, imageUrl, networkLabel, networks, videoUrl, type Network, type SocialPost } from "./social";
+import { captionFor, cardsOf, duePosts, formatOf, formatPostTime, googleButtonUrl, googleImageUrl, imageUrl, networkLabel, networks, videoUrl, type Network, type SocialPost } from "./social";
 
 /**
  * Publishes posts to the Facebook Page and the Instagram account through Meta's
@@ -15,6 +15,16 @@ import { captionFor, cardsOf, duePosts, formatOf, imageUrl, networkLabel, networ
  * - META_IG_USER_ID: the Instagram professional account linked to the Page.
  * - META_GRAPH_VERSION (optional): Graph API version, like "v24.0".
  * - SOCIAL_PAUSED=1 (optional): stop posting without removing anything.
+ *
+ * Google Business Profile (posts through Google's Business Profile API, free, but
+ * only after Google approves our Cloud project for API access):
+ * - GOOGLE_BUSINESS_CLIENT_ID / GOOGLE_BUSINESS_CLIENT_SECRET: an OAuth client in
+ *   the Google Cloud project.
+ * - GOOGLE_BUSINESS_REFRESH_TOKEN: from signing in once as a manager of the profile
+ *   (scope https://www.googleapis.com/auth/business.manage).
+ * - GOOGLE_BUSINESS_LOCATION: "accounts/<id>/locations/<id>".
+ * Until those are set, each due post is emailed to the owner once, ready to paste
+ * into the profile by hand (GOOGLE_POST_REMINDERS=0 stops those emails).
  *
  * What was posted is kept in the settings table under "social:<post id>:<network>".
  */
@@ -38,13 +48,24 @@ export function socialConfig() {
   const pageId = process.env.META_PAGE_ID ?? "";
   const token = process.env.META_PAGE_TOKEN ?? "";
   const igUserId = process.env.META_IG_USER_ID ?? "";
+  const g = googleConfig();
   return {
     paused: process.env.SOCIAL_PAUSED === "1",
     facebook: Boolean(pageId && token),
     instagram: Boolean(igUserId && token),
+    google: Boolean(g.clientId && g.clientSecret && g.refreshToken && g.location),
     pageId,
     igUserId,
     token,
+  };
+}
+
+function googleConfig() {
+  return {
+    clientId: process.env.GOOGLE_BUSINESS_CLIENT_ID ?? "",
+    clientSecret: process.env.GOOGLE_BUSINESS_CLIENT_SECRET ?? "",
+    refreshToken: process.env.GOOGLE_BUSINESS_REFRESH_TOKEN ?? "",
+    location: (process.env.GOOGLE_BUSINESS_LOCATION ?? "").replace(/^\/+|\/+$/g, ""),
   };
 }
 
@@ -171,9 +192,51 @@ async function postToInstagram(post: SocialPost): Promise<string> {
   return published.id || "";
 }
 
+async function googleAccessToken(): Promise<string> {
+  const g = googleConfig();
+  const res = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    body: new URLSearchParams({ client_id: g.clientId, client_secret: g.clientSecret, refresh_token: g.refreshToken, grant_type: "refresh_token" }),
+    cache: "no-store",
+  });
+  const data = (await res.json().catch(() => ({}))) as { access_token?: string; error_description?: string; error?: string };
+  if (!res.ok || !data.access_token) throw new Error(`Google sign-in failed: ${data.error_description || data.error || res.status}`);
+  return data.access_token;
+}
+
+async function googleApi(path: string, init: { method: "GET" | "POST"; body?: unknown }): Promise<{ name?: string; localPosts?: unknown[] }> {
+  const token = await googleAccessToken();
+  const res = await fetch(`https://mybusiness.googleapis.com/v4/${path}`, {
+    method: init.method,
+    headers: { Authorization: `Bearer ${token}`, ...(init.body ? { "Content-Type": "application/json" } : {}) },
+    body: init.body ? JSON.stringify(init.body) : undefined,
+    cache: "no-store",
+  });
+  const data = (await res.json().catch(() => ({}))) as { name?: string; localPosts?: unknown[]; error?: { message?: string } };
+  if (!res.ok || data.error) throw new Error(data.error?.message || `Google returned ${res.status}`);
+  return data;
+}
+
+/** A Google profile "update": the text, a photo version of the cover (googleCard) and a Learn more button. */
+async function postToGoogle(post: SocialPost): Promise<string> {
+  const { location } = googleConfig();
+  const data = await googleApi(`${location}/localPosts`, {
+    method: "POST",
+    body: {
+      languageCode: "en-US",
+      topicType: "STANDARD",
+      summary: captionFor(post, "google"),
+      callToAction: { actionType: "LEARN_MORE", url: googleButtonUrl(post) },
+      media: [{ mediaFormat: "PHOTO", sourceUrl: googleImageUrl(post) }],
+    },
+  });
+  return data.name || "";
+}
+
 const publishers: Record<Network, (post: SocialPost) => Promise<string>> = {
   facebook: postToFacebook,
   instagram: postToInstagram,
+  google: postToGoogle,
 };
 
 export type PublishOutcome = { postId: string; network: Network; status: "posted" | "failed"; error?: string; final?: boolean };
@@ -207,7 +270,37 @@ export async function publishDue(now: Date = new Date()): Promise<PublishOutcome
   // Email only once a post has used up its tries, so a passing hiccup doesn't send mail.
   const failed = outcomes.filter((o) => o.status === "failed" && o.final);
   if (failed.length) await notifyFailures(failed);
+  if (!config.google && process.env.GOOGLE_POST_REMINDERS !== "0") {
+    for (const post of duePosts(now)) await remindGooglePost(post);
+  }
   return outcomes;
+}
+
+/**
+ * While the Google profile isn't connected, emails the owner each due post once,
+ * ready to paste into the profile as an update.
+ */
+async function remindGooglePost(post: SocialPost) {
+  const key = `social:${post.id}:google-reminder`;
+  const rows = await sql`
+    insert into settings (key, value, updated_at) values (${key}, ${sql.json({ at: new Date().toISOString() })}, now())
+    on conflict (key) do nothing
+    returning key`;
+  if (!rows.length) return;
+  await sendEmail({
+    to: process.env.OWNER_EMAIL ?? site.email,
+    template: "owner_google_post",
+    subject: "Today's Google profile post is ready to paste",
+    paragraphs: [
+      `This post went out on Facebook and Instagram today (${formatPostTime(post.publishAt)}). It takes about a minute to add it to the Google profile:`,
+      `1. Open the Google profile (search "Reputation Turbo" while signed in as the profile's owner) and tap "Add update".`,
+      `2. Add this photo (save it, then upload it): ${googleImageUrl(post)}`,
+      "3. Paste this text:",
+      ...captionFor(post, "google").split("\n\n"),
+      `4. Add a button: "Learn more", with this link: ${googleButtonUrl(post)}`,
+      `You can also copy all of it from the dashboard: ${site.url}/admin/social#${post.id}`,
+    ],
+  });
 }
 
 /** "Post now" from the dashboard: publishes one post to one network, even outside its time. */
@@ -235,10 +328,15 @@ export async function checkConnection(): Promise<{ network: Network; ok: boolean
   const results: { network: Network; ok: boolean; detail: string }[] = [];
   for (const network of networks) {
     if (!config[network]) {
-      results.push({ network, ok: false, detail: "Not set up in Vercel yet." });
+      results.push({ network, ok: false, detail: network === "google" ? "Not connected yet (posts are emailed to you to paste)." : "Not set up in Vercel yet." });
       continue;
     }
     try {
+      if (network === "google") {
+        await googleApi(`${googleConfig().location}/localPosts?pageSize=1`, { method: "GET" });
+        results.push({ network, ok: true, detail: "Connected to the Google profile" });
+        continue;
+      }
       const id = network === "facebook" ? config.pageId : config.igUserId;
       const data = (await graph(id, { fields: network === "facebook" ? "name" : "username" }, "GET")) as { name?: string; username?: string };
       results.push({ network, ok: true, detail: `Connected to ${data.name ?? `@${data.username}`}` });

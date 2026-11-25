@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { posts as blogPosts } from "@/lib/blog";
 import { existsSync } from "node:fs";
 import path from "node:path";
-import { activeKeyword, allSocialPosts, cardsOf, cardText, formatOf, imagePath, parseImageFile, videoPath, blogShare, captionFor, commentToDm, duePosts, freeAuditUrl, pacificIso, PUBLISH_WINDOW_HOURS } from "@/lib/social";
+import { GOOGLE_POST_MAX, googleButtonUrl, googleCard, googleImagePath, activeKeyword, allSocialPosts, cardsOf, cardText, formatOf, imagePath, parseImageFile, videoPath, blogShare, captionFor, commentToDm, duePosts, freeAuditUrl, pacificIso, PUBLISH_WINDOW_HOURS } from "@/lib/social";
 import { adSourceFromUrl, describeAdSource } from "@/lib/ad-source";
 
 const assistants = ["ChatGPT", "Claude", "Gemini", "Perplexity", "Copilot"];
@@ -118,13 +118,56 @@ describe("post formats", () => {
 
   it("reads image file names back", () => {
     const p = all[0];
-    expect(parseImageFile(imagePath(p).split("/").pop()!)).toEqual({ id: p.id, slide: 1, tall: false });
-    expect(parseImageFile(imagePath(p, 3, true).split("/").pop()!)).toEqual({ id: p.id, slide: 3, tall: true });
+    expect(parseImageFile(imagePath(p).split("/").pop()!)).toEqual({ id: p.id, slide: 1, tall: false, google: false });
+    expect(parseImageFile(imagePath(p, 3, true).split("/").pop()!)).toEqual({ id: p.id, slide: 3, tall: true, google: false });
     expect(parseImageFile("../x.jpg")).toBeNull();
   });
 
   it("uses more than one look each month", () => {
     const formats = new Set(all.map(formatOf));
     expect(formats.size).toBeGreaterThan(1);
+  });
+});
+
+describe("Google profile posts", () => {
+  const all = allSocialPosts();
+
+  it("fit Google's length limit and leave out hashtags, keywords and links", () => {
+    for (const p of all) {
+      const text = captionFor(p, "google");
+      expect(text.length).toBeLessThanOrEqual(GOOGLE_POST_MAX);
+      expect(text).not.toMatch(/#\w/);
+      expect(text).not.toMatch(/Comment [A-Z]+ and/);
+      expect(text).not.toMatch(/https?:\/\//);
+      expect(text).toContain("Learn more button");
+    }
+  });
+
+  it("only shows the cover, so captions don't ask people to swipe", () => {
+    for (const p of all) expect(captionFor(p, "google")).not.toMatch(/swipe/i);
+  });
+
+  it("tags the Learn more link so the lead shows it came from a Google post", () => {
+    for (const p of all) {
+      const url = new URL(googleButtonUrl(p));
+      expect(url.hostname).toBe("reputationturbo.com");
+      const ad = adSourceFromUrl(url.search, url.pathname)!;
+      expect(describeAdSource(ad)).toBe(`Google · ${p.id}`);
+    }
+  });
+
+  it("always gets a photo, with its own image file", () => {
+    for (const p of all) {
+      expect(googleCard(p).layout).toBe("photo");
+      expect(parseImageFile(googleImagePath(p).replace("/social-image/", ""))).toEqual({ id: p.id, slide: 1, tall: false, google: true });
+    }
+    expect(parseImageFile("2026-11-27-thank-you.s3.tall.jpg")).toEqual({ id: "2026-11-27-thank-you", slide: 3, tall: true, google: false });
+  });
+
+  it("sends blog shares to the blog post and the rest to the free audit", () => {
+    const blog = all.find((p) => p.kind === "blog")!;
+    const tip = all.find((p) => p.kind !== "blog")!;
+    expect(new URL(googleButtonUrl(blog)).pathname).toMatch(/^\/blog\//);
+    expect(new URL(googleButtonUrl(tip)).pathname).toBe("/free-audit");
   });
 });
