@@ -22,7 +22,6 @@ const nextConfig: NextConfig = {
   // menu in SiteHeader.tsx and the sitemap) to bring one back.
   async redirects() {
     return [
-      { source: "/our-work", destination: "/", permanent: false },
       { source: "/one-sheet", destination: "/", permanent: false },
       // Short link to text or email customers: reputationturbo.com/review opens Google's review box.
       { source: "/review", destination: googleReviewUrl, permanent: false },
