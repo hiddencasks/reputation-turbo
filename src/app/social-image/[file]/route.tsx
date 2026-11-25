@@ -2,17 +2,18 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
 import sharp from "sharp";
-import { activeKeyword, cardsOf, formatOf, getSocialPost, parseImageFile, type CardPhoto, type CardTheme, type SocialCard } from "@/lib/social";
+import { activeKeyword, cardsOf, formatOf, getSocialPost, googleCard, parseImageFile, type CardPhoto, type CardTheme, type SocialCard } from "@/lib/social";
 
 // One card of a Facebook and Instagram post, drawn from its text. Served as a JPEG
 // because Instagram only accepts JPEG photos.
 //   /social-image/<id>.jpg         the image, or the carousel's first slide (1080 x 1350, 4:5)
 //   /social-image/<id>.s3.jpg      carousel slide 3
 //   /social-image/<id>.s2.tall.jpg a 1080 x 1920 (9:16) version, used to make Reels
+//   /social-image/<id>.google.jpg  the Google profile version: the cover's words over a photo, 1200 x 900
 
 export const runtime = "nodejs";
 
-const W = 1080;
+const BASE_W = 1080;
 const navy = "#061b3e";
 const navy800 = "#0c2a5c";
 const orange = "#ff6500";
@@ -132,14 +133,15 @@ export async function GET(_request: Request, { params }: { params: Promise<{ fil
   const parsed = parseImageFile(file);
   const post = parsed ? getSocialPost(parsed.id) : undefined;
   const cards = post ? cardsOf(post) : [];
-  const card = parsed ? cards[parsed.slide - 1] : undefined;
+  const card = parsed?.google ? (post && parsed.slide === 1 ? googleCard(post) : undefined) : parsed ? cards[parsed.slide - 1] : undefined;
   if (!post || !parsed || !card) return new Response("Not found", { status: 404 });
 
-  const H = parsed.tall ? 1920 : 1350;
+  const W = parsed.google ? 1200 : BASE_W;
+  const H = parsed.google ? 900 : parsed.tall ? 1920 : 1350;
   const p = palettes[card.layout === "photo" ? "navy" : (card.theme ?? "navy")];
   const [heading, bodySemi, bodyMedium, logoWhite, logoDark] = await assets;
-  const keyword = parsed.slide === 1 ? activeKeyword(post) : undefined;
-  const carousel = formatOf(post) === "carousel";
+  const keyword = parsed.slide === 1 && !parsed.google ? activeKeyword(post) : undefined;
+  const carousel = formatOf(post) === "carousel" && !parsed.google;
   const photo =
     card.layout === "photo"
       ? `data:image/jpeg;base64,${(await sharp(await photos[card.photo]()).resize(W, H, { fit: "cover" }).jpeg({ quality: 85 }).toBuffer()).toString("base64")}`
@@ -154,11 +156,13 @@ export async function GET(_request: Request, { params }: { params: Promise<{ fil
           <>
             {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text */}
             <img src={photo} width={W} height={H} style={{ position: "absolute", top: 0, left: 0 }} />
-            <div style={{ position: "absolute", top: 0, left: 0, width: W, height: H, display: "flex", background: "linear-gradient(180deg, rgba(6,27,62,0.35) 0%, rgba(6,27,62,0.75) 45%, rgba(6,27,62,0.95) 100%)" }} />
+            <div style={{ position: "absolute", top: 0, left: 0, width: W, height: H, display: "flex", background: parsed.google
+                  ? "linear-gradient(180deg, rgba(6,27,62,0.1) 0%, rgba(6,27,62,0.45) 40%, rgba(6,27,62,0.92) 100%)"
+                  : "linear-gradient(180deg, rgba(6,27,62,0.35) 0%, rgba(6,27,62,0.75) 45%, rgba(6,27,62,0.95) 100%)" }} />
           </>
         ) : null}
         <div style={{ display: "flex", height: 18, background: p.bg === orange ? navy : orange }} />
-        <div style={{ position: "relative", display: "flex", flexDirection: "column", flex: 1, padding: parsed.tall ? "120px 84px 0" : "90px 84px 0", justifyContent: photo ? "flex-end" : "center" }}>
+        <div style={{ position: "relative", display: "flex", flexDirection: "column", flex: 1, padding: parsed.tall ? "120px 84px 0" : parsed.google ? "56px 72px 0" : "90px 84px 0", justifyContent: photo ? "flex-end" : "center" }}>
           {keyword ? (
             <div style={{ position: "absolute", top: 60, right: 60, display: "flex", padding: "12px 24px", borderRadius: 14, border: `3px solid ${p.accent}`, background: photo ? "rgba(6,27,62,0.9)" : p.bg, color: p.text, fontSize: 30, fontWeight: 600 }}>
               Comment&nbsp;<span style={{ color: p.accent }}>{keyword}</span>
@@ -169,7 +173,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ fil
           </div>
           <Body card={card} p={p} />
         </div>
-        <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 48, padding: parsed.tall ? "40px 84px 140px" : "40px 84px 56px", ...(p.footerBg ? { background: p.footerBg } : {}) }}>
+        <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: parsed.google ? 28 : 48, padding: parsed.tall ? "40px 84px 140px" : parsed.google ? "24px 72px 36px" : "40px 84px 56px", ...(p.footerBg ? { background: p.footerBg } : {}) }}>
           {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text */}
           <img src={`data:image/png;base64,${logo.toString("base64")}`} width={logoW} height={logoH} />
           {carousel && !parsed.tall && parsed.slide < cards.length ? (

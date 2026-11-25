@@ -2,7 +2,7 @@ import "server-only";
 import { sql } from "./db";
 import { sendEmail } from "./email";
 import { site } from "./site";
-import { captionFor, cardsOf, duePosts, formatOf, formatPostTime, googleButtonUrl, imageUrl, networkLabel, networks, videoUrl, type Network, type SocialPost } from "./social";
+import { captionFor, cardsOf, duePosts, formatOf, formatPostTime, googleButtonUrl, googleImageUrl, imageUrl, networkLabel, networks, videoUrl, type Network, type SocialPost } from "./social";
 
 /**
  * Publishes posts to the Facebook Page and the Instagram account through Meta's
@@ -217,7 +217,7 @@ async function googleApi(path: string, init: { method: "GET" | "POST"; body?: un
   return data;
 }
 
-/** A Google profile "update": the text, the post's cover image and a Learn more button. Carousels and Reels use their cover. */
+/** A Google profile "update": the text, a photo version of the cover (googleCard) and a Learn more button. */
 async function postToGoogle(post: SocialPost): Promise<string> {
   const { location } = googleConfig();
   const data = await googleApi(`${location}/localPosts`, {
@@ -227,7 +227,7 @@ async function postToGoogle(post: SocialPost): Promise<string> {
       topicType: "STANDARD",
       summary: captionFor(post, "google"),
       callToAction: { actionType: "LEARN_MORE", url: googleButtonUrl(post) },
-      media: [{ mediaFormat: "PHOTO", sourceUrl: imageUrl(post) }],
+      media: [{ mediaFormat: "PHOTO", sourceUrl: googleImageUrl(post) }],
     },
   });
   return data.name || "";
@@ -294,7 +294,7 @@ async function remindGooglePost(post: SocialPost) {
     paragraphs: [
       `This post went out on Facebook and Instagram today (${formatPostTime(post.publishAt)}). It takes about a minute to add it to the Google profile:`,
       `1. Open the Google profile (search "Reputation Turbo" while signed in as the profile's owner) and tap "Add update".`,
-      `2. Add this image: ${imageUrl(post)}`,
+      `2. Add this photo (save it, then upload it): ${googleImageUrl(post)}`,
       "3. Paste this text:",
       ...captionFor(post, "google").split("\n\n"),
       `4. Add a button: "Learn more", with this link: ${googleButtonUrl(post)}`,

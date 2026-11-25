@@ -1,4 +1,4 @@
-import { captionFor, cardsOf, formatOf, googleButtonUrl, postTiming, recentSocialPosts, formatPostTime, imagePath, networkLabel, networks, PUBLISH_WINDOW_HOURS, videoPath, type SocialPost } from "@/lib/social";
+import { captionFor, cardsOf, formatOf, googleButtonUrl, googleImagePath, postTiming, recentSocialPosts, formatPostTime, imagePath, networkLabel, networks, PUBLISH_WINDOW_HOURS, videoPath, type SocialPost } from "@/lib/social";
 import { getStates, socialConfig, stateFor, type PublishState } from "@/lib/social-publish";
 import { postNow, testConnection } from "./actions";
 import { SubmitButton } from "@/components/admin/SubmitButton";
@@ -105,12 +105,16 @@ export default async function SocialPage({ searchParams }: { searchParams: Promi
                       {n === "google" ? (
                         <div className="mt-2 space-y-2 text-sm">
                           <p className="text-muted">
-                            One image (the cover) and a <strong>Learn more</strong> button: <span className="break-all">{googleButtonUrl(post)}</span>
+                            A photo version of the cover and a <strong>Learn more</strong> button: <span className="break-all">{googleButtonUrl(post)}</span>
                           </p>
+                          <a href={googleImagePath(post)} target="_blank" rel="noreferrer">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={googleImagePath(post)} alt="" width={240} height={180} loading="lazy" className="rounded-md border border-line" />
+                          </a>
                           <div className="flex flex-wrap gap-2">
                             <CopyButton text={captionFor(post, n)} label="Copy text" />
                             <CopyButton text={googleButtonUrl(post)} label="Copy button link" />
-                            <a href={imagePath(post)} download={`${post.id}.jpg`} className="rounded-md border border-navy px-3 py-1.5 text-sm font-semibold text-navy">Download image</a>
+                            <a href={googleImagePath(post)} download={`${post.id}-google.jpg`} className="rounded-md border border-navy px-3 py-1.5 text-sm font-semibold text-navy">Download photo</a>
                           </div>
                         </div>
                       ) : null}

@@ -106,6 +106,8 @@ export type SocialPost = {
   format?: SocialFormat;
   /** Optional description of the image for screen readers (Instagram alt text). */
   alt?: string;
+  /** The brand photo behind the Google profile version of this post. Picked automatically when left out. */
+  googlePhoto?: CardPhoto;
   /** The comment-to-DM keyword for this post (see `commentToDm`). Defaults to AUDIT. */
   keyword?: Keyword;
 };
@@ -280,6 +282,7 @@ export const fridayPosts: SocialPost[] = [
       quote: "Who's a reliable plumber near me who can come out today?",
       by: "Example question. Is your business in the answer?",
     },
+    googlePhoto: "trade-plumbing",
     alt: "Light card with a quote. What customers ask AI: Who's a reliable plumber near me who can come out today? Example question. Is your business in the answer?",
   },
   {
@@ -476,14 +479,38 @@ export function imagePath(post: SocialPost, slide = 1, tall = false): string {
   return `/social-image/${post.id}${slide > 1 ? `.s${slide}` : ""}${tall ? ".tall" : ""}.jpg`;
 }
 
-/** Reads "<id>.s3.tall.jpg" back into its parts. */
-export function parseImageFile(file: string): { id: string; slide: number; tall: boolean } | null {
-  const m = /^([a-z0-9-]+)(?:\.s(\d{1,2}))?(\.tall)?\.jpg$/.exec(file);
+/** The Google profile image: the cover's words over a real photo, 1200 x 900 (4:3, how Google shows post photos). */
+export function googleImagePath(post: SocialPost): string {
+  return `/social-image/${post.id}.google.jpg`;
+}
+
+/** Reads "<id>.s3.tall.jpg" or "<id>.google.jpg" back into its parts. */
+export function parseImageFile(file: string): { id: string; slide: number; tall: boolean; google: boolean } | null {
+  const m = /^([a-z0-9-]+?)(?:\.s(\d{1,2}))?(\.tall|\.google)?\.jpg$/.exec(file);
   if (!m) return null;
-  return { id: m[1], slide: m[2] ? Number(m[2]) : 1, tall: Boolean(m[3]) };
+  return { id: m[1], slide: m[2] ? Number(m[2]) : 1, tall: m[3] === ".tall", google: m[3] === ".google" };
+}
+
+/**
+ * The card drawn for Google: always a photo card. A photo cover is used as is;
+ * any other cover keeps its words and sits on a brand photo (the post's
+ * `googlePhoto`, or one picked from its id so posts don't all share a photo).
+ */
+export function googleCard(post: SocialPost): Extract<SocialCard, { layout: "photo" }> {
+  const c = post.card;
+  if (c.layout === "photo") return c;
+  const pool = cardPhotos.filter((ph) => ph !== "services-desk");
+  const photo = post.googlePhoto ?? pool[[...post.id].reduce((n, ch) => (n * 31 + ch.charCodeAt(0)) >>> 0, 7) % pool.length];
+  const headline = c.layout === "quote" ? `“${c.quote}”` : c.headline;
+  const subline = c.layout === "quote" ? c.by : c.layout === "compare" ? undefined : c.subline;
+  return { layout: "photo", kicker: c.kicker, headline, subline, photo };
 }
 
 const base = () => site.url.replace(/\/$/, "");
+
+export function googleImageUrl(post: SocialPost): string {
+  return `${base()}${googleImagePath(post)}`;
+}
 
 export function imageUrl(post: SocialPost, slide = 1): string {
   return `${base()}${imagePath(post, slide)}`;
