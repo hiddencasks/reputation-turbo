@@ -525,33 +525,46 @@ export async function setShowPrices(formData: FormData) {
   revalidatePricing();
 }
 
+export type PaymentLinkState = { error: string; url: string; label: string };
+
 /**
  * Makes a Stripe payment link for this lead: the final 50% of a website package, a monthly plan,
- * an add-on, or a custom amount. The link is saved on the lead's timeline to copy into an email or text.
+ * an add-on, or a custom amount. Returns the link to copy (no page reload), and notes it on the lead.
  */
-export async function createLeadPaymentLink(leadId: string, formData: FormData) {
+export async function createLeadPaymentLink(leadId: string, _prev: PaymentLinkState, formData: FormData): Promise<PaymentLinkState> {
   await requireOwner();
+  const fail = (error: string): PaymentLinkState => ({ error, url: "", label: "" });
   const { stripeEnabled, createPaymentLink, depositCents, dollars } = await import("@/lib/stripe");
-  if (!stripeEnabled()) throw new Error("Connect Stripe first (STRIPE_SECRET_KEY in Vercel).");
+  if (!stripeEnabled()) return fail("Connect Stripe first (STRIPE_SECRET_KEY in Vercel).");
   const what = String(formData.get("what") ?? "");
-  const customName = String(formData.get("name") ?? "").trim();
-  const customAmount = Math.round(Number(String(formData.get("amount") ?? "").replace(/[$,]/g, "")) * 100);
+  const customName = String(formData.get("name") ?? "").trim().slice(0, 120);
+  const rawAmount = String(formData.get("amount") ?? "").replace(/[$,\s]/g, "");
+  const customAmount = rawAmount ? Math.round(Number(rawAmount) * 100) : 0;
+  if (rawAmount && !(customAmount > 0)) return fail("Type the amount as a number, like 1 or 749.");
   const [kind, slug = ""] = what.split(":");
   let name = customName;
   let cents = customAmount;
   let monthly = formData.get("monthly") === "on";
   if (kind !== "custom") {
-    const [o] = await sql<{ name: string; price_cents: number; kind: string }[]>`select name, price_cents, kind from offerings where slug = ${slug}`;
-    if (!o) throw new Error("Pick what the payment is for.");
-    const due = kind === "final" ? o.price_cents - depositCents(o.price_cents) : o.price_cents;
+    const [o] = await sql<{ name: string; price_cents: number }[]>`select name, price_cents from offerings where slug = ${slug}`;
+    if (!o) return fail("Pick what the payment is for.");
     name ||= kind === "final" ? `${o.name}: final payment` : o.name;
-    cents = customAmount > 0 ? customAmount : due;
+    cents = customAmount > 0 ? customAmount : kind === "final" ? o.price_cents - depositCents(o.price_cents) : o.price_cents;
     monthly = kind === "plan";
   }
-  if (!name || !(cents >= 50)) throw new Error("Give the payment a name and an amount of at least $0.50.");
-  const url = await createPaymentLink({ leadId, name, cents, monthly, payment: kind, slug });
+  if (!name) return fail("Give the payment a name.");
+  if (!(cents >= 50)) return fail("The amount must be at least $0.50.");
+  let url: string;
+  try {
+    url = await createPaymentLink({ leadId, name, cents, monthly, payment: kind, slug });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    console.error("Stripe payment link failed:", message);
+    return fail(`Stripe didn't make the link: ${message}`);
+  }
+  const label = `${name}, ${dollars(cents)}${monthly ? "/month" : ""}`;
   await sql`
     insert into activities (lead_id, kind, body, meta)
-    values (${leadId}, 'payment_link', ${`Payment link for ${name}, ${dollars(cents)}${monthly ? "/month" : ""}: ${url}`}, ${sql.json({ url } as never)})`;
-  revalidatePath(`/admin/leads/${leadId}`);
+    values (${leadId}, 'payment_link', ${`Payment link for ${label}: ${url}`}, ${sql.json({ url } as never)})`;
+  return { error: "", url, label };
 }

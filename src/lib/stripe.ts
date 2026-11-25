@@ -27,6 +27,8 @@ async function stripe<T>(path: string, params: Params): Promise<T> {
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/x-www-form-urlencoded" },
     body: form(params),
     cache: "no-store",
+    // Never leave a button spinning: give up after 20 seconds.
+    signal: AbortSignal.timeout(20_000),
   });
   const json = (await res.json()) as T & { error?: { message?: string } };
   if (!res.ok) throw new Error(json.error?.message ?? `Stripe error ${res.status}`);

@@ -16,6 +16,7 @@ import { paymentsForLead } from "@/lib/payments";
 import { depositCents, dollars, stripeEnabled } from "@/lib/stripe";
 import { summarizeLead } from "@/lib/lead-summary";
 import { DeleteLead } from "./DeleteLead";
+import { PaymentLinkForm } from "./PaymentLinkForm";
 import { FollowupNote } from "./FollowupNote";
 import { getFollowupsForLead, followupsReady } from "@/lib/followup";
 import { describeAdSource, parseAdSource } from "@/lib/ad-source";
@@ -243,40 +244,18 @@ export default async function LeadPage({ params, searchParams }: { params: Promi
           <p className="mt-1 text-sm text-muted">No online payments yet.</p>
         )}
         {payEnabled ? (
-          <form action={createLeadPaymentLink.bind(null, lead.id)} className="mt-4 grid gap-3 sm:grid-cols-[2fr_1fr_1fr_auto] sm:items-end">
-            <label className="text-sm font-semibold">Payment link for
-              <select name="what" required className={input} defaultValue="">
-                <option value="" disabled>Choose…</option>
-                <optgroup label="Website: second half (before go-live)">
-                  {offerings.filter((o) => o.kind === "package" && o.slug !== "ai-search-setup").map((o) => (
-                    <option key={o.slug} value={`final:${o.slug}`}>{o.name}: final {dollars(o.price_cents - depositCents(o.price_cents))}</option>
-                  ))}
-                </optgroup>
-                <optgroup label="Monthly plan (starts billing today)">
-                  {offerings.filter((o) => o.kind === "plan").map((o) => <option key={o.slug} value={`plan:${o.slug}`}>{o.name}: {dollars(o.price_cents)}/month</option>)}
-                </optgroup>
-                <optgroup label="Package in full">
-                  {offerings.filter((o) => o.kind === "package").map((o) => <option key={o.slug} value={`full:${o.slug}`}>{o.name}: {dollars(o.price_cents)}</option>)}
-                </optgroup>
-                <optgroup label="Add-on">
-                  {offerings.filter((o) => o.kind === "addon" && o.price_cents > 0).map((o) => <option key={o.slug} value={`addon:${o.slug}`}>{o.name}: {dollars(o.price_cents)}</option>)}
-                </optgroup>
-                <option value="custom">Something else (type a name and amount)</option>
-              </select>
-            </label>
-            <label className="text-sm font-semibold">Name (optional)
-              <input name="name" placeholder="e.g. Founding client deposit" className={input} />
-            </label>
-            <label className="text-sm font-semibold">Amount $ (optional)
-              <input name="amount" inputMode="decimal" placeholder="Uses the price" className={input} />
-            </label>
-            <SubmitButton pendingText="Making link…" className="rounded-md bg-navy px-4 py-2 font-semibold text-white">Make payment link</SubmitButton>
-            <label className="flex items-center gap-2 text-sm sm:col-span-4"><input type="checkbox" name="monthly" /> Charge monthly (only for &quot;Something else&quot;)</label>
-            <p className="text-xs text-muted sm:col-span-4">
-              Copy the link into an email or text. When they pay, it shows up here, the lead moves to Won for project payments, and you get an email.
-              For a founding client, type the discounted amount, or let them use your Stripe promotion code at checkout.
-            </p>
-          </form>
+          <PaymentLinkForm
+            action={createLeadPaymentLink.bind(null, lead.id)}
+            groups={[
+              {
+                label: "Website: second half (before go-live)",
+                options: offerings.filter((o) => o.kind === "package" && o.slug !== "ai-search-setup").map((o) => ({ value: `final:${o.slug}`, label: `${o.name}: final ${dollars(o.price_cents - depositCents(o.price_cents))}` })),
+              },
+              { label: "Monthly plan (starts billing today)", options: offerings.filter((o) => o.kind === "plan").map((o) => ({ value: `plan:${o.slug}`, label: `${o.name}: ${dollars(o.price_cents)}/month` })) },
+              { label: "Package in full", options: offerings.filter((o) => o.kind === "package").map((o) => ({ value: `full:${o.slug}`, label: `${o.name}: ${dollars(o.price_cents)}` })) },
+              { label: "Add-on", options: offerings.filter((o) => o.kind === "addon" && o.price_cents > 0).map((o) => ({ value: `addon:${o.slug}`, label: `${o.name}: ${dollars(o.price_cents)}` })) },
+            ]}
+          />
         ) : (
           <p className="mt-2 text-sm text-muted">Connect Stripe to make payment links: add STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET in Vercel, and run <code>db/updates/2026-11-stripe-payments.sql</code>.</p>
         )}
