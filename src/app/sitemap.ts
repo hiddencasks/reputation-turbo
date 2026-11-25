@@ -5,7 +5,7 @@ import { isLive, posts } from "@/lib/blog";
 // Re-checked every hour so scheduled blog posts are added on their date.
 export const revalidate = 3600;
 
-const paths = ["", "/services", "/ai-search", "/about", "/free-audit", "/contact", "/privacy", "/terms", "/areas", "/auto-shops", "/blog"];
+const paths = ["", "/services", "/ai-search", "/about", "/free-audit", "/contact", "/privacy", "/terms", "/areas", "/auto-shops", "/our-work", "/blog"];
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const cities = site.cities.map((c) => `/areas/${citySlug(c)}`);

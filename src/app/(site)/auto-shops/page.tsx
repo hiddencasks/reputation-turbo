@@ -164,7 +164,7 @@ export default function AutoShopsPage() {
         </Container>
       </section>
 
-      <section className="bg-navy py-14 text-white">
+      <section id="case-study" className="scroll-mt-24 bg-navy py-14 text-white">
         <Container>
           <Eyebrow>Case study</Eyebrow>
           <h2 className="mt-2 font-display text-3xl font-bold sm:text-4xl">Smoggy Joe&apos;s, Market St., San Diego</h2>

@@ -49,6 +49,7 @@ ${plans.map(line).join("\n")}
 - [About](${url("/about")})
 - [Contact](${url("/contact")})
 - [Auto Shops](${url("/auto-shops")}): Google, reviews, websites and AI search for smog check stations, auto repair shops and tire shops, with the Smoggy Joe's case study
+- [Our Work](${url("/our-work")}): client projects, starting with Smoggy Joe's (smog check station, San Diego)
 - [Areas We Serve](${url("/areas")})
 ${site.cities.map((c) => `- [${c}](${url(`/areas/${citySlug(c)}`)}): services in ${c}, CA`).join("\n")}
 - [Blog](${url("/blog")}): local marketing tips
