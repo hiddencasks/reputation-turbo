@@ -31,12 +31,15 @@ export function SiteFooter() {
           <a href={`mailto:${site.email}`} className="block hover:text-orange">{site.email}</a>
           <span className="block">{addressOneLine}</span>
           {socialLinks.length > 0 && (
-            <span className="mt-2 flex flex-wrap gap-x-4">
+            <span className="mt-3 block">
+              <span className="block text-xs font-semibold uppercase tracking-wider text-white/60">Find us on</span>
+              <span className="flex flex-wrap gap-x-4">
               {socialLinks.map((l) => (
                 <a key={l.href} href={l.href} target="_blank" rel="noopener me" className="font-semibold text-white hover:text-orange">
                   {l.label}
                 </a>
               ))}
+              </span>
             </span>
           )}
           <a
