@@ -46,7 +46,7 @@ export default async function FreeAuditPage({
             : "Tell us about your business and we'll send a personalized audit of your online presence. It's free, with no obligation."
         }
       />
-      <section className="py-14">
+      <section className="py-8 sm:py-14">
         <Container className="grid gap-12 lg:grid-cols-[1fr_1.2fr]">
           <div>
             <h2 className="font-display text-3xl font-bold text-navy">What we check</h2>
@@ -70,7 +70,8 @@ export default async function FreeAuditPage({
               </p>
             )}
           </div>
-          <div className="rounded-lg border border-line p-6 shadow-sm sm:p-8">
+          {/* On phones the form comes first, so ad visitors see it without scrolling past the details. */}
+          <div className="order-first rounded-lg border border-line p-6 shadow-sm sm:p-8 lg:order-none">
             <AuditForm focus={aiSearch ? "ai-search" : undefined} interest={interest} trade={trade} />
           </div>
         </Container>
