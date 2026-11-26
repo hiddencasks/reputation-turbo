@@ -301,6 +301,9 @@ export function AuditForm({ focus, interest, trade }: { focus?: "ai-search"; int
           </p>
         </>
       )}
+      <p className="rounded-md bg-navy-50 px-3 py-2 text-sm font-semibold text-navy">
+        See your quick check on screen right away{site.auditTurnaround ? `. Full audit ${site.auditTurnaround}.` : "."}
+      </p>
       <RequiredNote />
       <div className="grid gap-4 sm:grid-cols-2">
         <Field name="firstName" label="First name" state={state} autoComplete="given-name" placeholder="Sam" required />
