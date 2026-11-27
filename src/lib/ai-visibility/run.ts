@@ -8,6 +8,7 @@ import { analyzeAnswers } from "./extract";
 import { tallyCompetitors, type Competitor } from "./match";
 import { enabledProviders, providerLabel } from "./providers";
 import { buildQuestions } from "./questions";
+import { withRateLimitRetry } from "./retry";
 import { runSiteAudit } from "../audit/run";
 import type { SiteAudit } from "../audit/checks";
 
@@ -115,7 +116,10 @@ export async function processCheck(checkId: string): Promise<void> {
     const results: { provider: string; question: string; text: string; sources: string[]; error: string | null }[] = [];
     await pool(jobs, CONCURRENCY, async ({ question, provider }) => {
       try {
-        const answer = await beforeDeadline(() => provider.ask(question, { businessName: check.business_name }), deadline);
+        const answer = await withRateLimitRetry(
+          () => beforeDeadline(() => provider.ask(question, { businessName: check.business_name }), deadline),
+          deadline,
+        );
         if (!answer.text) throw new Error("Empty answer.");
         results.push({ provider: provider.id, question, text: answer.text, sources: answer.sources, error: null });
       } catch (err) {
