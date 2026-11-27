@@ -8,6 +8,7 @@ import {
   analyzeGoogle,
   analyzeSocial,
   analyzeWebsite,
+  isScriptShell,
   type AuditContext,
   type AuditSection,
   type MapsCompetitor,
@@ -64,6 +65,34 @@ async function fetchHome(website: string): Promise<{ html: string; finalUrl: str
     return { html, finalUrl: url.toString(), ms: Date.now() - started };
   }
   throw new Error("The website redirected too many times.");
+}
+
+/**
+ * For a home page that's only a script shell, downloads the site's own JavaScript (same host,
+ * at most 6 files and 3 MB) so the checks can find links and text the code draws. Empty on failure.
+ */
+async function fetchScripts(html: string, pageUrl: string): Promise<string> {
+  const base = new URL(pageUrl);
+  const srcs = [
+    ...html.matchAll(/<script[^>]+src=["']([^"']+)["']/gi),
+    ...html.matchAll(/<link[^>]+rel=["']modulepreload["'][^>]*href=["']([^"']+)["']/gi),
+  ].map((m) => m[1]);
+  const urls = [...new Set(srcs)]
+    .map((s) => { try { return new URL(s, base); } catch { return null; } })
+    .filter((u): u is URL => u !== null && u.hostname === base.hostname)
+    .slice(0, 6);
+  let out = "";
+  for (const url of urls) {
+    if (out.length > 3_000_000) break;
+    try {
+      await assertPublic(url);
+      const res = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS), headers: { "user-agent": "Mozilla/5.0 (compatible; ReputationTurboAudit/1.0; +https://reputationturbo.com)" } });
+      if (res.ok) out += (await res.text()).slice(0, MAX_BYTES) + "\n";
+    } catch (err) {
+      console.error("[audit] script fetch failed:", url.toString(), err);
+    }
+  }
+  return out;
 }
 
 /**
@@ -168,6 +197,7 @@ export async function runSiteAudit(ctx: AuditContext): Promise<SiteAudit> {
   const sections: AuditSection[] = [];
 
   let html: string | null = null;
+  let scripts = "";
   if (!ctx.website) {
     sections.push({
       id: "website",
@@ -178,7 +208,8 @@ export async function runSiteAudit(ctx: AuditContext): Promise<SiteAudit> {
     try {
       const home = fake ? { html: FAKE_HTML, finalUrl: ctx.website, ms: 900 } : await fetchHome(ctx.website);
       html = home.html;
-      sections.push({ id: "website", title: "Website", items: analyzeWebsite(home.html, home.finalUrl, ctx, home.ms) });
+      if (!fake && isScriptShell(home.html)) scripts = await fetchScripts(home.html, home.finalUrl);
+      sections.push({ id: "website", title: "Website", items: analyzeWebsite(home.html, home.finalUrl, ctx, home.ms, scripts) });
     } catch (err) {
       const reason = err instanceof Error ? err.message : String(err);
       sections.push({
@@ -200,7 +231,7 @@ export async function runSiteAudit(ctx: AuditContext): Promise<SiteAudit> {
     }),
   ]);
   sections.push(analyzeGoogle(place, ctx));
-  sections.push({ id: "social", title: "Social profiles", items: analyzeSocial(html) });
+  sections.push({ id: "social", title: "Social profiles", items: analyzeSocial(html, scripts) });
   const contact = analyzeContact(ctx);
   if (contact.length) sections.push({ id: "contact", title: "Contact details", items: contact });
   return { sections, competitors };

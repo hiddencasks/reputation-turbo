@@ -54,19 +54,23 @@ export function isScriptShell(html: string): boolean {
   return /<script[^>]+src=/i.test(html) && visible.length < 200;
 }
 
-const SHELL_DETAIL = "Your site draws this part of the page with JavaScript, so our automatic check couldn't read it. We'll confirm it by hand.";
+const SHELL_DETAIL = "Your site loads this part with JavaScript and we couldn't download its code to check it.";
 
 const LOCAL_TYPES = /LocalBusiness|HomeAndConstructionBusiness|Contractor|Plumber|Electrician|RoofingContractor|HVACBusiness|GeneralContractor|HousePainter|Locksmith|MovingCompany|LandscapingBusiness|ProfessionalService/;
 
 /** Website findings from the home page HTML. `finalUrl` is where the request ended up after redirects. */
-export function analyzeWebsite(html: string, finalUrl: string, ctx: AuditContext, loadMs?: number): AuditItem[] {
+/**
+ * `scripts` is the site's own JavaScript, fetched when the home page is a script shell. Those sites
+ * build their links and text in code, so the checks below look there too (e.g. `href:"tel:..."`).
+ */
+export function analyzeWebsite(html: string, finalUrl: string, ctx: AuditContext, loadMs?: number, scripts = ""): AuditItem[] {
   const items: AuditItem[] = [];
   const body = text(html);
-  const lower = body.toLowerCase();
+  const lower = (body + " " + scripts).toLowerCase();
   const shell = isScriptShell(html);
-  /** On a JavaScript-built page a missing link or word proves nothing, so report it as "info", not "fix". */
+  /** Only when we couldn't read a shell site's code is a missing link unproven, so it's "info", not "fix". */
   const check = (ok: boolean, good: AuditItem, fix: AuditItem): AuditItem =>
-    ok ? good : shell ? { ...fix, status: "info", detail: SHELL_DETAIL } : fix;
+    ok ? good : shell && !scripts ? { ...fix, status: "info", detail: SHELL_DETAIL } : fix;
 
   items.push(
     finalUrl.startsWith("https://")
@@ -107,7 +111,7 @@ export function analyzeWebsite(html: string, finalUrl: string, ctx: AuditContext
 
   items.push(
     check(
-      /href=["']tel:/i.test(html),
+      /href=["']tel:/i.test(html) || /["'`]tel:\+?[\d(]/i.test(scripts),
       { id: "call", label: "Tap to call", status: "good", detail: "Visitors on phones can tap your number to call." },
       { id: "call", label: "Tap to call", status: "fix", detail: "There's no tap-to-call link, so phone visitors have to copy your number by hand." },
     ),
@@ -115,7 +119,7 @@ export function analyzeWebsite(html: string, finalUrl: string, ctx: AuditContext
 
   items.push(
     check(
-      /<form[\s>]/i.test(html) || /href=["'][^"']*contact/i.test(html),
+      /<form[\s>]/i.test(html) || /href=["'][^"']*contact/i.test(html) || /\(\s*["']form["']/.test(scripts) || /["'`][^"'`\s]*\/contact/i.test(scripts),
       { id: "contact", label: "Easy to contact", status: "good", detail: "There's a contact form or contact page." },
       { id: "contact", label: "Easy to contact", status: "fix", detail: "No contact form or contact page was found on the home page." },
     ),
@@ -140,7 +144,7 @@ export function analyzeWebsite(html: string, finalUrl: string, ctx: AuditContext
 
   items.push(
     check(
-      /faq|frequently asked/i.test(body) || types.includes("FAQPage"),
+      /faq|frequently asked/i.test(body) || /frequently asked|["'`]faq/i.test(scripts) || types.includes("FAQPage"),
       { id: "faq", label: "Answers common questions", status: "good", detail: "The site has a questions section, which AI assistants often quote." },
       { id: "faq", label: "Answers common questions", status: "fix", detail: "No FAQ found. Plain-language answers to common customer questions are what AI assistants quote." },
     ),
@@ -167,13 +171,13 @@ const SOCIAL: { id: string; label: string; re: RegExp }[] = [
 ];
 
 /** Social profiles linked from the website. Without a website we can't tell, so these are informational. */
-export function analyzeSocial(html: string | null): AuditItem[] {
+export function analyzeSocial(html: string | null, scripts = ""): AuditItem[] {
   if (html === null) {
     return [{ id: "social", label: "Social profiles", status: "info", detail: "We'll check your Facebook, Instagram and Yelp profiles by hand and include what we find." }];
   }
-  const found = SOCIAL.filter((s) => s.re.test(html));
-  if (!found.length && isScriptShell(html)) {
-    return [{ id: "social", label: "Social profiles", status: "info", detail: "Your site is built with JavaScript, so we'll check its Facebook and Instagram links by hand." }];
+  const found = SOCIAL.filter((s) => s.re.test(html) || s.re.test(scripts));
+  if (!found.length && !scripts && isScriptShell(html)) {
+    return [{ id: "social", label: "Social profiles", status: "info", detail: "Your site loads its links with JavaScript and we couldn't download its code to check them." }];
   }
   const items: AuditItem[] = found.map((s) => ({ id: s.id, label: s.label, status: "good", detail: `Your website links to your ${s.label} page.` }));
   if (!found.some((s) => s.id === "facebook" || s.id === "instagram")) {
