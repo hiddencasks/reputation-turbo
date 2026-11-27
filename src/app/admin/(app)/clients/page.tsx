@@ -10,7 +10,7 @@ export default async function ClientsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="font-display text-3xl font-bold text-navy">Clients</h1>
-        <p className="text-muted">Every client project, with its steps, time log and the client&apos;s checklist. Start one from a lead&apos;s page.</p>
+        <p className="text-muted">Every client project, with its steps, time log and the client&apos;s checklist. Start one from a lead&apos;s page. Clients on a monthly plan (posts and billing) are under <Link href="/admin/plans" className="font-semibold text-orange">Monthly plans</Link>.</p>
       </div>
       {!ready ? (
         <p className="rounded-lg bg-amber-50 p-4 text-sm text-amber-900">

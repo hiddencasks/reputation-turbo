@@ -9,6 +9,9 @@ import { providerLabel } from "@/lib/ai-visibility/providers";
 import { AutoRefresh } from "@/components/AutoRefresh";
 import { PackagePicker } from "@/components/PackagePicker";
 import { getOfferings } from "@/lib/offerings";
+import { plansForLead, plansReady } from "@/lib/plans";
+import { statusLabel } from "@/lib/plan-schedule";
+import { startManualPlan } from "../../plans/actions";
 import { recommendPackages, splitPackages } from "@/lib/recommend";
 import { auditScore, fixIds } from "@/lib/audit/checks";
 import { addNote, approveReport, createLeadPaymentLink, deleteLead, markVendor, runAiCheck, setAiMonitoring, updateLead, updateLeadDetails, copyDetailsFromChecklist } from "../../../actions";
@@ -66,6 +69,8 @@ export default async function LeadPage({ params, searchParams }: { params: Promi
   if (!lead) notFound();
   const projectTable = await projectsReady();
   const payments = await paymentsForLead(lead.id);
+  const plansTable = await plansReady();
+  const leadPlans = plansTable ? await plansForLead(lead.id) : [];
   const payEnabled = stripeEnabled();
   const paymentLinks = activities.filter((a) => a.kind === "payment_link").slice(0, 3);
   const project = projectTable ? await getProjectForLead(lead.id) : null;
@@ -267,6 +272,41 @@ export default async function LeadPage({ params, searchParams }: { params: Promi
           </ul>
         )}
       </section>
+
+      {plansTable && (
+        <section className="rounded-lg bg-white p-5 shadow-sm">
+          <h2 className="font-display text-xl font-bold text-navy">Monthly plan</h2>
+          {leadPlans.length > 0 ? (
+            <ul className="mt-2 divide-y divide-line text-sm">
+              {leadPlans.map((p) => (
+                <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
+                  <span><strong>{p.name || "Monthly plan"}</strong> · {dollars(p.amount_cents)}/month · {statusLabel[p.status]}{p.paused ? " (posting paused)" : ""}</span>
+                  <Link href={`/admin/plans/${p.id}`} className="font-semibold text-orange">Open posts and billing →</Link>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-1 text-sm text-muted">No monthly plan. One is added here by itself when they pay for a plan online.</p>
+          )}
+          {!leadPlans.some((p) => p.status !== "canceled") && (
+            <details className="mt-3 text-sm">
+              <summary className="cursor-pointer font-semibold text-navy">Start a plan by hand (paid by cash or check, or free)</summary>
+              <form action={startManualPlan} className="mt-3 flex flex-wrap items-end gap-3">
+                <input type="hidden" name="leadId" value={lead.id} />
+                <label className="font-medium">Plan
+                  <select name="slug" required className={input}>
+                    {offerings.filter((o) => o.kind === "plan").map((o) => <option key={o.slug} value={o.slug}>{o.name}: {dollars(o.price_cents)}/month</option>)}
+                  </select>
+                </label>
+                <label className="font-medium">Price per month ($, blank for the list price)
+                  <input name="amount" inputMode="decimal" placeholder="e.g. 0 or 239" className={input} />
+                </label>
+                <SubmitButton pendingText="Starting…" className="rounded-md bg-navy px-4 py-2 font-semibold text-white">Start plan</SubmitButton>
+              </form>
+            </details>
+          )}
+        </section>
+      )}
 
       <section aria-labelledby="ai-heading" className="rounded-lg bg-white p-5 shadow-sm">
         {checkRunning && <AutoRefresh />}

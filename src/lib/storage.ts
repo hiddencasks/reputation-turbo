@@ -141,3 +141,19 @@ export async function readLocal(objectPath: string): Promise<Buffer> {
 function encodePath(p: string): string {
   return p.split("/").map(encodeURIComponent).join("/");
 }
+
+/** A stored file's bytes, read on the server (used to draw client post images). Null when it can't be read. */
+export async function readStored(objectPath: string): Promise<Buffer | null> {
+  const mode = storageMode();
+  try {
+    if (mode === "supabase") {
+      const res = await fetch(`${supabaseUrl()}/storage/v1/object/authenticated/${BUCKET}/${encodePath(objectPath)}`, { headers: authHeaders(), cache: "no-store" });
+      if (!res.ok) return null;
+      return Buffer.from(await res.arrayBuffer());
+    }
+    if (mode === "local") return await readLocal(objectPath);
+  } catch {
+    return null;
+  }
+  return null;
+}
