@@ -135,4 +135,7 @@ export type CompletedCheckout = {
   customer_details: { email: string | null; name: string | null; phone: string | null } | null;
   custom_fields?: { key: string; text?: { value: string | null } | null }[];
   total_details?: { amount_discount?: number } | null;
+  /** Set on subscription checkouts (ids, unless Stripe was asked to expand them). */
+  subscription?: string | { id: string } | null;
+  customer?: string | { id: string } | null;
 };

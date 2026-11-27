@@ -4,6 +4,7 @@ import { sendEmail } from "./email";
 import { upsertLead, type Lead } from "./leads";
 import { site } from "./site";
 import { dollars, type CompletedCheckout } from "./stripe";
+import { ensurePlanFromCheckout } from "./plans";
 
 export type Payment = {
   id: string;
@@ -88,6 +89,24 @@ export async function recordCheckout(s: CompletedCheckout): Promise<boolean> {
     await sql`insert into activities (lead_id, kind, body) values (${lead.id}, 'stage_change', ${"Moved to Won after an online payment."})`;
   }
 
+  // Any monthly plan gets its own plan page (posts, billing status) right away.
+  let planId: string | null = null;
+  if (monthly) {
+    const id = (v: CompletedCheckout["subscription"]) => (typeof v === "string" ? v : v?.id ?? "");
+    const [offering] = m.slug ? await sql<{ name: string }[]>`select name from offerings where slug = ${m.slug}`.catch(() => []) : [];
+    planId = await ensurePlanFromCheckout({
+      leadId: lead.id,
+      slug: m.slug ?? "",
+      name: offering?.name || item,
+      amountCents: amount,
+      subscriptionId: id(s.subscription),
+      customerId: id(s.customer),
+    }).catch((err) => {
+      console.error("[plans] could not start the plan:", err);
+      return null;
+    });
+  }
+
   await sendEmail({
     to: process.env.OWNER_EMAIL ?? site.email,
     leadId: lead.id,
@@ -98,6 +117,7 @@ export async function recordCheckout(s: CompletedCheckout): Promise<boolean> {
       note,
       [`Name: ${`${lead.first_name} ${lead.last_name}`.trim() || "(not given)"}`, `Business: ${lead.business_name || "(not given)"}`, `Email: ${email}`, `Phone: ${lead.phone || "(not given)"}`].join("\n"),
       ["deposit", "full"].includes(kind) ? "Next step: open the lead and start their client project so the welcome email and checklist go out." : "",
+      planId ? `Their monthly plan page is ready, where you draft and approve their posts: ${site.url}/admin/plans/${planId}` : "",
       `Open in dashboard: ${site.url}/admin/leads/${lead.id}`,
     ].filter(Boolean),
   });
