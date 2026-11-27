@@ -43,6 +43,19 @@ export function schemaTypes(html: string): string[] {
   return [...types];
 }
 
+/**
+ * True when the home page is an empty shell that JavaScript fills in later (a React/Vite style
+ * single-page app). Our checks read the raw HTML, so on these sites links, text and forms only
+ * exist after scripts run and would wrongly show as missing.
+ */
+export function isScriptShell(html: string): boolean {
+  const bodyHtml = html.match(/<body[^>]*>([\s\S]*)<\/body>/i)?.[1] ?? html;
+  const visible = text(bodyHtml).trim();
+  return /<script[^>]+src=/i.test(html) && visible.length < 200;
+}
+
+const SHELL_DETAIL = "Your site draws this part of the page with JavaScript, so our automatic check couldn't read it. We'll confirm it by hand.";
+
 const LOCAL_TYPES = /LocalBusiness|HomeAndConstructionBusiness|Contractor|Plumber|Electrician|RoofingContractor|HVACBusiness|GeneralContractor|HousePainter|Locksmith|MovingCompany|LandscapingBusiness|ProfessionalService/;
 
 /** Website findings from the home page HTML. `finalUrl` is where the request ended up after redirects. */
@@ -50,6 +63,10 @@ export function analyzeWebsite(html: string, finalUrl: string, ctx: AuditContext
   const items: AuditItem[] = [];
   const body = text(html);
   const lower = body.toLowerCase();
+  const shell = isScriptShell(html);
+  /** On a JavaScript-built page a missing link or word proves nothing, so report it as "info", not "fix". */
+  const check = (ok: boolean, good: AuditItem, fix: AuditItem): AuditItem =>
+    ok ? good : shell ? { ...fix, status: "info", detail: SHELL_DETAIL } : fix;
 
   items.push(
     finalUrl.startsWith("https://")
@@ -89,15 +106,19 @@ export function analyzeWebsite(html: string, finalUrl: string, ctx: AuditContext
   );
 
   items.push(
-    /href=["']tel:/i.test(html)
-      ? { id: "call", label: "Tap to call", status: "good", detail: "Visitors on phones can tap your number to call." }
-      : { id: "call", label: "Tap to call", status: "fix", detail: "There's no tap-to-call link, so phone visitors have to copy your number by hand." },
+    check(
+      /href=["']tel:/i.test(html),
+      { id: "call", label: "Tap to call", status: "good", detail: "Visitors on phones can tap your number to call." },
+      { id: "call", label: "Tap to call", status: "fix", detail: "There's no tap-to-call link, so phone visitors have to copy your number by hand." },
+    ),
   );
 
   items.push(
-    /<form[\s>]/i.test(html) || /href=["'][^"']*contact/i.test(html)
-      ? { id: "contact", label: "Easy to contact", status: "good", detail: "There's a contact form or contact page." }
-      : { id: "contact", label: "Easy to contact", status: "fix", detail: "No contact form or contact page was found on the home page." },
+    check(
+      /<form[\s>]/i.test(html) || /href=["'][^"']*contact/i.test(html),
+      { id: "contact", label: "Easy to contact", status: "good", detail: "There's a contact form or contact page." },
+      { id: "contact", label: "Easy to contact", status: "fix", detail: "No contact form or contact page was found on the home page." },
+    ),
   );
 
   const types = schemaTypes(html);
@@ -109,17 +130,31 @@ export function analyzeWebsite(html: string, finalUrl: string, ctx: AuditContext
 
   if (ctx.city) {
     items.push(
-      lower.includes(ctx.city.toLowerCase())
-        ? { id: "area", label: "Service area on the page", status: "good", detail: `The home page mentions ${ctx.city}.` }
-        : { id: "area", label: "Service area on the page", status: "fix", detail: `The home page doesn't mention ${ctx.city}. Naming the areas you serve helps you show up in local searches.` },
+      check(
+        lower.includes(ctx.city.toLowerCase()),
+        { id: "area", label: "Service area on the page", status: "good", detail: `The home page mentions ${ctx.city}.` },
+        { id: "area", label: "Service area on the page", status: "fix", detail: `The home page doesn't mention ${ctx.city}. Naming the areas you serve helps you show up in local searches.` },
+      ),
     );
   }
 
   items.push(
-    /faq|frequently asked/i.test(body) || types.includes("FAQPage")
-      ? { id: "faq", label: "Answers common questions", status: "good", detail: "The site has a questions section, which AI assistants often quote." }
-      : { id: "faq", label: "Answers common questions", status: "fix", detail: "No FAQ found. Plain-language answers to common customer questions are what AI assistants quote." },
+    check(
+      /faq|frequently asked/i.test(body) || types.includes("FAQPage"),
+      { id: "faq", label: "Answers common questions", status: "good", detail: "The site has a questions section, which AI assistants often quote." },
+      { id: "faq", label: "Answers common questions", status: "fix", detail: "No FAQ found. Plain-language answers to common customer questions are what AI assistants quote." },
+    ),
   );
+
+  if (shell) {
+    items.push({
+      id: "no-js",
+      label: "Readable without JavaScript",
+      status: "fix",
+      detail:
+        "Your home page is almost blank until JavaScript runs. Google can usually handle that, but many of the crawlers that feed ChatGPT, Claude, Gemini, Perplexity and Copilot read only the raw page, so they may see little about your business.",
+    });
+  }
 
   return items;
 }
@@ -137,6 +172,9 @@ export function analyzeSocial(html: string | null): AuditItem[] {
     return [{ id: "social", label: "Social profiles", status: "info", detail: "We'll check your Facebook, Instagram and Yelp profiles by hand and include what we find." }];
   }
   const found = SOCIAL.filter((s) => s.re.test(html));
+  if (!found.length && isScriptShell(html)) {
+    return [{ id: "social", label: "Social profiles", status: "info", detail: "Your site is built with JavaScript, so we'll check its Facebook and Instagram links by hand." }];
+  }
   const items: AuditItem[] = found.map((s) => ({ id: s.id, label: s.label, status: "good", detail: `Your website links to your ${s.label} page.` }));
   if (!found.some((s) => s.id === "facebook" || s.id === "instagram")) {
     items.push({ id: "social-links", label: "Social profiles linked", status: "fix", detail: "Your website doesn't link to a Facebook or Instagram page. Linked profiles help customers and AI tools confirm you're the real business." });
