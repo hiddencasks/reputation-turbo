@@ -27,6 +27,15 @@ describe("website audit", () => {
     expect(status(analyzeSocial(shell))).toEqual({ social: "info" });
   });
 
+  it("checks a JavaScript-built page's code for its links and text", () => {
+    const shell = `<html><head><title>Lopez Concrete</title></head><body><div id="root"></div><script type="module" src="/assets/index.js"></script></body></html>`;
+    const js = `jsx("a",{href:"tel:619-555-0100",children:"Call"}),jsx("form",{onSubmit:s}),jsx("p",{children:"Serving El Cajon"})`;
+    const s = status(analyzeWebsite(shell, "https://lopezconcrete.com/", ctx, 300, js));
+    expect(s).toMatchObject({ call: "good", contact: "good", area: "good", faq: "fix", "no-js": "fix" });
+    expect(status(analyzeSocial(shell, js))).toMatchObject({ "social-links": "fix" });
+    expect(status(analyzeSocial(shell, `href:"https://www.instagram.com/lopezconcrete"`))).toMatchObject({ instagram: "good" });
+  });
+
   it("keeps normal pages free of the JavaScript note", () => {
     const s = status(analyzeWebsite("<html><title>Home</title><body>Hello</body></html>", "https://lopezconcrete.com", ctx));
     expect(s["no-js"]).toBeUndefined();
