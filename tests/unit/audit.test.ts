@@ -19,6 +19,19 @@ describe("website audit", () => {
     expect(items.every((i) => i.status === "good")).toBe(true);
   });
 
+  it("doesn't blame a JavaScript-built page for links it can't see", () => {
+    const shell = `<html><head><title>Lopez Concrete</title><meta name="viewport" content="width=device-width"></head>
+      <body><div id="root"></div><script type="module" src="/assets/index-abc.js"></script></body></html>`;
+    const s = status(analyzeWebsite(shell, "https://lopezconcrete.com/", ctx, 300));
+    expect(s).toMatchObject({ call: "info", contact: "info", area: "info", faq: "info", "no-js": "fix" });
+    expect(status(analyzeSocial(shell))).toEqual({ social: "info" });
+  });
+
+  it("keeps normal pages free of the JavaScript note", () => {
+    const s = status(analyzeWebsite("<html><title>Home</title><body>Hello</body></html>", "https://lopezconcrete.com", ctx));
+    expect(s["no-js"]).toBeUndefined();
+  });
+
   it("counts FAQ structured data as answering common questions", () => {
     const html = `<script type="application/ld+json">{"@type":"FAQPage"}</script><body>Questions we get</body>`;
     expect(status(analyzeWebsite(html, "https://lopezconcrete.com/", ctx)).faq).toBe("good");
